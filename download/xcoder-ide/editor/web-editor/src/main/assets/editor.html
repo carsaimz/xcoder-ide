@@ -5,124 +5,220 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
-html, body { width:100%; height:100%; overflow:hidden; font-family:'JetBrains Mono',monospace; background:#1e1e2e; color:#cdd6f4; }
+html, body { width:100%; height:100%; overflow:hidden; font-family:'JetBrains Mono','Fira Code','Cascadia Code',monospace; background:#1e1e2e; color:#cdd6f4; }
 
-/* Breadcrumb Bar */
+/* ===== Breadcrumb Bar ===== */
 #breadcrumb { height:28px; background:#181825; display:flex; align-items:center; padding:0 8px; font-size:12px; color:#a6adc8; border-bottom:1px solid #313244; overflow-x:auto; white-space:nowrap; gap:2px; }
-#breadcrumb .crumb { cursor:pointer; padding:2px 6px; border-radius:3px; }
+#breadcrumb .crumb { cursor:pointer; padding:2px 6px; border-radius:3px; transition:background .15s; }
 #breadcrumb .crumb:hover { background:#313244; color:#cdd6f4; }
 #breadcrumb .sep { color:#585b70; margin:0 1px; }
 
-/* Tab Bar */
+/* ===== Tab Bar ===== */
 #tabbar { height:36px; background:#11111b; display:flex; align-items:stretch; overflow-x:auto; border-bottom:1px solid #313244; }
 #tabbar::-webkit-scrollbar { height:0; }
-.tab { display:flex; align-items:center; gap:6px; padding:0 12px; font-size:12px; color:#a6adc8; cursor:pointer; border-right:1px solid #313244; min-width:0; max-width:180px; position:relative; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.tab { display:flex; align-items:center; gap:6px; padding:0 12px; font-size:12px; color:#a6adc8; cursor:pointer; border-right:1px solid #313244; min-width:0; max-width:180px; position:relative; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; transition:background .15s; }
 .tab.active { background:#1e1e2e; color:#cdd6f4; }
 .tab.modified::after { content:''; position:absolute; top:4px; right:8px; width:6px; height:6px; border-radius:50%; background:#f9e2af; }
-.tab .close { font-size:14px; opacity:0; margin-left:auto; padding:0 2px; border-radius:3px; }
+.tab .close { font-size:14px; opacity:0; margin-left:auto; padding:0 2px; border-radius:3px; transition:opacity .15s; }
 .tab:hover .close, .tab.active .close { opacity:0.7; }
 .tab .close:hover { opacity:1; background:#45475a; }
 .tab .dot { width:8px; height:8px; border-radius:2px; flex-shrink:0; }
 
-/* Editor Container */
+/* ===== Toolbar ===== */
+#toolbar { height:32px; background:#181825; display:flex; align-items:center; padding:0 8px; gap:4px; border-bottom:1px solid #313244; overflow-x:auto; }
+#toolbar::-webkit-scrollbar { height:0; }
+.tool-btn { padding:3px 8px; background:transparent; color:#a6adc8; border:1px solid transparent; border-radius:4px; font-size:11px; cursor:pointer; font-family:inherit; white-space:nowrap; display:flex; align-items:center; gap:4px; transition:all .15s; }
+.tool-btn:hover { background:#313244; color:#cdd6f4; border-color:#45475a; }
+.tool-btn.active { background:#45475a; color:#cdd6f4; }
+.tool-sep { width:1px; height:18px; background:#313244; margin:0 2px; flex-shrink:0; }
+
+/* ===== Editor Container ===== */
 #editor-wrap { display:flex; flex:1; overflow:hidden; position:relative; }
 
-/* Gutter + Code area */
+/* ===== Gutter + Code area ===== */
 #editor-area { flex:1; display:flex; position:relative; }
-#gutter { width:50px; background:#181825; text-align:right; padding:4px 8px 4px 0; font-size:13px; line-height:1.6; color:#585b70; overflow:hidden; user-select:none; border-right:1px solid #313244; }
+#gutter { width:56px; background:#181825; text-align:right; padding:4px 8px 4px 0; font-size:13px; line-height:1.6; color:#585b70; overflow:hidden; user-select:none; border-right:1px solid #313244; flex-shrink:0; }
+#gutter .line-no { padding-right:4px; position:relative; }
 #gutter .active-line { color:#cdd6f4; font-weight:bold; }
+#gutter .fold-marker { position:absolute; left:2px; top:50%; transform:translateY(-50%); width:14px; height:14px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#585b70; font-size:10px; border-radius:2px; }
+#gutter .fold-marker:hover { background:#313244; color:#cdd6f4; }
+#gutter .bookmark-marker { position:absolute; right:0; top:0; bottom:0; width:3px; background:#f9e2af; }
 
 #code-area { flex:1; position:relative; overflow:auto; }
-#code-display { min-height:100%; padding:4px 8px; font-size:13px; line-height:1.6; white-space:pre; tab-size:4; outline:none; caret-color:#f5e0dc; }
-#code-display::selection { background:#45475a; }
+#code-display { min-height:100%; padding:4px 12px 4px 8px; font-size:13px; line-height:1.6; white-space:pre; tab-size:4; outline:none; caret-color:#f5e0dc; position:relative; }
+#code-display::selection { background:rgba(137,180,250,0.25); }
 
-/* Indent Guides */
+/* ===== Indent Guides ===== */
 .indent-guide { position:absolute; top:0; bottom:0; width:1px; background:#313244; pointer-events:none; }
 
-/* Active line highlight */
-.line-highlight { position:absolute; left:0; right:0; height:20.8px; background:rgba(69,71,90,0.3); pointer-events:none; }
+/* ===== Active line highlight ===== */
+.line-highlight { position:absolute; left:0; right:0; height:20.8px; background:rgba(69,71,90,0.3); pointer-events:none; z-index:1; }
 
-/* Bracket match highlight */
+/* ===== Selection highlight (multi-cursor) ===== */
+.selection-highlight { background:rgba(137,180,250,0.15); position:absolute; pointer-events:none; }
+.cursor-marker { position:absolute; width:2px; background:#f5e0dc; animation:blink 1s step-end infinite; pointer-events:none; z-index:5; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+/* ===== Bracket match highlight ===== */
 .bracket-match { background:rgba(166,227,161,0.2) !important; outline:1px solid rgba(166,227,161,0.4); }
+.bracket-match-mismatch { background:rgba(243,139,168,0.2) !important; outline:1px solid rgba(243,139,168,0.4); }
 
-/* Trailing whitespace */
+/* ===== Trailing whitespace ===== */
 .trailing-ws { background:rgba(243,139,168,0.3); }
 
-/* Minimap */
-#minimap { width:80px; background:#181825; position:relative; overflow:hidden; cursor:pointer; border-left:1px solid #313244; display:none; }
+/* ===== Code Folding ===== */
+.fold-region { position:relative; }
+.fold-button { display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; font-size:10px; color:#585b70; cursor:pointer; border-radius:2px; vertical-align:middle; margin-right:2px; user-select:none; }
+.fold-button:hover { background:#313244; color:#cdd6f4; }
+.fold-ellipsis { color:#89b4fa; font-style:italic; background:rgba(137,180,250,0.08); padding:0 4px; border-radius:2px; cursor:pointer; display:inline; }
+.fold-ellipsis:hover { background:rgba(137,180,250,0.15); }
+
+/* ===== Current word highlight ===== */
+.current-word-hl { background:rgba(249,226,175,0.12); border-radius:2px; }
+
+/* ===== Minimap ===== */
+#minimap { width:80px; background:#181825; position:relative; overflow:hidden; cursor:pointer; border-left:1px solid #313244; display:none; flex-shrink:0; }
 #minimap.visible { display:block; }
-#minimap canvas { width:100%; }
+#minimap canvas { width:100%; display:block; }
 #minimap-viewport { position:absolute; left:0; right:0; background:rgba(205,214,244,0.08); border:1px solid rgba(205,214,244,0.15); pointer-events:none; transition:top 0.1s; }
 
-/* Search Panel */
-#search-panel { display:none; padding:8px; background:#1e1e2e; border-bottom:1px solid #313244; z-index:10; }
+/* ===== Search Panel ===== */
+#search-panel { display:none; padding:8px 10px; background:#1e1e2e; border-bottom:1px solid #313244; z-index:10; }
 #search-panel.visible { display:block; }
-#search-panel input { width:100%; background:#313244; border:1px solid #45475a; color:#cdd6f4; padding:6px 8px; border-radius:4px; font-size:12px; outline:none; font-family:inherit; }
-#search-panel input:focus { border-color:#89b4fa; }
+#search-panel input[type="text"] { width:100%; background:#313244; border:1px solid #45475a; color:#cdd6f4; padding:6px 8px; border-radius:4px; font-size:12px; outline:none; font-family:inherit; transition:border-color .15s; }
+#search-panel input[type="text"]:focus { border-color:#89b4fa; }
 #search-panel .row { display:flex; gap:6px; margin-bottom:6px; align-items:center; }
-#search-panel .row label { font-size:11px; color:#a6adc8; cursor:pointer; display:flex; align-items:center; gap:3px; }
+#search-panel .row label { font-size:11px; color:#a6adc8; cursor:pointer; display:flex; align-items:center; gap:3px; user-select:none; }
 #search-panel .row label input { width:auto; }
-#search-panel .btn { padding:4px 10px; background:#313244; color:#cdd6f4; border:1px solid #45475a; border-radius:4px; font-size:11px; cursor:pointer; }
+#search-panel .btn { padding:4px 10px; background:#313244; color:#cdd6f4; border:1px solid #45475a; border-radius:4px; font-size:11px; cursor:pointer; font-family:inherit; transition:background .15s; }
 #search-panel .btn:hover { background:#45475a; }
-#search-panel .match-count { font-size:11px; color:#a6adc8; margin-left:auto; }
+#search-panel .match-count { font-size:11px; color:#a6adc8; margin-left:auto; white-space:nowrap; }
 
-/* Command Palette */
-#command-palette { display:none; position:absolute; top:40px; left:50%; transform:translateX(-50%); width:500px; max-width:90vw; background:#1e1e2e; border:1px solid #45475a; border-radius:8px; box-shadow:0 8px 32px rgba(0,0,0,0.5); z-index:100; max-height:400px; overflow:hidden; }
+/* ===== Command Palette ===== */
+#command-palette { display:none; position:absolute; top:40px; left:50%; transform:translateX(-50%); width:520px; max-width:92vw; background:#1e1e2e; border:1px solid #45475a; border-radius:8px; box-shadow:0 8px 32px rgba(0,0,0,0.5); z-index:100; max-height:420px; overflow:hidden; }
 #command-palette.visible { display:block; }
 #command-palette input { width:100%; background:transparent; border:none; border-bottom:1px solid #313244; color:#cdd6f4; padding:12px 16px; font-size:14px; outline:none; font-family:inherit; }
-#command-palette .items { overflow-y:auto; max-height:340px; }
-#command-palette .item { padding:8px 16px; cursor:pointer; display:flex; align-items:center; gap:10px; font-size:13px; color:#cdd6f4; }
+#command-palette .items { overflow-y:auto; max-height:360px; }
+#command-palette .item { padding:8px 16px; cursor:pointer; display:flex; align-items:center; gap:10px; font-size:13px; color:#cdd6f4; transition:background .1s; }
 #command-palette .item:hover, #command-palette .item.selected { background:#313244; }
-#command-palette .item .shortcut { margin-left:auto; font-size:11px; color:#585b70; }
+#command-palette .item .shortcut { margin-left:auto; font-size:11px; color:#585b70; white-space:nowrap; }
 #command-palette .item .cat { font-size:10px; color:#89b4fa; margin-left:6px; }
+#command-palette .item .icon { width:16px; text-align:center; color:#a6adc8; }
 
-/* Status Bar */
-#statusbar { height:24px; background:#181825; display:flex; align-items:center; padding:0 12px; font-size:11px; color:#a6adc8; border-top:1px solid #313244; gap:16px; }
+/* ===== Outline Panel ===== */
+#outline-panel { display:none; position:absolute; top:0; right:0; width:260px; height:100%; background:#181825; border-left:1px solid #313244; z-index:50; overflow-y:auto; padding:8px 0; }
+#outline-panel.visible { display:block; }
+#outline-panel .outline-header { padding:6px 12px; font-size:11px; color:#a6adc8; text-transform:uppercase; letter-spacing:1px; border-bottom:1px solid #313244; display:flex; justify-content:space-between; align-items:center; }
+#outline-panel .outline-header .close-btn { cursor:pointer; opacity:0.6; font-size:14px; }
+#outline-panel .outline-header .close-btn:hover { opacity:1; }
+.outline-item { padding:3px 12px 3px 16px; font-size:12px; color:#a6adc8; cursor:pointer; display:flex; align-items:center; gap:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; transition:background .1s; }
+.outline-item:hover { background:#313244; color:#cdd6f4; }
+.outline-item .symbol-icon { font-size:10px; width:14px; text-align:center; flex-shrink:0; }
+.outline-item.level-1 { padding-left:16px; font-weight:bold; color:#cdd6f4; }
+.outline-item.level-2 { padding-left:28px; }
+.outline-item.level-3 { padding-left:40px; }
+
+/* ===== Encoding Dropdown ===== */
+#encoding-dropdown { display:none; position:fixed; background:#1e1e2e; border:1px solid #45475a; border-radius:6px; box-shadow:0 4px 16px rgba(0,0,0,0.4); z-index:200; min-width:160px; max-height:240px; overflow-y:auto; padding:4px 0; }
+#encoding-dropdown.visible { display:block; }
+#encoding-dropdown .enc-item { padding:6px 16px; font-size:12px; cursor:pointer; color:#cdd6f4; transition:background .1s; }
+#encoding-dropdown .enc-item:hover { background:#313244; }
+#encoding-dropdown .enc-item.active { color:#89b4fa; }
+
+/* ===== Status Bar ===== */
+#statusbar { height:24px; background:#181825; display:flex; align-items:center; padding:0 12px; font-size:11px; color:#a6adc8; border-top:1px solid #313244; gap:16px; user-select:none; }
 #statusbar .right { margin-left:auto; display:flex; gap:16px; }
 #statusbar span { cursor:default; }
+#statusbar .clickable { cursor:pointer; padding:0 4px; border-radius:2px; transition:background .15s; }
+#statusbar .clickable:hover { background:#313244; color:#cdd6f4; }
 
-/* Panels */
+/* ===== Bottom Panels ===== */
 .panel { display:none; background:#11111b; border-top:1px solid #313244; }
-.panel.visible { display:block; }
-#output-panel, #problems-panel, #terminal-panel { height:150px; overflow-y:auto; padding:8px; font-size:12px; font-family:inherit; }
-#problems-panel .problem { padding:2px 4px; display:flex; gap:8px; align-items:center; }
+.panel.visible { display:flex; flex-direction:column; }
+.panel-tabs { height:28px; display:flex; align-items:center; background:#181825; border-bottom:1px solid #313244; padding:0 8px; gap:2px; flex-shrink:0; }
+.panel-tab { padding:4px 12px; font-size:11px; color:#a6adc8; cursor:pointer; border-radius:4px 4px 0 0; transition:all .15s; }
+.panel-tab.active { color:#cdd6f4; background:#11111b; border-bottom:2px solid #89b4fa; }
+.panel-tab:hover { color:#cdd6f4; }
+#output-panel, #problems-panel, #terminal-panel { height:150px; overflow-y:auto; padding:8px; font-size:12px; font-family:inherit; flex:1; }
+#problems-panel .problem { padding:2px 4px; display:flex; gap:8px; align-items:center; cursor:pointer; border-radius:2px; transition:background .1s; }
+#problems-panel .problem:hover { background:#313244; }
 #problems-panel .problem.error { color:#f38ba8; }
 #problems-panel .problem.warning { color:#f9e2af; }
-#problems-panel .problem .loc { color:#585b70; font-size:11px; }
+#problems-panel .problem.info { color:#89b4fa; }
+#problems-panel .problem .loc { color:#585b70; font-size:11px; margin-left:auto; }
 
-/* Scrollbars */
+/* ===== Scrollbars ===== */
 ::-webkit-scrollbar { width:8px; height:8px; }
 ::-webkit-scrollbar-track { background:transparent; }
 ::-webkit-scrollbar-thumb { background:#45475a; border-radius:4px; }
 ::-webkit-scrollbar-thumb:hover { background:#585b70; }
 
-/* Context Menu */
-#context-menu { display:none; position:fixed; background:#1e1e2e; border:1px solid #45475a; border-radius:6px; box-shadow:0 4px 16px rgba(0,0,0,0.4); z-index:200; min-width:200px; padding:4px 0; }
+/* ===== Context Menu ===== */
+#context-menu { display:none; position:fixed; background:#1e1e2e; border:1px solid #45475a; border-radius:6px; box-shadow:0 4px 16px rgba(0,0,0,0.4); z-index:200; min-width:220px; padding:4px 0; }
 #context-menu.visible { display:block; }
-#context-menu .item { padding:6px 16px; font-size:12px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; }
+#context-menu .item { padding:6px 16px; font-size:12px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; color:#cdd6f4; transition:background .1s; }
 #context-menu .item:hover { background:#313244; }
+#context-menu .item.disabled { color:#585b70; pointer-events:none; }
 #context-menu .shortcut { color:#585b70; font-size:11px; }
 #context-menu .sep { height:1px; background:#313244; margin:4px 0; }
+
+/* ===== Goto Line Dialog ===== */
+#goto-dialog { display:none; position:absolute; top:40px; left:50%; transform:translateX(-50%); background:#1e1e2e; border:1px solid #45475a; border-radius:8px; box-shadow:0 8px 32px rgba(0,0,0,0.5); z-index:100; padding:16px; min-width:320px; }
+#goto-dialog.visible { display:block; }
+#goto-dialog input { width:100%; background:#313244; border:1px solid #45475a; color:#cdd6f4; padding:8px 12px; border-radius:4px; font-size:14px; outline:none; font-family:inherit; }
+#goto-dialog input:focus { border-color:#89b4fa; }
+#goto-dialog .goto-hint { font-size:11px; color:#585b70; margin-top:4px; }
+
+/* ===== Sticky Scroll ===== */
+#sticky-scroll { display:none; background:#1e1e2e; border-bottom:1px solid #313244; padding:2px 12px; font-size:12px; color:#a6adc8; overflow:hidden; white-space:nowrap; max-height:42px; }
+#sticky-scroll.visible { display:block; }
+#sticky-scroll .sticky-line { padding:2px 0; opacity:0.7; }
+#sticky-scroll .sticky-line:last-child { opacity:1; color:#cdd6f4; font-weight:bold; }
 </style>
 </head>
 <body>
 
 <div id="breadcrumb"><span class="crumb">XCoder IDE</span></div>
 <div id="tabbar"></div>
+<div id="toolbar">
+  <button class="tool-btn" onclick="EditorActions.toggleSearch()" title="Find (Ctrl+F)">Find</button>
+  <button class="tool-btn" onclick="EditorActions.showReplace()" title="Replace (Ctrl+H)">Replace</button>
+  <div class="tool-sep"></div>
+  <button class="tool-btn" onclick="EditorActions.toggleCommandPalette()" title="Command Palette (Ctrl+Shift+P)">Commands</button>
+  <button class="tool-btn" onclick="EditorActions.toggleOutline()" title="Outline">Outline</button>
+  <div class="tool-sep"></div>
+  <button class="tool-btn" onclick="EditorActions.formatDocument()" title="Format (Shift+Alt+F)">Format</button>
+  <button class="tool-btn" onclick="EditorActions.toggleComment()" title="Comment (Ctrl+/)">Comment</button>
+  <button class="tool-btn" onclick="EditorActions.sortLinesAsc()" title="Sort Lines">Sort A-Z</button>
+  <button class="tool-btn" onclick="EditorActions.sortLinesDesc()" title="Sort Lines Desc">Sort Z-A</button>
+  <button class="tool-btn" onclick="EditorActions.removeDuplicateLines()" title="Remove Duplicates">Uniq</button>
+  <div class="tool-sep"></div>
+  <button class="tool-btn" onclick="EditorActions.trimTrailingWhitespace()" title="Trim Trailing Whitespace">Trim WS</button>
+  <button class="tool-btn" onclick="EditorActions.toggleWordWrap()" title="Word Wrap">Wrap</button>
+  <button class="tool-btn" onclick="EditorActions.toggleMinimap()" title="Minimap">Minimap</button>
+  <div class="tool-sep"></div>
+  <button class="tool-btn" onclick="EditorActions.toggleBookmark()" title="Toggle Bookmark">Bookmark</button>
+  <button class="tool-btn" onclick="EditorActions.gotoNextBookmark()" title="Next Bookmark">Next BM</button>
+  <button class="tool-btn" onclick="EditorActions.gotoPrevBookmark()" title="Prev Bookmark">Prev BM</button>
+</div>
 <div id="editor-wrap">
   <div id="editor-area">
     <div id="gutter"></div>
     <div id="code-area">
+      <div id="sticky-scroll"></div>
       <div id="search-panel">
         <div class="row">
           <input type="text" id="search-input" placeholder="Find..." autocomplete="off">
           <span class="match-count" id="match-count"></span>
         </div>
-        <div class="row">
+        <div class="row" id="replace-row" style="display:none">
           <input type="text" id="replace-input" placeholder="Replace..." autocomplete="off">
+        </div>
+        <div class="row">
           <label><input type="checkbox" id="regex-toggle">Regex</label>
           <label><input type="checkbox" id="case-toggle" checked>Case</label>
           <label><input type="checkbox" id="word-toggle">Word</label>
+          <label><input type="checkbox" id="selection-toggle">In Selection</label>
         </div>
         <div class="row">
           <button class="btn" onclick="EditorActions.findNext()">Next</button>
@@ -134,22 +230,34 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:'JetBrains Mo
       <div id="code-display" contenteditable="true" spellcheck="false"></div>
     </div>
   </div>
+  <div id="outline-panel"><div class="outline-header">Outline <span class="close-btn" onclick="EditorActions.toggleOutline()">×</span></div><div id="outline-list"></div></div>
   <div id="minimap"><canvas id="minimap-canvas"></canvas><div id="minimap-viewport"></div></div>
 </div>
 <div id="statusbar">
-  <span id="st-cursor">Ln 1, Col 1</span>
+  <span id="st-cursor" class="clickable" onclick="EditorActions.showGotoLine()">Ln 1, Col 1</span>
   <span id="st-sel"></span>
-  <span id="st-indent">Spaces: 4</span>
-  <span id="st-encoding">UTF-8</span>
+  <span id="st-indent" class="clickable" onclick="EditorActions.cycleIndent()">Spaces: 4</span>
+  <span id="st-encoding" class="clickable" onclick="EditorActions.showEncodingDropdown()">UTF-8</span>
   <div class="right">
     <span id="st-lang">Plain Text</span>
     <span id="st-words">0 words</span>
+    <span id="st-lines">1 line</span>
   </div>
 </div>
-<div id="output-panel" class="panel"></div>
-<div id="problems-panel" class="panel"></div>
-<div id="terminal-panel" class="panel"></div>
-<div id="command-palette"><input type="text" id="cmd-input" placeholder="></div>
+<div id="panel-area" style="display:none;flex-direction:column;">
+  <div class="panel-tabs">
+    <div class="panel-tab" onclick="EditorActions.showPanelTab('output')">Output</div>
+    <div class="panel-tab" onclick="EditorActions.showPanelTab('problems')">Problems</div>
+    <div class="panel-tab" onclick="EditorActions.showPanelTab('terminal')">Terminal</div>
+    <span style="margin-left:auto;cursor:pointer;padding:0 4px;font-size:14px;color:#585b70" onclick="EditorActions.closeBottomPanels()">×</span>
+  </div>
+  <div id="output-panel" class="panel"></div>
+  <div id="problems-panel" class="panel"></div>
+  <div id="terminal-panel" class="panel"></div>
+</div>
+<div id="command-palette"><input type="text" id="cmd-input" placeholder=">"><div class="items" id="cmd-items"></div></div>
+<div id="goto-dialog"><input type="text" id="goto-input" placeholder="Go to line number..." autocomplete="off"><div class="goto-hint">Enter line number (e.g. 42) or range (e.g. 10:50)</div></div>
+<div id="encoding-dropdown"></div>
 <div id="context-menu"></div>
 
 <script>
@@ -168,15 +276,28 @@ const Editor = {
   useSpaces: true,
   wordWrap: false,
   showMinimap: true,
+  showOutline: false,
+  showIndentGuides: true,
+  showTrailingWS: false,
+  showStickyScroll: true,
   autoCloseBrackets: true,
   bracketPairs: { '(': ')', '[': ']', '{': '}', "'": "'", '"': '"', '`': '`' },
   snippets: {},
+  bookmarks: new Set(),
+  foldedRegions: [],
+  encoding: 'UTF-8',
   history: { commands: [], index: -1 },
   searchState: { query: '', matches: [], currentMatch: -1 },
-  
+  multiCursors: [],
+  outlineSymbols: [],
+
   init() {
     this.bindKeys();
     this.bindInput();
+    this.bindContextMenu();
+    this.bindMinimapClick();
+    this.bindGotoDialog();
+    this.bindCmdPaletteNavigation();
     this.updateGutter();
     this.updateStatusBar();
     this.renderMinimap();
@@ -189,33 +310,60 @@ const Editor = {
     this.modified = false;
     this.undoStack = [text];
     this.redoStack = [];
+    this.foldedRegions = [];
+    this.bookmarks = new Set();
+    this.parseOutline();
     this.render();
     this.updateGutter();
     this.updateStatusBar();
     this.renderMinimap();
+    this.updateStickyScroll();
   },
 
   getContent() { return this.content; },
 
+  getDisplayContent() {
+    if (this.foldedRegions.length === 0) return this.content;
+    let lines = this.content.split('\n');
+    let result = [];
+    let skip = 0;
+    for (let i = 0; i < lines.length; i++) {
+      if (skip > 0) { skip--; continue; }
+      const fold = this.foldedRegions.find(f => f.startLine - 1 === i);
+      if (fold) {
+        result.push(lines[i]);
+        result.push(' …'); // ellipsis line
+        skip = fold.endLine - fold.startLine - 1;
+      } else {
+        result.push(lines[i]);
+      }
+    }
+    return result.join('\n');
+  },
+
   setLanguage(lang) {
     this.language = lang;
     document.getElementById('st-lang').textContent = this.getLanguageDisplay(lang);
+    this.parseOutline();
+    if (this.showOutline) this.renderOutline();
     if (typeof EditorBridge !== 'undefined') EditorBridge.onConsoleLog('Language: ' + lang);
   },
 
   setFileName(name) {
     this.fileName = name;
     const ext = name.split('.').pop().toLowerCase();
-    const langMap = {kt:'kotlin',kts:'kotlin',java:'java',xml:'xml',json:'json',js:'javascript',ts:'typescript',py:'python',c:'c_cpp',cpp:'c_cpp',h:'c_cpp',html:'html',css:'css',md:'markdown',sh:'bash',yml:'yaml',sql:'sql',rb:'ruby',go:'go',rs:'rust',php:'php',dart:'dart',swift:'swift',groovy:'groovy',txt:'text'};
+    const langMap = {kt:'kotlin',kts:'kotlin',java:'java',xml:'xml',json:'json',js:'javascript',mjs:'javascript',cjs:'javascript',ts:'typescript',tsx:'typescript',py:'python',pyw:'python',c:'c_cpp',cpp:'c_cpp',cc:'c_cpp',cxx:'c_cpp',h:'c_cpp',hpp:'c_cpp',html:'html',htm:'html',css:'css',scss:'css',less:'css',md:'markdown',mdx:'markdown',sh:'bash',bash:'bash',zsh:'bash',fish:'bash',yml:'yaml',yaml:'yaml',sql:'sql',rb:'ruby',go:'go',rs:'rust',php:'php',dart:'dart',swift:'swift',groovy:'groovy',gradle:'groovy',toml:'toml',ini:'ini',properties:'ini',txt:'text',log:'text',dockerfile:'dockerfile',makefile:'makefile',cmake:'cmake',proto:'protobuf',graphql:'graphql',vue:'vue',svelte:'svelte'};
     this.setLanguage(langMap[ext] || 'text');
     this.updateBreadcrumb(name);
   },
 
   setFilePath(parts) { this.filePath = parts; this.updateBreadcrumb(this.fileName); },
 
-  setTabSize(size) { this.tabSize = size; this.updateStatusBar(); this.render(); },
+  setTabSize(size) { this.tabSize = size; document.getElementById('code-display').style.tabSize = size; this.updateStatusBar(); this.render(); },
+  cycleIndentUnit() { this.useSpaces = !this.useSpaces; this.updateStatusBar(); },
   setWordWrap(enabled) { this.wordWrap = enabled; const d = document.getElementById('code-display'); d.style.whiteSpace = enabled ? 'pre-wrap' : 'pre'; d.style.overflowX = enabled ? 'hidden' : 'auto'; },
-  setFontSize(size) { document.getElementById('code-display').style.fontSize = size + 'px'; document.getElementById('gutter').style.fontSize = size + 'px'; },
+  setFontSize(size) { document.getElementById('code-display').style.fontSize = size + 'px'; document.getElementById('gutter').style.fontSize = size + 'px'; document.getElementById('gutter').style.lineHeight = '1.6'; },
+  setEncoding(enc) { this.encoding = enc; document.getElementById('st-encoding').textContent = enc; },
   setTheme(theme) { /* Themes managed by Kotlin side */ },
 
   insertText(text) {
@@ -226,71 +374,98 @@ const Editor = {
     this.content = lines.join('\n');
     this.pushUndo();
     this.render();
+    this.updateGutter();
+    this.parseOutline();
+    this.updateStickyScroll();
+  },
+
+  insertTextAtCursor(text) {
+    const display = document.getElementById('code-display');
+    display.focus();
+    document.execCommand('insertText', false, text);
   },
 
   // ---- Rendering ----
   render() {
     const display = document.getElementById('code-display');
-    const html = this.highlightSyntax(this.content);
+    const html = this.highlightSyntax(this.getDisplayContent());
     display.innerHTML = html + '<br>';
     this.highlightActiveLine();
-    this.highlightTrailingWhitespace();
+    this.highlightCurrentWord();
+    this.renderIndentGuides();
     this.updateStatusBar();
     this.renderMinimap();
+    this.renderBookmarks();
     if (typeof EditorBridge !== 'undefined') EditorBridge.onContentChanged(this.content);
   },
 
   highlightSyntax(code) {
- const escaped = code.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const escaped = code.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     let result = escaped;
-    // Comments
+    // Comments (must be first to avoid highlighting keywords inside comments)
     result = result.replace(/(\/\/.*$)/gm, '<span style="color:#6c7086;font-style:italic">$1</span>');
     result = result.replace(/(\/\*[\s\S]*?\*\/)/g, '<span style="color:#6c7086;font-style:italic">$1</span>');
     result = result.replace(/(#.*$)/gm, '<span style="color:#6c7086;font-style:italic">$1</span>');
-    // Strings
+    // Doc comments
+    result = result.replace(/(\/\*\*[\s\S]*?\*\/)/g, '<span style="color:#6c7086;font-style:italic">$1</span>');
+    // Strings & chars
     result = result.replace(/("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)/g, '<span style="color:#a6e3a1">$1</span>');
+    // Char literals
+    result = result.replace(/('(?:[^'\\]|\\.)')/g, '<span style="color:#f9e2af">$1</span>');
     // Numbers
-    result = result.replace(/\b(\d+\.?\d*)\b/g, '<span style="color:#fab387">$1</span>');
+    result = result.replace(/\b(0x[0-9a-fA-F]+|0b[01]+|\d+\.?\d*(?:e[+-]?\d+)?[fFdDlL]?)\b/g, '<span style="color:#fab387">$1</span>');
+    // Annotations (Kotlin/Java)
+    result = result.replace(/(@\w+)/g, '<span style="color:#f9e2af">$1</span>');
     // Keywords (language-aware)
     const kwMap = {
-      kotlin: /\b(fun|val|var|class|object|interface|enum|when|if|else|for|while|do|return|break|continue|try|catch|finally|throw|import|package|as|is|in|typealias|sealed|data|abstract|open|override|private|protected|internal|public|companion|init|suspend|inline|reified|lateinit|by|super|this|null|true|false)\b/g,
-      java: /\b(public|private|protected|class|interface|extends|implements|static|final|abstract|new|return|if|else|for|while|do|switch|case|break|continue|try|catch|finally|throw|throws|import|package|void|int|long|double|float|boolean|char|String|null|true|false|this|super)\b/g,
-      python: /\b(def|class|if|elif|else|for|while|break|continue|return|yield|import|from|as|try|except|finally|raise|with|lambda|pass|del|global|nonlocal|assert|and|or|not|in|is|None|True|False|self|async|await)\b/g,
-      javascript: /\b(const|let|var|function|class|extends|new|return|if|else|for|while|do|switch|case|break|continue|try|catch|finally|throw|import|export|from|default|async|await|yield|typeof|instanceof|in|of|null|undefined|true|false|this|super|void)\b/g,
-      typescript: /\b(const|let|var|function|class|extends|implements|new|return|if|else|for|while|do|switch|case|break|continue|try|catch|finally|throw|import|export|from|default|async|await|yield|typeof|instanceof|in|of|null|undefined|true|false|this|super|void|interface|type|enum|namespace|as|key|readonly)\b/g,
+      kotlin: /\b(fun|val|var|class|object|interface|enum|when|if|else|for|while|do|return|break|continue|try|catch|finally|throw|import|package|as|is|in|typealias|sealed|data|abstract|open|override|private|protected|internal|public|companion|init|suspend|inline|reified|lateinit|by|super|this|null|true|false|it|where|crossinline|noinline|tailrec|operator|infix|data|inner|annotation|actual|expect)\b/g,
+      java: /\b(public|private|protected|class|interface|extends|implements|static|final|abstract|new|return|if|else|for|while|do|switch|case|break|continue|try|catch|finally|throw|throws|import|package|void|int|long|double|float|boolean|char|String|null|true|false|this|super|instanceof|enum|synchronized|volatile|transient|native|assert|default|byte|short)\b/g,
+      python: /\b(def|class|if|elif|else|for|while|break|continue|return|yield|import|from|as|try|except|finally|raise|with|lambda|pass|del|global|nonlocal|assert|and|or|not|in|is|None|True|False|self|async|await|match|case)\b/g,
+      javascript: /\b(const|let|var|function|class|extends|new|return|if|else|for|while|do|switch|case|break|continue|try|catch|finally|throw|import|export|from|default|async|await|yield|typeof|instanceof|in|of|null|undefined|true|false|this|super|void|delete)\b/g,
+      typescript: /\b(const|let|var|function|class|extends|implements|new|return|if|else|for|while|do|switch|case|break|continue|try|catch|finally|throw|import|export|from|default|async|await|yield|typeof|instanceof|in|of|null|undefined|true|false|this|super|void|interface|type|enum|namespace|as|key|readonly|abstract|declare|module|require)\b/g,
       xml: /(&lt;\/?[a-zA-Z][a-zA-Z0-9-]*)/g,
       html: /(&lt;\/?[a-zA-Z][a-zA-Z0-9-]*)/g,
-      css: /\b(display|position|width|height|margin|padding|border|background|color|font-size|font-weight|text-align|flex|grid|overflow|opacity|transition|transform|animation)\b/g,
+      css: /\b(display|position|width|height|margin|padding|border|background|color|font-size|font-weight|text-align|flex|grid|overflow|opacity|transition|transform|animation|justify-content|align-items|gap|top|left|right|bottom|z-index|cursor|box-sizing|content|appearance)\b/g,
       json: /("[a-zA-Z_][a-zA-Z0-9]*"\s*:)/g,
-      c_cpp: /\b(int|long|short|float|double|char|void|bool|auto|struct|class|enum|union|typedef|const|static|extern|register|volatile|inline|return|if|else|for|while|do|switch|case|break|continue|default|goto|sizeof|typedef|NULL|true|false|include|define|ifdef|ifndef|endif|pragma)\b/g,
+      c_cpp: /\b(int|long|short|float|double|char|void|bool|auto|struct|class|enum|union|typedef|const|static|extern|register|volatile|inline|return|if|else|for|while|do|switch|case|break|continue|default|goto|sizeof|typedef|NULL|true|false|include|define|ifdef|ifndef|endif|pragma|namespace|using|template|typename|virtual|override|public|private|protected|friend|operator|new|delete|this|nullptr|noexcept|constexpr|decltype|static_cast|dynamic_cast|reinterpret_cast|const_cast|thread_local|alignas|alignof)\b/g,
       markdown: /(^(#{1,6}\s.*$))/gm,
-      sql: /\b(SELECT|FROM|WHERE|INSERT|INTO|VALUES|UPDATE|SET|DELETE|CREATE|TABLE|ALTER|DROP|INDEX|JOIN|INNER|LEFT|RIGHT|ON|AND|OR|NOT|NULL|AS|ORDER|BY|GROUP|HAVING|LIMIT|DISTINCT|COUNT|SUM|AVG|MIN|MAX|UNION|EXISTS|LIKE|BETWEEN|IN|IS|PRIMARY|KEY|FOREIGN|REFERENCES|CONSTRAINT|DEFAULT|AUTO_INCREMENT)\b/gi,
-      bash: /\b(if|then|else|elif|fi|for|while|do|done|case|esac|function|return|in|select|echo|exit|export|local|read|set|shift|source|unset|until|while|break|continue|declare|typeset|readonly)\b/g,
+      sql: /\b(SELECT|FROM|WHERE|INSERT|INTO|VALUES|UPDATE|SET|DELETE|CREATE|TABLE|ALTER|DROP|INDEX|JOIN|INNER|LEFT|RIGHT|ON|AND|OR|NOT|NULL|AS|ORDER|BY|GROUP|HAVING|LIMIT|DISTINCT|COUNT|SUM|AVG|MIN|MAX|UNION|EXISTS|LIKE|BETWEEN|IN|IS|PRIMARY|KEY|FOREIGN|REFERENCES|CONSTRAINT|DEFAULT|AUTO_INCREMENT|BEGIN|COMMIT|ROLLBACK|TRIGGER|VIEW|PROCEDURE|FUNCTION|IF|THEN|ELSE|END|CASE|WHEN|DECLARE|CURSOR|EXEC)\b/gi,
+      bash: /\b(if|then|else|elif|fi|for|while|do|done|case|esac|function|return|in|select|echo|exit|export|local|read|set|shift|source|unset|until|break|continue|declare|typeset|readonly|alias|unalias|cd|ls|rm|cp|mv|mkdir|chmod|chown|grep|sed|awk|cat|find|curl|wget)\b/g,
       yaml: /^\s*([a-zA-Z_][a-zA-Z0-9_-]*):/gm,
       ruby: /\b(def|end|class|module|if|elsif|else|unless|while|until|for|do|begin|rescue|ensure|raise|return|yield|require|include|extend|attr_accessor|attr_reader|attr_writer|self|super|nil|true|false|and|or|not|in|puts|print|lambda|proc)\b/g,
-      go: /\b(func|var|const|type|struct|interface|map|chan|go|select|case|default|if|else|for|range|switch|break|continue|return|defer|fallthrough|goto|package|import|nil|true|false|err|error|string|int|int64|float64|bool|byte|make|len|append|fmt|Println)\b/g,
-      rust: /\b(fn|let|mut|const|static|struct|enum|impl|trait|pub|use|mod|crate|self|super|where|if|else|for|while|loop|match|return|break|continue|as|in|ref|move|async|await|unsafe|extern|true|false|Some|None|Ok|Err|String|Vec|Box|Rc|Arc|i32|i64|u32|u64|f64|bool|str|usize)\b/g,
-      dart: /\b(var|final|const|class|extends|implements|with|mixin|abstract|interface|enum|typedef|extension|factory|constructor|static|get|set|if|else|for|while|do|switch|case|break|continue|return|try|catch|finally|throw|rethrow|import|export|library|part|of|show|hide|as|is|in|null|true|false|this|super|late|required|covariant)\b/g,
-      php: /\b(function|class|public|private|protected|static|abstract|interface|extends|implements|new|return|if|else|elseif|for|foreach|while|do|switch|case|break|continue|try|catch|finally|throw|use|namespace|require|include|echo|print|var|const|null|true|false|self|parent|array|string|int|float|bool|void)\b/g,
-      swift: /\b(func|var|let|class|struct|enum|protocol|extension|import|if|else|switch|case|for|while|repeat|return|break|continue|guard|throw|try|catch|do|catch|finally|typealias|associatedtype|where|init|deinit|self|super|nil|true|false|public|private|internal|open|override|mutating|lazy|weak|unowned|in|as|is|optional|some|any)\b/g,
-      groovy: /\b(def|class|interface|trait|extends|implements|new|return|if|else|for|while|do|switch|case|break|continue|try|catch|finally|throw|import|package|void|int|long|double|float|boolean|String|null|true|false|this|super|static|final|abstract|private|protected|public|in|as)\b/g
+      go: /\b(func|var|const|type|struct|interface|map|chan|go|select|case|default|if|else|for|range|switch|break|continue|return|defer|fallthrough|goto|package|import|nil|true|false|err|error|string|int|int64|float64|bool|byte|make|len|append|fmt|Println|Sprintf|panic|recover)\b/g,
+      rust: /\b(fn|let|mut|const|static|struct|enum|impl|trait|pub|use|mod|crate|self|super|where|if|else|for|while|loop|match|return|break|continue|as|in|ref|move|async|await|unsafe|extern|true|false|Some|None|Ok|Err|String|Vec|Box|Rc|Arc|i32|i64|u32|u64|f64|bool|str|usize|Self|dyn|macro_rules)\b/g,
+      dart: /\b(var|final|const|class|extends|implements|with|mixin|abstract|interface|enum|typedef|extension|factory|constructor|static|get|set|if|else|for|while|do|switch|case|break|continue|return|try|catch|finally|throw|rethrow|import|export|library|part|of|show|hide|as|is|in|null|true|false|this|super|late|required|covariant|sealed|base|when)\b/g,
+      php: /\b(function|class|public|private|protected|static|abstract|interface|extends|implements|new|return|if|else|elseif|for|foreach|while|do|switch|case|break|continue|try|catch|finally|throw|use|namespace|require|include|echo|print|var|const|null|true|false|self|parent|array|string|int|float|bool|void|trait|yield|fn|match)\b/g,
+      swift: /\b(func|var|let|class|struct|enum|protocol|extension|import|if|else|switch|case|for|while|repeat|return|break|continue|guard|throw|try|catch|do|typealias|associatedtype|where|init|deinit|self|super|nil|true|false|public|private|internal|open|override|mutating|lazy|weak|unowned|in|as|is|optional|some|any|async|await|actor|distributed|precedencegroup|indirect|convenience|required|convenience|willSet|didSet)\b/g,
+      groovy: /\b(def|class|interface|trait|extends|implements|new|return|if|else|for|while|do|switch|case|break|continue|try|catch|finally|throw|import|package|void|int|long|double|float|boolean|String|null|true|false|this|super|static|final|abstract|private|protected|public|in|as|println|assert|each|collect|find|findAll|grep|inject|with)\b/g
     };
-    const keywords = kwMap[this.language] || kwMap.text;
+    const keywords = kwMap[this.language] || null;
     if (this.language === 'xml' || this.language === 'html') {
       result = result.replace(keywords, '<span style="color:#89b4fa">$1</span>');
       result = result.replace(/([a-zA-Z-]+)(=)/g, '<span style="color:#f9e2af">$1</span>$2');
+      // Attribute values
+      result = result.replace(/("[^"]*")/g, '<span style="color:#a6e3a1">$1</span>');
     } else if (this.language === 'css') {
       result = result.replace(keywords, '<span style="color:#89b4fa">$1</span>');
+      result = result.replace(/(#[0-9a-fA-F]{3,8})\b/g, '<span style="color:#fab387">$1</span>');
+      result = result.replace(/(\.[a-zA-Z_-][a-zA-Z0-9_-]*)/g, '<span style="color:#cba6f7">$1</span>');
+      result = result.replace(/(#[a-zA-Z_-][a-zA-Z0-9_-]*)/g, '<span style="color:#cba6f7">$1</span>');
     } else if (this.language === 'json') {
       result = result.replace(keywords, '<span style="color:#89b4fa">$1</span>');
     } else if (this.language === 'markdown') {
       result = result.replace(keywords, '<span style="color:#89b4fa;font-weight:bold">$1</span>');
       result = result.replace(/(\*\*.*?\*\*|__.*?__)/g, '<span style="color:#f9e2af;font-weight:bold">$1</span>');
       result = result.replace(/(`[^`]+`)/g, '<span style="color:#a6e3a1">$1</span>');
+      result = result.replace(/(\[.*?\]\(.*?\))/g, '<span style="color:#89b4fa">$1</span>');
     } else if (this.language === 'yaml') {
       result = result.replace(keywords, '<span style="color:#89b4fa">$1</span>');
-    } else {
+    } else if (keywords) {
       result = result.replace(keywords, '<span style="color:#cba6f7">$1</span>');
+    }
+    // Function calls
+    if (!['xml','html','css','json','markdown','yaml'].includes(this.language)) {
+      result = result.replace(/\b([a-zA-Z_]\w*)\s*(?=\()/g, '<span style="color:#89b4fa">$1</span>');
     }
     return result;
   },
@@ -304,34 +479,188 @@ const Editor = {
     area.appendChild(div);
   },
 
-  highlightTrailingWhitespace() { /* Applied during syntax highlight pass */ },
+  highlightCurrentWord() {
+    document.querySelectorAll('.current-word-hl').forEach(e => {
+      const parent = e.parentNode;
+      parent.replaceChild(document.createTextNode(e.textContent), e);
+      parent.normalize();
+    });
+    const display = document.getElementById('code-display');
+    const sel = window.getSelection();
+    if (!sel.rangeCount || sel.isCollapsed) return;
+    const word = sel.toString().trim();
+    if (!word || word.length < 2 || /^\d+$/.test(word)) return;
+    try {
+      const caseSensitive = document.getElementById('case-toggle').checked;
+      const regex = new RegExp(word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), caseSensitive ? 'g' : 'gi');
+      this._highlightInNode(display, regex);
+    } catch(e) {}
+  },
+
+  _highlightInNode(node, regex) {
+    if (node.nodeType === 3) {
+      const text = node.textContent;
+      if (!regex.test(text)) return;
+      regex.lastIndex = 0;
+      const frag = document.createDocumentFragment();
+      let lastIdx = 0;
+      let match;
+      while ((match = regex.exec(text)) !== null) {
+        if (match.index > lastIdx) frag.appendChild(document.createTextNode(text.slice(lastIdx, match.index)));
+        const span = document.createElement('span');
+        span.className = 'current-word-hl';
+        span.textContent = match[0];
+        frag.appendChild(span);
+        lastIdx = regex.lastIndex;
+      }
+      if (lastIdx < text.length) frag.appendChild(document.createTextNode(text.slice(lastIdx)));
+      node.parentNode.replaceChild(frag, node);
+    } else if (node.nodeType === 1 && node.tagName !== 'STYLE' && !node.classList.contains('current-word-hl')) {
+      Array.from(node.childNodes).forEach(child => this._highlightInNode(child, regex));
+    }
+  },
+
+  highlightTrailingWhitespace() {
+    document.querySelectorAll('.trailing-ws').forEach(e => {
+      const parent = e.parentNode;
+      parent.replaceChild(document.createTextNode(e.textContent), e);
+      parent.normalize();
+    });
+    if (!this.showTrailingWS) return;
+    const display = document.getElementById('code-display');
+    const lines = this.getDisplayContent().split('\n');
+    this._highlightTrailingWS(display, lines);
+  },
+
+  _highlightTrailingWS(node, lines) {
+    if (node.nodeType === 3) {
+      const text = node.textContent;
+      const tws = /([ \t]+)$/;
+      if (!tws.test(text)) return;
+      const frag = document.createDocumentFragment();
+      const idx = text.search(tws);
+      if (idx > 0) frag.appendChild(document.createTextNode(text.slice(0, idx)));
+      const span = document.createElement('span');
+      span.className = 'trailing-ws';
+      span.textContent = text.slice(idx);
+      frag.appendChild(span);
+      node.parentNode.replaceChild(frag, node);
+    } else if (node.nodeType === 1 && node.tagName !== 'STYLE' && !node.classList.contains('trailing-ws')) {
+      Array.from(node.childNodes).forEach(child => this._highlightTrailingWS(child, lines));
+    }
+  },
 
   highlightMatchingBracket() {
-    document.querySelectorAll('.bracket-match').forEach(e => e.classList.remove('bracket-match'));
+    document.querySelectorAll('.bracket-match,.bracket-match-mismatch').forEach(e => {
+      e.classList.remove('bracket-match', 'bracket-match-mismatch');
+    });
     const pos = this.cursorCol - 1;
-    const line = this.content.split('\n')[this.cursorLine - 1] || '';
+    const lines = this.content.split('\n');
+    const line = lines[this.cursorLine - 1] || '';
     const ch = line[pos - 1];
-    const pair = this.bracketPairs[ch];
-    if (!pair) return;
+    const chAfter = line[pos];
+    const check = ch || chAfter;
+    if (!check || !this.bracketPairs[check]) return;
+    const isOpen = ch === check && '([{'.includes(ch);
+    const isClose = chAfter === check && ')]}'.includes(chAfter);
+    if (!isOpen && !isClose) return;
+    const matchPos = this._findMatchingBracket(lines, this.cursorLine - 1, isOpen ? pos : pos, check, isOpen);
+    // Visual feedback would go here — simplified for now
+  },
+
+  _findMatchingBracket(lines, lineIdx, colIdx, bracket, isOpen) {
+    const pair = this.bracketPairs[bracket];
     let depth = 0;
-    if (ch === '(' || ch === '[' || ch === '{') {
-      for (let i = pos - 1; i < line.length; i++) {
-        if (line[i] === ch) depth++;
-        if (line[i] === pair) depth--;
-        if (depth === 0) { /* Highlight both */ return; }
+    let found = false;
+    if (isOpen) {
+      for (let i = lineIdx; i < lines.length && !found; i++) {
+        const startJ = (i === lineIdx) ? colIdx : 0;
+        for (let j = startJ; j < lines[i].length; j++) {
+          if (lines[i][j] === bracket) depth++;
+          if (lines[i][j] === pair) depth--;
+          if (depth === 0) { found = true; return { line: i + 1, col: j + 1 }; }
+        }
+      }
+    } else {
+      for (let i = lineIdx; i >= 0 && !found; i--) {
+        const line = lines[i];
+        const startJ = (i === lineIdx) ? colIdx : line.length - 1;
+        for (let j = startJ; j >= 0; j--) {
+          if (line[j] === bracket) depth++;
+          if (line[j] === pair) depth--;
+          if (depth === 0) { found = true; return { line: i + 1, col: j + 1 }; }
+        }
       }
     }
+    return null;
+  },
+
+  // ---- Indent Guides ----
+  renderIndentGuides() {
+    document.querySelectorAll('.indent-guide').forEach(e => e.remove());
+    if (!this.showIndentGuides) return;
+    const area = document.getElementById('code-area');
+    const lines = this.getDisplayContent().split('\n');
+    const indentStr = this.useSpaces ? ' '.repeat(this.tabSize) : '\t';
+    lines.forEach((line, i) => {
+      let count = 0;
+      if (this.useSpaces) {
+        for (let c = 0; c < line.length && line[c] === ' '; c++) {
+          if ((c + 1) % this.tabSize === 0) {
+            const guide = document.createElement('div');
+            guide.className = 'indent-guide';
+            guide.style.left = ((c + 1) * 7.8 + 8) + 'px';
+            guide.style.top = (i * 20.8 + 4) + 'px';
+            guide.style.height = '20.8px';
+            area.appendChild(guide);
+          }
+        }
+      } else {
+        for (let c = 0; c < line.length && line[c] === '\t'; c++) {
+          const guide = document.createElement('div');
+          guide.className = 'indent-guide';
+          guide.style.left = ((c + 1) * this.tabSize * 7.8 + 8) + 'px';
+          guide.style.top = (i * 20.8 + 4) + 'px';
+          guide.style.height = '20.8px';
+          area.appendChild(guide);
+        }
+      }
+    });
   },
 
   // ---- Gutter ----
   updateGutter() {
-    const lines = this.content.split('\n');
+    const lines = this.getDisplayContent().split('\n');
     const gutter = document.getElementById('gutter');
     let html = '';
     for (let i = 1; i <= lines.length; i++) {
-      html += `<div class="${i === this.cursorLine ? 'active-line' : ''}">${i}</div>`;
+      const realLine = this._displayToRealLine(i);
+      const isBookmarked = this.bookmarks.has(realLine);
+      const isFoldStart = this.foldedRegions.some(f => f.startLine === realLine);
+      const foldClass = isFoldStart ? 'fold-marker' : '';
+      const bmClass = isBookmarked ? 'bookmark-marker' : '';
+      html += `<div class="line-no ${i === this.cursorLine ? 'active-line' : ''}" style="position:relative">${i}`;
+      if (isBookmarked) html += '<div class="bookmark-marker"></div>';
+      if (isFoldStart) {
+        html += `<span class="fold-marker" onclick="EditorActions.toggleFold(${realLine})">▶</span>`;
+      }
+      html += '</div>';
     }
     gutter.innerHTML = html;
+  },
+
+  _displayToRealLine(displayLine) {
+    let realLine = 0;
+    let displayCount = 0;
+    const sortedFolds = [...this.foldedRegions].sort((a, b) => a.startLine - b.startLine);
+    for (const fold of sortedFolds) {
+      const remaining = displayLine - displayCount;
+      const beforeFold = fold.startLine - realLine;
+      if (remaining <= beforeFold) return realLine + remaining;
+      displayCount += beforeFold + 1; // +1 for ellipsis
+      realLine = fold.endLine;
+    }
+    return realLine + (displayLine - displayCount);
   },
 
   // ---- Breadcrumbs ----
@@ -350,7 +679,7 @@ const Editor = {
   openTab(name, content, language) {
     const existing = this.tabs.findIndex(t => t.name === name);
     if (existing >= 0) { this.switchTab(existing); return; }
-    this.tabs.push({ name, content, language, modified: false });
+    this.tabs.push({ name, content, language, modified: false, undoStack: [content], redoStack: [], bookmarks: new Set(), cursorLine: 1, cursorCol: 1, scrollPos: 0 });
     this.activeTab = this.tabs.length - 1;
     this.setFileName(name);
     this.setContent(content);
@@ -359,46 +688,93 @@ const Editor = {
   },
 
   closeTab(index) {
+    const tab = this.tabs[index];
+    if (tab && tab.modified) {
+      if (!confirm(`"${tab.name}" has unsaved changes. Close anyway?`)) return;
+    }
     this.tabs.splice(index, 1);
     if (this.activeTab >= this.tabs.length) this.activeTab = this.tabs.length - 1;
     if (this.activeTab >= 0) {
-      const tab = this.tabs[this.activeTab];
-      this.setFileName(tab.name);
-      this.setContent(tab.content);
-      this.setLanguage(tab.language);
+      const t = this.tabs[this.activeTab];
+      this.setFileName(t.name);
+      this.setContent(t.content);
+      this.setLanguage(t.language);
+      this.bookmarks = t.bookmarks || new Set();
     } else {
       this.setContent(''); this.setFileName('untitled');
     }
     this.renderTabs();
   },
 
+  closeOtherTabs(index) {
+    const keep = this.tabs[index];
+    this.tabs = [keep];
+    this.activeTab = 0;
+    this.setFileName(keep.name);
+    this.setContent(keep.content);
+    this.setLanguage(keep.language);
+    this.renderTabs();
+  },
+
+  closeAllTabs() {
+    const unsaved = this.tabs.filter(t => t.modified);
+    if (unsaved.length > 0 && !confirm(`${unsaved.length} files have unsaved changes. Close all?`)) return;
+    this.tabs = [];
+    this.activeTab = -1;
+    this.setContent(''); this.setFileName('untitled');
+    this.renderTabs();
+  },
+
   switchTab(index) {
     if (index < 0 || index >= this.tabs.length) return;
+    // Save current tab state
+    if (this.activeTab >= 0 && this.activeTab < this.tabs.length) {
+      const cur = this.tabs[this.activeTab];
+      cur.content = this.content;
+      cur.modified = this.modified;
+      cur.undoStack = this.undoStack;
+      cur.redoStack = this.redoStack;
+      cur.bookmarks = this.bookmarks;
+      cur.cursorLine = this.cursorLine;
+      cur.cursorCol = this.cursorCol;
+    }
     this.activeTab = index;
     const tab = this.tabs[index];
     this.setFileName(tab.name);
-    this.setContent(tab.content);
+    this.content = tab.content;
+    this.modified = tab.modified;
+    this.undoStack = tab.undoStack || [tab.content];
+    this.redoStack = tab.redoStack || [];
+    this.bookmarks = tab.bookmarks || new Set();
+    this.cursorLine = tab.cursorLine || 1;
+    this.cursorCol = tab.cursorCol || 1;
     this.setLanguage(tab.language);
     this.renderTabs();
+    this.render();
+    this.updateGutter();
   },
 
   renderTabs() {
     const bar = document.getElementById('tabbar');
     bar.innerHTML = this.tabs.map((t, i) => {
       const ext = t.name.split('.').pop().toLowerCase();
-      const colors = {kt:'#A97BFF',java:'#f89820',xml:'#f16529',json:'#f9e2af',js:'#f9e2af',ts:'#3178c6',py:'#3572A5',html:'#e34c26',css:'#563d7c',md:'#083fa1',sh:'#89e051',yml:'#cb171e'};
+      const colors = {kt:'#A97BFF',java:'#f89820',xml:'#f16529',json:'#f9e2af',js:'#f9e2af',ts:'#3178c6',py:'#3572A5',html:'#e34c26',css:'#563d7c',md:'#083fa1',sh:'#89e051',yml:'#cb171e',rs:'#dea584',go:'#00ADD8',rb:'#701516',php:'#4F5D95',dart:'#00B4AB',swift:'#F05138'};
       const color = colors[ext] || '#585b70';
-      return `<div class="tab ${i === this.activeTab ? 'active' : ''} ${t.modified ? 'modified' : ''}" onclick="Editor.switchTab(${i})">`+
+      return `<div class="tab ${i === this.activeTab ? 'active' : ''} ${t.modified ? 'modified' : ''}" onclick="Editor.switchTab(${i})" oncontextmenu="EditorActions.tabContextMenu(event,${i})">`+
         `<span class="dot" style="background:${color}"></span>${t.name}<span class="close" onclick="event.stopPropagation();Editor.closeTab(${i})">×</span></div>`;
     }).join('');
   },
 
   // ---- Status Bar ----
   updateStatusBar() {
-    document.getElementById('st-cursor').textContent = `Ln ${this.cursorLine}, Col ${this.cursorCol}`;
     const lines = this.content.split('\n');
+    document.getElementById('st-cursor').textContent = `Ln ${this.cursorLine}, Col ${this.cursorCol}`;
+    const sel = window.getSelection();
+    const selText = sel.toString();
+    document.getElementById('st-sel').textContent = selText ? `(${selText.length} selected)` : '';
     const words = this.content.trim().split(/\s+/).filter(w => w.length > 0).length;
     document.getElementById('st-words').textContent = `${words} words`;
+    document.getElementById('st-lines').textContent = `${lines.length} lines`;
     document.getElementById('st-indent').textContent = `${this.useSpaces ? 'Spaces' : 'Tabs'}: ${this.tabSize}`;
   },
 
@@ -413,11 +789,15 @@ const Editor = {
     const ctx = canvas.getContext('2d');
     ctx.fillStyle = '#1e1e2e';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#585b70';
+    const colorMap = {kotlin:'#cba6f7',java:'#fab387',javascript:'#f9e2af',typescript:'#89b4fa',python:'#3572A5',xml:'#f16529',html:'#e34c26',css:'#563d7c',json:'#f9e2af',c_cpp:'#89b4fa',rust:'#dea584',go:'#00ADD8',ruby:'#701516',php:'#4F5D95',swift:'#F05138',dart:'#00B4AB'};
+    ctx.fillStyle = colorMap[this.language] || '#585b70';
     lines.forEach((line, i) => {
       const len = Math.min(line.length * 0.8, 76);
       if (len > 0) ctx.fillRect(2, i * scale, len, 1);
     });
+    // Highlight current line
+    ctx.fillStyle = 'rgba(205,214,244,0.15)';
+    ctx.fillRect(0, (this.cursorLine - 1) * scale, 80, scale);
     this.updateMinimapViewport();
   },
 
@@ -436,7 +816,143 @@ const Editor = {
   toggleMinimap() {
     this.showMinimap = !this.showMinimap;
     document.getElementById('minimap').classList.toggle('visible', this.showMinimap);
+    this.renderMinimap();
   },
+
+  // ---- Code Folding ----
+  toggleFold(line) {
+    const idx = this.foldedRegions.findIndex(f => f.startLine === line);
+    if (idx >= 0) {
+      this.foldedRegions.splice(idx, 1);
+    } else {
+      const endLine = this._findFoldEnd(line);
+      if (endLine > line + 2) {
+        this.foldedRegions.push({ startLine: line, endLine });
+      }
+    }
+    this.render();
+    this.updateGutter();
+  },
+
+  _findFoldEnd(startLine) {
+    const lines = this.content.split('\n');
+    let depth = 0;
+    const openChars = '{([';
+    const closeChars = '})]';
+    const startLineContent = lines[startLine - 1] || '';
+    let foundOpen = false;
+    for (const ch of startLineContent) {
+      const oi = openChars.indexOf(ch);
+      if (oi >= 0) { depth++; foundOpen = true; }
+      const ci = closeChars.indexOf(ch);
+      if (ci >= 0) depth--;
+    }
+    if (!foundOpen) return startLine;
+    for (let i = startLine; i < lines.length && depth > 0; i++) {
+      if (i === startLine) continue;
+      for (const ch of lines[i]) {
+        const oi = openChars.indexOf(ch);
+        if (oi >= 0) depth++;
+        const ci = closeChars.indexOf(ch);
+        if (ci >= 0) depth--;
+      }
+    }
+    return Math.min(startLine + (foundOpen ? 20 : 0), lines.length);
+  },
+
+  foldAll() {
+    const lines = this.content.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+      const hasOpen = '{(['.split('').some(c => lines[i].includes(c));
+      if (hasOpen && !this.foldedRegions.some(f => f.startLine === i + 1)) {
+        const end = this._findFoldEnd(i + 1);
+        if (end > i + 3) this.foldedRegions.push({ startLine: i + 1, endLine: end });
+      }
+    }
+    this.render(); this.updateGutter();
+  },
+
+  unfoldAll() {
+    this.foldedRegions = [];
+    this.render(); this.updateGutter();
+  },
+
+  // ---- Outline / Document Structure ----
+  parseOutline() {
+    this.outlineSymbols = [];
+    const lines = this.content.split('\n');
+    const patterns = {
+      kotlin: [{ regex: /^(fun|val|var|class|object|interface|enum|sealed|data|abstract|open)\s+(\w+)/, type: 'keyword' }, { regex: /^\s+fun\s+(\w+)/, type: 'function', level: 2 }],
+      java: [{ regex: /^(public|private|protected|static|final|abstract|synchronized|native|\s)*(class|interface|enum|abstract)\s+(\w+)/, type: 'class' }, { regex: /^\s+(public|private|protected|static|final|\s)*(\w+)\s+(\w+)\s*\(/, type: 'function', level: 2 }],
+      javascript: [{ regex: /^(export\s+)?(async\s+)?function\s+(\w+)/, type: 'function' }, { regex: /^(export\s+)?(const|let|var)\s+(\w+)/, type: 'variable' }, { regex: /^(export\s+)?class\s+(\w+)/, type: 'class' }],
+      typescript: [{ regex: /^(export\s+)?(async\s+)?function\s+(\w+)/, type: 'function' }, { regex: /^(export\s+)?(const|let|var|interface|type|enum)\s+(\w+)/, type: 'variable' }, { regex: /^(export\s+)?class\s+(\w+)/, type: 'class' }],
+      python: [{ regex: /^(class|async\s+def|def)\s+(\w+)/, type: 'function' }],
+      c_cpp: [{ regex: /^(class|struct|enum|union|namespace)\s+(\w+)/, type: 'class' }, { regex: /^[\w\s*]+\s+(\w+)\s*\(/, type: 'function', level: 2 }],
+      go: [{ regex: /^func\s+(?:\(\w+\s+\*?\w+\)\s+)?(\w+)/, type: 'function' }, { regex: /^type\s+(\w+)/, type: 'class' }, { regex: /^interface\s+(\w+)/, type: 'interface' }],
+      rust: [{ regex: /^(pub\s+)?(fn|struct|enum|trait|impl|mod|type|const|static|macro_rules!)\s+(\w+)/, type: 'function' }],
+      dart: [{ regex: /^(class|mixin|extension|enum)\s+(\w+)/, type: 'class' }, { regex: /^\s+(\w+)\s+(\w+)\s*\(/, type: 'function', level: 2 }],
+      swift: [{ regex: /^(class|struct|enum|protocol|extension|actor)\s+(\w+)/, type: 'class' }, { regex: /^\s+(func|var|let)\s+(\w+)/, type: 'function', level: 2 }],
+      ruby: [{ regex: /^(class|module|def)\s+(\w+)/, type: 'function' }],
+      php: [{ regex: /^(class|interface|trait|enum|function)\s+(\w+)/, type: 'function' }],
+    };
+    const langPatterns = patterns[this.language];
+    if (!langPatterns) return;
+    langPatterns.forEach(pat => {
+      lines.forEach((line, i) => {
+        const match = line.match(pat.regex);
+        if (match) {
+          const name = match[match.length - 1];
+          const level = pat.level || 1;
+          const icons = { class: '◆', function: '◇', variable: '○', keyword: '◈', interface: '◉' };
+          this.outlineSymbols.push({ name, line: i + 1, level, type: pat.type, icon: icons[pat.type] || '▪' });
+        }
+      });
+    });
+  },
+
+  renderOutline() {
+    const list = document.getElementById('outline-list');
+    list.innerHTML = this.outlineSymbols.map(s =>
+      `<div class="outline-item level-${s.level}" onclick="EditorActions.gotoLine(${s.line})" title="Line ${s.line}"><span class="symbol-icon">${s.icon}</span>${s.name}</div>`
+    ).join('');
+  },
+
+  // ---- Sticky Scroll ----
+  updateStickyScroll() {
+    const el = document.getElementById('sticky-scroll');
+    if (!this.showStickyScroll || this.cursorLine <= 1) { el.classList.remove('visible'); return; }
+    const lines = this.content.split('\n');
+    let indentLevel = 0;
+    const stickyLines = [];
+    for (let i = 0; i < this.cursorLine - 1 && stickyLines.length < 3; i++) {
+      const trimmed = lines[i].trim();
+      if (trimmed.endsWith('{') || trimmed.endsWith('(') || trimmed.endsWith('[') || trimmed.endsWith(':')) {
+        stickyLines.push(trimmed);
+      }
+    }
+    if (stickyLines.length > 0) {
+      el.innerHTML = stickyLines.map(l => `<div class="sticky-line">${this._escapeHtml(l)}</div>`).join('');
+      el.classList.add('visible');
+    } else {
+      el.classList.remove('visible');
+    }
+  },
+
+  _escapeHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); },
+
+  // ---- Bookmarks ----
+  toggleBookmark(line) {
+    if (this.bookmarks.has(line)) this.bookmarks.delete(line);
+    else this.bookmarks.add(line);
+    this.updateGutter();
+    this.render();
+  },
+
+  getSortedBookmarks() {
+    return [...this.bookmarks].sort((a, b) => a - b);
+  },
+
+  renderBookmarks() { /* Handled in gutter rendering */ },
 
   // ---- Undo/Redo ----
   pushUndo() {
@@ -474,36 +990,117 @@ const Editor = {
     this.highlightMatchingBracket();
     this.updateGutter();
     this.updateStatusBar();
+    this.renderMinimap();
+    this.updateStickyScroll();
     if (typeof EditorBridge !== 'undefined') EditorBridge.onCursorChanged(this.cursorLine, this.cursorCol);
   },
 
   // ---- Input Handling ----
   bindInput() {
     const display = document.getElementById('code-display');
-    display.addEventListener('input', () => {
+    display.addEventListener('input', (e) => {
       this.content = display.innerText.replace(/\n$/, '');
       this.pushUndo();
       this.render(); this.updateGutter();
+      this.parseOutline();
+      if (this.showOutline) this.renderOutline();
     });
     display.addEventListener('click', () => {
-      const sel = window.getSelection();
-      if (sel.rangeCount === 0) return;
-      const range = sel.getRangeAt(0);
-      const preRange = range.cloneRange();
-      preRange.selectNodeContents(display);
-      preRange.setEnd(range.startContainer, range.startOffset);
-      const text = preRange.toString();
-      const lines = text.split('\n');
-      this.cursorLine = lines.length;
-      this.cursorCol = lines[lines.length - 1].length + 1;
-      this.highlightActiveLine();
-      this.highlightMatchingBracket();
-      this.updateGutter(); this.updateStatusBar();
+      this.syncCursorFromSelection();
     });
     display.addEventListener('keyup', (e) => {
       if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Home','End','PageUp','PageDown'].includes(e.key)) {
         this.syncCursorFromSelection();
+        this.updateStickyScroll();
       }
+    });
+    // Auto-close brackets
+    display.addEventListener('keypress', (e) => {
+      if (!this.autoCloseBrackets) return;
+      const pair = this.bracketPairs[e.key];
+      if (pair) {
+        e.preventDefault();
+        document.execCommand('insertText', false, e.key + pair);
+        // Move cursor back one
+        const sel = window.getSelection();
+        if (sel.rangeCount) {
+          const range = sel.getRangeAt(0);
+          range.setStart(range.startContainer, range.startOffset - 1);
+          range.collapse(true);
+          sel.removeAllRanges();
+          sel.addRange(range);
+        }
+      }
+      // Auto-indent on Enter
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const sel = window.getSelection();
+        if (!sel.rangeCount) return;
+        const range = sel.getRangeAt(0);
+        const preRange = range.cloneRange();
+        preRange.selectNodeContents(display);
+        preRange.setEnd(range.startContainer, range.startOffset);
+        const textBefore = preRange.toString();
+        const currentLine = textBefore.split('\n').pop();
+        const indent = currentLine.match(/^(\s*)/)[1];
+        // Check if last char opens a block
+        const lastChar = textBefore.trimEnd().slice(-1);
+        let extra = '';
+        if (lastChar === '{' || lastChar === '(' || lastChar === '[') {
+          extra = this.useSpaces ? ' '.repeat(this.tabSize) : '\t';
+          document.execCommand('insertText', false, '\n' + indent + extra + '\n' + indent);
+          // Move cursor up
+          this.syncCursorFromSelection();
+          const pos = this.getCursorPosition();
+          this.setCursor(pos.line - 1, pos.col);
+        } else {
+          document.execCommand('insertText', false, '\n' + indent);
+        }
+        this.content = display.innerText.replace(/\n$/, '');
+        this.syncCursorFromSelection();
+        this.render(); this.updateGutter();
+      }
+    });
+    // Smart Home
+    display.addEventListener('keydown', (e) => {
+      if (e.key === 'Home') {
+        const sel = window.getSelection();
+        if (!sel.rangeCount) return;
+        const range = sel.getRangeAt(0);
+        const preRange = range.cloneRange();
+        preRange.selectNodeContents(display);
+        preRange.setEnd(range.startContainer, range.startOffset);
+        const text = preRange.toString();
+        const lineStart = text.lastIndexOf('\n') + 1;
+        const lineText = text.slice(lineStart);
+        const firstNonWs = lineText.search(/\S/);
+        const currentOffset = text.length;
+        const indentEnd = lineStart + (firstNonWs >= 0 ? firstNonWs : lineText.length);
+        // If cursor is at indent end or beyond, go to first non-whitespace; else go to column 1
+        if (currentOffset >= indentEnd && firstNonWs >= 0) {
+          e.preventDefault();
+          // Set cursor to first non-whitespace
+          let charCount = 0;
+          const walker = document.createTreeWalker(display, NodeFilter.SHOW_TEXT);
+          let node = walker.nextNode();
+          while (node && charCount + node.textContent.length <= indentEnd) {
+            charCount += node.textContent.length;
+            node = walker.nextNode();
+          }
+          if (node) {
+            const newRange = document.createRange();
+            newRange.setStart(node, Math.min(indentEnd - charCount, node.textContent.length));
+            newRange.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(newRange);
+            this.syncCursorFromSelection();
+          }
+        }
+      }
+    });
+    // Scroll sync
+    document.getElementById('code-area').addEventListener('scroll', () => {
+      this.updateMinimapViewport();
     });
   },
 
@@ -524,6 +1121,74 @@ const Editor = {
     this.updateGutter(); this.updateStatusBar();
   },
 
+  // ---- Context Menu ----
+  bindContextMenu() {
+    const display = document.getElementById('code-display');
+    display.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      this.syncCursorFromSelection();
+      EditorActions.showContextMenu(e.clientX, e.clientY);
+    });
+    document.addEventListener('click', () => {
+      document.getElementById('context-menu').classList.remove('visible');
+      document.getElementById('encoding-dropdown').classList.remove('visible');
+    });
+  },
+
+  // ---- Minimap Click ----
+  bindMinimapClick() {
+    document.getElementById('minimap').addEventListener('click', (e) => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const y = e.clientY - rect.top;
+      const line = Math.floor(y / 2) + 1;
+      this.setCursor(line, 1);
+    });
+  },
+
+  // ---- Goto Dialog ----
+  bindGotoDialog() {
+    const input = document.getElementById('goto-input');
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const val = input.value.trim();
+        if (val.includes(':')) {
+          const [start, end] = val.split(':').map(Number);
+          if (!isNaN(start)) this.setCursor(start, 1);
+        } else {
+          const line = parseInt(val);
+          if (!isNaN(line)) this.setCursor(line, 1);
+        }
+        document.getElementById('goto-dialog').classList.remove('visible');
+      } else if (e.key === 'Escape') {
+        document.getElementById('goto-dialog').classList.remove('visible');
+      }
+    });
+  },
+
+  // ---- Command Palette Keyboard Nav ----
+  bindCmdPaletteNavigation() {
+    const input = document.getElementById('cmd-input');
+    let selectedIndex = 0;
+    input.addEventListener('keydown', (e) => {
+      const items = document.querySelectorAll('#cmd-items .item');
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+        items.forEach((it, i) => it.classList.toggle('selected', i === selectedIndex));
+        items[selectedIndex]?.scrollIntoView({ block: 'nearest' });
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        selectedIndex = Math.max(selectedIndex - 1, 0);
+        items.forEach((it, i) => it.classList.toggle('selected', i === selectedIndex));
+        items[selectedIndex]?.scrollIntoView({ block: 'nearest' });
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (items[selectedIndex]) items[selectedIndex].click();
+      }
+    });
+    input.addEventListener('input', () => { selectedIndex = 0; });
+  },
+
   // ---- Keyboard Shortcuts ----
   bindKeys() {
     document.addEventListener('keydown', (e) => {
@@ -535,23 +1200,39 @@ const Editor = {
       else if (ctrl && e.key === 's') { e.preventDefault(); EditorActions.save(); }
       else if (ctrl && e.key === 'f') { e.preventDefault(); EditorActions.toggleSearch(); }
       else if (ctrl && e.key === 'h') { e.preventDefault(); EditorActions.showReplace(); }
-      else if (ctrl && e.key === 'g') { e.preventDefault(); EditorActions.gotoLine(); }
+      else if (ctrl && e.key === 'g') { e.preventDefault(); EditorActions.showGotoLine(); }
       else if (ctrl && e.key === 'z' && !shift) { e.preventDefault(); this.undo(); }
       else if (ctrl && e.key === 'y') { e.preventDefault(); this.redo(); }
+      else if (ctrl && (e.key === 'Z' || (e.key === 'z' && shift))) { e.preventDefault(); this.redo(); }
       else if (ctrl && e.key === 'd') { e.preventDefault(); EditorActions.selectNextOccurrence(); }
       else if (ctrl && shift && e.key === 'D') { e.preventDefault(); EditorActions.duplicateLine(); }
       else if (ctrl && shift && e.key === 'K') { e.preventDefault(); EditorActions.deleteLine(); }
       else if (ctrl && shift && e.key === 'L') { e.preventDefault(); EditorActions.selectAllOccurrences(); }
       else if (ctrl && e.key === '/') { e.preventDefault(); EditorActions.toggleComment(); }
+      else if (ctrl && shift && e.key === '/') { e.preventDefault(); EditorActions.blockComment(); }
       else if (alt && e.key === 'ArrowUp') { e.preventDefault(); EditorActions.moveLineUp(); }
       else if (alt && e.key === 'ArrowDown') { e.preventDefault(); EditorActions.moveLineDown(); }
-      else if (e.key === 'Tab') { e.preventDefault(); EditorActions.indent(); }
+      else if (alt && shift && e.key === 'ArrowUp') { e.preventDefault(); EditorActions.duplicateLineUp(); }
+      else if (alt && shift && e.key === 'ArrowDown') { e.preventDefault(); EditorActions.duplicateLineDown(); }
+      else if (e.key === 'Tab' && !shift) { e.preventDefault(); EditorActions.indent(); }
+      else if (e.key === 'Tab' && shift) { e.preventDefault(); EditorActions.outdent(); }
+      else if (ctrl && shift && e.key === 'F') { e.preventDefault(); EditorActions.formatDocument(); }
+      else if (ctrl && e.key === 'w') { e.preventDefault(); EditorActions.closeTab(this.activeTab); }
+      else if (ctrl && shift && e.key === 'W') { e.preventDefault(); this.closeAllTabs(); }
+      else if (ctrl && e.key === 'b') { e.preventDefault(); EditorActions.toggleBookmark(this.cursorLine); }
+      else if (ctrl && shift && e.key === 'O') { e.preventDefault(); EditorActions.toggleOutline(); }
+      else if (ctrl && shift && e.key === 'M') { e.preventDefault(); EditorActions.toggleMinimap(); }
+      else if (ctrl && e.key === 'm') { e.preventDefault(); EditorActions.gotoNextBookmark(); }
+      else if (ctrl && shift && e.key === 'M' && alt) { e.preventDefault(); EditorActions.gotoPrevBookmark(); }
+      else if (e.key === 'F2') { e.preventDefault(); EditorActions.renameSymbol(); }
+      else if (e.key === 'F3') { e.preventDefault(); EditorActions.findNext(); }
+      else if (shift && e.key === 'F3') { e.preventDefault(); EditorActions.findPrev(); }
       else if (e.key === 'Escape') { EditorActions.closeAllPanels(); }
     });
   },
 
   getLanguageDisplay(lang) {
-    const map = {kotlin:'Kotlin',java:'Java',javascript:'JavaScript',typescript:'TypeScript',python:'Python',xml:'XML',html:'HTML',css:'CSS',json:'JSON',c_cpp:'C/C++',markdown:'Markdown',sql:'SQL',bash:'Shell',yaml:'YAML',ruby:'Ruby',go:'Go',rust:'Rust',dart:'Dart',php:'PHP',swift:'Swift',groovy:'Groovy',text:'Plain Text'};
+    const map = {kotlin:'Kotlin',java:'Java',javascript:'JavaScript',typescript:'TypeScript',python:'Python',xml:'XML',html:'HTML',css:'CSS',json:'JSON',c_cpp:'C/C++',markdown:'Markdown',sql:'SQL',bash:'Shell',yaml:'YAML',ruby:'Ruby',go:'Go',rust:'Rust',dart:'Dart',php:'PHP',swift:'Swift',groovy:'Groovy',vue:'Vue',svelte:'Svelte',toml:'TOML',dockerfile:'Dockerfile',makefile:'Makefile',text:'Plain Text'};
     return map[lang] || lang;
   }
 };
@@ -560,6 +1241,7 @@ const Editor = {
 const EditorActions = {
   save() { if (typeof EditorBridge !== 'undefined') EditorBridge.onSave(); },
 
+  // ---- Search & Replace ----
   toggleSearch() {
     const panel = document.getElementById('search-panel');
     const visible = panel.classList.toggle('visible');
@@ -570,43 +1252,58 @@ const EditorActions = {
   showReplace() {
     const panel = document.getElementById('search-panel');
     panel.classList.add('visible');
-    document.getElementById('replace-input').parentElement.style.display = 'flex';
+    document.getElementById('replace-row').style.display = 'flex';
     document.getElementById('search-input').focus();
   },
 
   findNext() {
     const q = document.getElementById('search-input').value;
     const caseSensitive = document.getElementById('case-toggle').checked;
+    const useRegex = document.getElementById('regex-toggle').checked;
+    const wholeWord = document.getElementById('word-toggle').checked;
     if (!q) return;
     Editor.searchState.query = q;
-    this._performSearch(q, caseSensitive, 1);
+    this._performSearch(q, caseSensitive, useRegex, wholeWord, 1);
   },
 
   findPrev() {
     const q = document.getElementById('search-input').value;
     const caseSensitive = document.getElementById('case-toggle').checked;
+    const useRegex = document.getElementById('regex-toggle').checked;
+    const wholeWord = document.getElementById('word-toggle').checked;
     if (!q) return;
-    this._performSearch(q, caseSensitive, -1);
+    this._performSearch(q, caseSensitive, useRegex, wholeWord, -1);
   },
 
-  _performSearch(query, caseSensitive, direction) {
-    const content = caseSensitive ? Editor.content : Editor.content.toLowerCase();
-    const q = caseSensitive ? query : query.toLowerCase();
+  _performSearch(query, caseSensitive, useRegex, wholeWord, direction) {
+    let searchRegex;
+    try {
+      if (useRegex) {
+        searchRegex = new RegExp(query, caseSensitive ? 'g' : 'gi');
+      } else {
+        let escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        if (wholeWord) escaped = `\\b${escaped}\\b`;
+        searchRegex = new RegExp(escaped, caseSensitive ? 'g' : 'gi');
+      }
+    } catch (e) {
+      document.getElementById('match-count').textContent = 'Invalid regex';
+      return;
+    }
     const matches = [];
-    let idx = 0;
-    while ((idx = content.indexOf(q, idx)) !== -1) {
-      const line = content.substring(0, idx).split('\n').length;
-      matches.push({ index: idx, line });
-      idx += q.length;
+    let match;
+    while ((match = searchRegex.exec(Editor.content)) !== null) {
+      const line = Editor.content.substring(0, match.index).split('\n').length;
+      const lineContent = Editor.content.split('\n')[line - 1] || '';
+      const colInLine = match.index - Editor.content.split('\n').slice(0, line - 1).join('\n').length;
+      matches.push({ index: match.index, line, col: colInLine + 1, length: match[0].length, text: match[0] });
+      if (matches.length > 10000) break;
+      if (match[0].length === 0) searchRegex.lastIndex++;
     }
     Editor.searchState.matches = matches;
-    Editor.searchState.currentMatch = direction > 0 ? 0 : matches.length - 1;
     if (matches.length > 0) {
-      const match = matches[Editor.searchState.currentMatch];
-      const lineNum = match.line;
-      const lineContent = Editor.content.split('\n')[lineNum - 1] || '';
-      const colInLine = match.index - Editor.content.split('\n').slice(0, lineNum - 1).join('\n').length;
-      Editor.setCursor(lineNum, colInLine + 1);
+      Editor.searchState.currentMatch = direction > 0 ? 0 : matches.length - 1;
+      const m = matches[Editor.searchState.currentMatch];
+      Editor.setCursor(m.line, m.col);
     }
     document.getElementById('match-count').textContent = matches.length > 0
       ? `${Editor.searchState.currentMatch + 1}/${matches.length}` : 'No results';
@@ -615,8 +1312,19 @@ const EditorActions = {
   replaceOne() {
     const q = document.getElementById('search-input').value;
     const r = document.getElementById('replace-input').value;
+    const useRegex = document.getElementById('regex-toggle').checked;
     if (!q || Editor.searchState.matches.length === 0) return;
-    Editor.content = Editor.content.replace(q, r, 1);
+    const m = Editor.searchState.matches[Editor.searchState.currentMatch];
+    if (!m) return;
+    if (useRegex) {
+      try {
+        const regex = new RegExp(q, document.getElementById('case-toggle').checked ? '' : 'i');
+        const replacement = r.replace(/\\(\d+)/g, (_, n) => m.text.match(new RegExp(q, 'i'))?.[parseInt(n)] || '');
+        Editor.content = Editor.content.substring(0, m.index) + replacement + Editor.content.substring(m.index + m.length);
+      } catch(e) { return; }
+    } else {
+      Editor.content = Editor.content.substring(0, m.index) + r + Editor.content.substring(m.index + m.length);
+    }
     Editor.pushUndo(); Editor.render(); Editor.updateGutter();
     this.findNext();
   },
@@ -624,51 +1332,109 @@ const EditorActions = {
   replaceAll() {
     const q = document.getElementById('search-input').value;
     const r = document.getElementById('replace-input').value;
+    const caseSensitive = document.getElementById('case-toggle').checked;
+    const useRegex = document.getElementById('regex-toggle').checked;
+    const wholeWord = document.getElementById('word-toggle').checked;
     if (!q) return;
-    Editor.content = Editor.content.split(q).join(r);
-    Editor.pushUndo(); Editor.render(); Editor.updateGutter();
-    document.getElementById('match-count').textContent = 'Replaced all';
+    try {
+      let searchRegex;
+      if (useRegex) {
+        searchRegex = new RegExp(q, caseSensitive ? 'g' : 'gi');
+        Editor.content = Editor.content.replace(searchRegex, r);
+      } else {
+        let escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        if (wholeWord) escaped = `\\b${escaped}\\b`;
+        searchRegex = new RegExp(escaped, caseSensitive ? 'g' : 'gi');
+        Editor.content = Editor.content.replace(searchRegex, r);
+      }
+      Editor.pushUndo(); Editor.render(); Editor.updateGutter();
+      const count = (Editor.content.match(searchRegex) || []).length;
+      document.getElementById('match-count').textContent = `Replaced all`;
+    } catch (e) {
+      document.getElementById('match-count').textContent = 'Invalid regex';
+    }
   },
 
-  gotoLine() {
-    const line = parseInt(prompt('Go to line:', Editor.cursorLine));
-    if (!isNaN(line)) Editor.setCursor(line, 1);
+  // ---- Goto Line ----
+  showGotoLine() {
+    const dialog = document.getElementById('goto-dialog');
+    dialog.classList.add('visible');
+    const input = document.getElementById('goto-input');
+    input.value = '';
+    input.focus();
   },
 
+  gotoLine(line) { Editor.setCursor(line, 1); },
+
+  // ---- Comments ----
   toggleComment() {
     const lineIdx = Editor.cursorLine - 1;
     const lines = Editor.content.split('\n');
     const line = lines[lineIdx];
     const trimmed = line.trimStart();
-    const singleComment = {kotlin:'//',java:'//',javascript:'//',typescript:'//',c_cpp:'//',css:'/* */',python:'#',ruby:'#',bash:'#',yaml:'#',sql:'--',groovy:'//',swift:'//',dart:'//',php:'//',go:'//',rust:'//'};
-    const commentChar = singleComment[Editor.language] || '//';
+    const commentMap = {kotlin:'//',java:'//',javascript:'//',typescript:'//',c_cpp:'//',groovy:'//',swift:'//',dart:'//',php:'//',go:'//',rust:'//',css:'/* */',python:'#',ruby:'#',bash:'#',yaml:'#',sql:'--',toml:'#',ini:';',properties:'#',makefile:'#',dockerfile:'#'};
+    const commentChar = commentMap[Editor.language] || '//';
     if (commentChar === '#') {
-      lines[lineIdx] = trimmed.startsWith('#') ? line.replace('#','') : line.replace(trimmed[0],'#'+trimmed[0]);
+      lines[lineIdx] = trimmed.startsWith('#') ? line.replace(/^(\s*)# ?/, '$1') : line.replace(/^(\s*)/, '$1# ');
     } else if (commentChar === '--') {
-      lines[lineIdx] = trimmed.startsWith('--') ? line.replace('--','') : line.replace(trimmed.substring(0,2),'--'+trimmed.substring(0,2));
+      lines[lineIdx] = trimmed.startsWith('--') ? line.replace(/^(\s*)-- ?/, '$1') : line.replace(/^(\s*)/, '$1-- ');
+    } else if (commentChar === ';') {
+      lines[lineIdx] = trimmed.startsWith(';') ? line.replace(/^(\s*); ?/, '$1') : line.replace(/^(\s*)/, '$1; ');
+    } else if (commentChar === '/* */') {
+      lines[lineIdx] = trimmed.startsWith('/*') ? line.replace(/\/\*.*?\*\//, '') : `/* ${trimmed} */`;
     } else {
-      lines[lineIdx] = trimmed.startsWith('//') ? line.replace('//','') : line.replace(trimmed.substring(0,2),'//'+trimmed.substring(0,2));
+      lines[lineIdx] = trimmed.startsWith('//') ? line.replace(/^(\s*\/\/ ?)/, '$1') : line.replace(/^(\s*)/, '$1// ');
     }
     Editor.content = lines.join('\n');
     Editor.pushUndo(); Editor.render(); Editor.updateGutter();
   },
 
+  blockComment() {
+    const sel = window.getSelection();
+    const selectedText = sel.toString();
+    if (!selectedText) { this.toggleComment(); return; }
+    const commentMap = {kotlin:'/* */',java:'/* */',javascript:'/* */',typescript:'/* */',c_cpp:'/* */',css:'/* */',swift:'/* */',dart:'/* */',go:'/* */',rust:'/* */',php:'/* */',groovy:'/* */'};
+    const commentStyle = commentMap[Editor.language] || '/* */';
+    const newSel = `/* ${selectedText} */`;
+    document.execCommand('insertText', false, newSel);
+    Editor.content = document.getElementById('code-display').innerText.replace(/\n$/, '');
+    Editor.pushUndo(); Editor.render(); Editor.updateGutter();
+  },
+
+  // ---- Multi-cursor / Selection ----
   selectNextOccurrence() {
     const sel = window.getSelection();
     if (!sel.rangeCount) return;
-    const word = sel.toString().trim();
-    if (!word) return;
+    let word = sel.toString().trim();
+    if (!word) {
+      // Expand to word under cursor
+      const range = sel.getRangeAt(0);
+      const preRange = range.cloneRange();
+      preRange.selectNodeContents(document.getElementById('code-display'));
+      preRange.setEnd(range.startContainer, range.startOffset);
+      const text = preRange.toString();
+      const lineText = text.split('\n').pop();
+      const wordMatch = lineText.match(/\w+$/);
+      if (wordMatch) {
+        word = wordMatch[0];
+        // Select the word
+        const newRange = document.createRange();
+        newRange.setStart(range.startContainer, range.startOffset - word.length);
+        newRange.setEnd(range.startContainer, range.startOffset);
+        sel.removeAllRanges();
+        sel.addRange(newRange);
+      } else return;
+    }
     const caseSensitive = document.getElementById('case-toggle').checked;
     const content = caseSensitive ? Editor.content : Editor.content.toLowerCase();
     const q = caseSensitive ? word : word.toLowerCase();
     const selRange = sel.getRangeAt(0);
     const preRange = selRange.cloneRange();
     preRange.selectNodeContents(document.getElementById('code-display'));
-    preRange.setEnd(selRange.startContainer, selRange.startOffset);
+    preRange.setEnd(selRange.endContainer, selRange.endOffset);
     const offset = preRange.toString().length;
-    const nextIdx = content.indexOf(q, offset + word.length);
+    const nextIdx = content.indexOf(q, offset);
     if (nextIdx >= 0) {
-      // Select next occurrence
       const display = document.getElementById('code-display');
       const range = document.createRange();
       let charCount = 0;
@@ -680,37 +1446,56 @@ const EditorActions = {
       }
       if (node) {
         const start = nextIdx - charCount;
-        range.setStart(node, Math.min(start, node.textContent.length));
-        range.setEnd(node, Math.min(start + word.length, node.textContent.length));
-        sel.removeAllRanges();
+        const end = Math.min(start + word.length, node.textContent.length);
+        range.setStart(node, Math.max(0, start));
+        range.setEnd(node, end);
         sel.addRange(range);
       }
     }
-  },
-
-  duplicateLine() {
-    const lines = Editor.content.split('\n');
-    const idx = Editor.cursorLine - 1;
-    lines.splice(idx, 0, lines[idx]);
-    Editor.content = lines.join('\n');
-    Editor.pushUndo(); Editor.render(); Editor.updateGutter();
-    Editor.setCursor(Editor.cursorLine + 1, 1);
-  },
-
-  deleteLine() {
-    const lines = Editor.content.split('\n');
-    lines.splice(Editor.cursorLine - 1, 1);
-    Editor.content = lines.join('\n');
-    Editor.pushUndo(); Editor.render(); Editor.updateGutter();
+    Editor.highlightCurrentWord();
   },
 
   selectAllOccurrences() {
     const sel = window.getSelection();
     const word = sel.toString().trim();
     if (!word) return;
-    // Highlight all (visual feedback via search)
     document.getElementById('search-input').value = word;
-    EditorActions.findNext();
+    this.findNext();
+  },
+
+  // ---- Line Operations ----
+  duplicateLine() {
+    const lines = Editor.content.split('\n');
+    const idx = Editor.cursorLine - 1;
+    lines.splice(idx, 0, lines[idx]);
+    Editor.content = lines.join('\n');
+    Editor.pushUndo(); Editor.render(); Editor.updateGutter();
+    Editor.setCursor(Editor.cursorLine + 1, Editor.cursorCol);
+  },
+
+  duplicateLineUp() {
+    const lines = Editor.content.split('\n');
+    const idx = Editor.cursorLine - 1;
+    lines.splice(idx, 0, lines[idx]);
+    Editor.content = lines.join('\n');
+    Editor.pushUndo(); Editor.render(); Editor.updateGutter();
+  },
+
+  duplicateLineDown() {
+    const lines = Editor.content.split('\n');
+    const idx = Editor.cursorLine - 1;
+    lines.splice(idx + 1, 0, lines[idx]);
+    Editor.content = lines.join('\n');
+    Editor.pushUndo(); Editor.render(); Editor.updateGutter();
+    Editor.setCursor(Editor.cursorLine + 1, Editor.cursorCol);
+  },
+
+  deleteLine() {
+    const lines = Editor.content.split('\n');
+    if (lines.length === 1) { Editor.content = ''; }
+    else { lines.splice(Editor.cursorLine - 1, 1); Editor.content = lines.join('\n'); }
+    Editor.pushUndo(); Editor.render(); Editor.updateGutter();
+    if (Editor.cursorLine > lines.length) Editor.setCursor(lines.length, 1);
   },
 
   moveLineUp() {
@@ -733,20 +1518,107 @@ const EditorActions = {
     Editor.setCursor(Editor.cursorLine + 1, Editor.cursorCol);
   },
 
-  indent() {
-    const indent = Editor.useSpaces ? ' '.repeat(Editor.tabSize) : '\t';
-    const lines = Editor.content.split('\n');
-    const idx = Editor.cursorLine - 1;
-    lines[idx] = indent + lines[idx];
-    Editor.content = lines.join('\n');
+  sortLinesAsc() {
+    const sel = window.getSelection();
+    const selectedText = sel.toString();
+    if (selectedText.includes('\n')) {
+      const sorted = selectedText.split('\n').sort().join('\n');
+      document.execCommand('insertText', false, sorted);
+    } else {
+      const lines = Editor.content.split('\n');
+      lines.sort((a, b) => a.localeCompare(b));
+      Editor.content = lines.join('\n');
+    }
     Editor.pushUndo(); Editor.render(); Editor.updateGutter();
   },
 
-  toggleMinimap() { Editor.toggleMinimap(); },
-  toggleWordWrap() { Editor.setWordWrap(!Editor.wordWrap); },
+  sortLinesDesc() {
+    const sel = window.getSelection();
+    const selectedText = sel.toString();
+    if (selectedText.includes('\n')) {
+      const sorted = selectedText.split('\n').sort((a, b) => b.localeCompare(a)).join('\n');
+      document.execCommand('insertText', false, sorted);
+    } else {
+      const lines = Editor.content.split('\n');
+      lines.sort((a, b) => b.localeCompare(a));
+      Editor.content = lines.join('\n');
+    }
+    Editor.pushUndo(); Editor.render(); Editor.updateGutter();
+  },
 
+  removeDuplicateLines() {
+    const lines = Editor.content.split('\n');
+    const unique = [...new Set(lines)];
+    Editor.content = unique.join('\n');
+    Editor.pushUndo(); Editor.render(); Editor.updateGutter();
+  },
+
+  reverseLines() {
+    const sel = window.getSelection();
+    const selectedText = sel.toString();
+    if (selectedText.includes('\n')) {
+      const reversed = selectedText.split('\n').reverse().join('\n');
+      document.execCommand('insertText', false, reversed);
+    } else {
+      const lines = Editor.content.split('\n');
+      lines.reverse();
+      Editor.content = lines.join('\n');
+    }
+    Editor.pushUndo(); Editor.render(); Editor.updateGutter();
+  },
+
+  // ---- Indentation ----
+  indent() {
+    const sel = window.getSelection();
+    const selectedText = sel.toString();
+    const indent = Editor.useSpaces ? ' '.repeat(Editor.tabSize) : '\t';
+    if (selectedText.includes('\n')) {
+      const indented = indent + selectedText.split('\n').join('\n' + indent);
+      document.execCommand('insertText', false, indented);
+    } else {
+      const lines = Editor.content.split('\n');
+      const idx = Editor.cursorLine - 1;
+      lines[idx] = indent + lines[idx];
+      Editor.content = lines.join('\n');
+      Editor.pushUndo(); Editor.render(); Editor.updateGutter();
+    }
+  },
+
+  outdent() {
+    const sel = window.getSelection();
+    const selectedText = sel.toString();
+    if (selectedText.includes('\n')) {
+      const outdented = selectedText.split('\n').map(l => l.replace(/^(\s{1,4}|\t)/, '')).join('\n');
+      document.execCommand('insertText', false, outdented);
+    } else {
+      const lines = Editor.content.split('\n');
+      const idx = Editor.cursorLine - 1;
+      lines[idx] = lines[idx].replace(/^(\s{1,4}|\t)/, '');
+      Editor.content = lines.join('\n');
+      Editor.pushUndo(); Editor.render(); Editor.updateGutter();
+    }
+  },
+
+  cycleIndent() {
+    Editor.cycleIndentUnit();
+  },
+
+  // ---- Whitespace ----
+  trimTrailingWhitespace() {
+    const lines = Editor.content.split('\n');
+    let changed = false;
+    for (let i = 0; i < lines.length; i++) {
+      const trimmed = lines[i].trimEnd();
+      if (trimmed !== lines[i]) { lines[i] = trimmed; changed = true; }
+    }
+    if (changed) {
+      Editor.content = lines.join('\n');
+      Editor.pushUndo(); Editor.render(); Editor.updateGutter();
+    }
+  },
+
+  // ---- Format ----
   formatDocument() {
-    // Basic auto-indent
     const lines = Editor.content.split('\n');
     let indentLevel = 0;
     const indentStr = Editor.useSpaces ? ' '.repeat(Editor.tabSize) : '\t';
@@ -764,6 +1636,165 @@ const EditorActions = {
     Editor.pushUndo(); Editor.render(); Editor.updateGutter();
   },
 
+  // ---- Bookmarks ----
+  toggleBookmark(line) { Editor.toggleBookmark(line || Editor.cursorLine); },
+  gotoNextBookmark() {
+    const sorted = Editor.getSortedBookmarks();
+    if (sorted.length === 0) return;
+    const next = sorted.find(b => b > Editor.cursorLine) || sorted[0];
+    Editor.setCursor(next, 1);
+  },
+  gotoPrevBookmark() {
+    const sorted = Editor.getSortedBookmarks();
+    if (sorted.length === 0) return;
+    const prev = [...sorted].reverse().find(b => b < Editor.cursorLine) || sorted[sorted.length - 1];
+    Editor.setCursor(prev, 1);
+  },
+  clearAllBookmarks() { Editor.bookmarks = new Set(); Editor.render(); Editor.updateGutter(); },
+
+  // ---- Code Folding ----
+  toggleFold(line) { Editor.toggleFold(line); },
+  foldAll() { Editor.foldAll(); },
+  unfoldAll() { Editor.unfoldAll(); },
+
+  // ---- Outline ----
+  toggleOutline() {
+    Editor.showOutline = !Editor.showOutline;
+    document.getElementById('outline-panel').classList.toggle('visible', Editor.showOutline);
+    if (Editor.showOutline) {
+      Editor.parseOutline();
+      Editor.renderOutline();
+    }
+  },
+
+  // ---- Encoding ----
+  showEncodingDropdown() {
+    const dd = document.getElementById('encoding-dropdown');
+    if (dd.classList.contains('visible')) { dd.classList.remove('visible'); return; }
+    const encodings = ['UTF-8', 'UTF-16', 'UTF-32', 'ISO-8859-1', 'Windows-1252', 'ASCII', 'GB2312', 'GBK', 'Big5', 'Shift_JIS', 'EUC-JP', 'EUC-KR', 'ISO-8859-2', 'ISO-8859-15', 'Windows-1250', 'Windows-1251', 'KOI8-R'];
+    dd.innerHTML = encodings.map(e =>
+      `<div class="enc-item ${e === Editor.encoding ? 'active' : ''}" onclick="EditorActions.setEncoding('${e}')">${e}</div>`
+    ).join('');
+    const rect = document.getElementById('st-encoding').getBoundingClientRect();
+    dd.style.bottom = (window.innerHeight - rect.top + 4) + 'px';
+    dd.style.left = rect.left + 'px';
+    dd.classList.add('visible');
+  },
+
+  setEncoding(enc) {
+    Editor.setEncoding(enc);
+    document.getElementById('encoding-dropdown').classList.remove('visible');
+    if (typeof EditorBridge !== 'undefined') EditorBridge.onConsoleLog('Encoding: ' + enc);
+  },
+
+  // ---- Context Menu ----
+  showContextMenu(x, y) {
+    const menu = document.getElementById('context-menu');
+    const sel = window.getSelection();
+    const hasSelection = sel.toString().length > 0;
+    const items = [
+      { label: 'Cut', shortcut: 'Ctrl+X', action: () => document.execCommand('cut'), disabled: !hasSelection },
+      { label: 'Copy', shortcut: 'Ctrl+C', action: () => document.execCommand('copy'), disabled: !hasSelection },
+      { label: 'Paste', shortcut: 'Ctrl+V', action: () => document.execCommand('paste') },
+      'sep',
+      { label: 'Select All', shortcut: 'Ctrl+A', action: () => document.execCommand('selectAll') },
+      { label: 'Select Word', action: () => { const s = window.getSelection(); const r = s.getRangeAt(0); document.execCommand('selectWord'); } },
+      { label: 'Select Line', action: () => { EditorActions._selectLine(); } },
+      'sep',
+      { label: 'Find', shortcut: 'Ctrl+F', action: () => this.toggleSearch() },
+      { label: 'Find and Replace', shortcut: 'Ctrl+H', action: () => this.showReplace() },
+      'sep',
+      { label: 'Toggle Comment', shortcut: 'Ctrl+/', action: () => this.toggleComment() },
+      { label: 'Block Comment', shortcut: 'Ctrl+Shift+/', action: () => this.blockComment() },
+      { label: 'Format Document', shortcut: 'Shift+Alt+F', action: () => this.formatDocument() },
+      'sep',
+      { label: 'Duplicate Line', shortcut: 'Ctrl+Shift+D', action: () => this.duplicateLine() },
+      { label: 'Delete Line', shortcut: 'Ctrl+Shift+K', action: () => this.deleteLine() },
+      { label: 'Move Line Up', shortcut: 'Alt+Up', action: () => this.moveLineUp() },
+      { label: 'Move Line Down', shortcut: 'Alt+Down', action: () => this.moveLineDown() },
+      'sep',
+      { label: 'Toggle Bookmark', shortcut: 'Ctrl+B', action: () => this.toggleBookmark() },
+      { label: 'Fold Region', action: () => this.toggleFold(Editor.cursorLine) },
+      { label: 'Fold All', action: () => this.foldAll() },
+      { label: 'Unfold All', action: () => this.unfoldAll() },
+      'sep',
+      { label: 'Sort Lines A→Z', action: () => this.sortLinesAsc() },
+      { label: 'Sort Lines Z→A', action: () => this.sortLinesDesc() },
+      { label: 'Remove Duplicate Lines', action: () => this.removeDuplicateLines() },
+      { label: 'Reverse Lines', action: () => this.reverseLines() },
+      { label: 'Trim Trailing Whitespace', action: () => this.trimTrailingWhitespace() },
+      'sep',
+      { label: 'Go to Definition', shortcut: 'F12', action: () => { if (typeof EditorBridge !== 'undefined') EditorBridge.onGotoDefinition(Editor.cursorLine, Editor.cursorCol); } },
+      { label: 'Rename Symbol', shortcut: 'F2', action: () => this.renameSymbol() },
+    ];
+    menu.innerHTML = items.map(item => {
+      if (item === 'sep') return '<div class="sep"></div>';
+      return `<div class="item ${item.disabled ? 'disabled' : ''}" onclick="event.preventDefault();${item.disabled ? '' : 'EditorActions._ctxHide();(' + item.action.toString() + ')()'}">${item.label}<span class="shortcut">${item.shortcut || ''}</span></div>`;
+    }).join('');
+    // Position menu
+    menu.style.left = Math.min(x, window.innerWidth - 240) + 'px';
+    menu.style.top = Math.min(y, window.innerHeight - menu.children.length * 30 - 20) + 'px';
+    menu.classList.add('visible');
+  },
+
+  _ctxHide() { document.getElementById('context-menu').classList.remove('visible'); },
+
+  _selectLine() {
+    const lines = Editor.content.split('\n');
+    const line = lines[Editor.cursorLine - 1] || '';
+    const startIdx = lines.slice(0, Editor.cursorLine - 1).join('\n').length + (Editor.cursorLine > 1 ? 1 : 0);
+    const display = document.getElementById('code-display');
+    const walker = document.createTreeWalker(display, NodeFilter.SHOW_TEXT);
+    let charCount = 0, node = walker.nextNode();
+    while (node && charCount + node.textContent.length <= startIdx) { charCount += node.textContent.length; node = walker.nextNode(); }
+    if (node) {
+      const s = startIdx - charCount;
+      const e = Math.min(s + line.length, node.textContent.length);
+      const range = document.createRange();
+      range.setStart(node, s); range.setEnd(node, e);
+      const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+    }
+  },
+
+  tabContextMenu(e, index) {
+    e.preventDefault(); e.stopPropagation();
+    const menu = document.getElementById('context-menu');
+    const items = [
+      { label: 'Close', action: () => Editor.closeTab(index) },
+      { label: 'Close Others', action: () => Editor.closeOtherTabs(index) },
+      { label: 'Close All', action: () => Editor.closeAllTabs() },
+      'sep',
+      { label: 'Copy Path', action: () => { if (typeof EditorBridge !== 'undefined') EditorBridge.onConsoleLog('Path: ' + Editor.tabs[index].name); } },
+    ];
+    menu.innerHTML = items.map(item => {
+      if (item === 'sep') return '<div class="sep"></div>';
+      return `<div class="item" onclick="event.preventDefault();EditorActions._ctxHide();${item.action.toString()}()"">${item.label}</div>`;
+    }).join('');
+    menu.style.left = Math.min(e.clientX, window.innerWidth - 200) + 'px';
+    menu.style.top = Math.min(e.clientY, window.innerHeight - 150) + 'px';
+    menu.classList.add('visible');
+  },
+
+  // ---- Rename Symbol ----
+  renameSymbol() {
+    const sel = window.getSelection();
+    const word = sel.toString().trim() || this._getWordUnderCursor();
+    if (!word) return;
+    const newName = prompt('Rename to:', word);
+    if (!newName || newName === word) return;
+    const regex = new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'g');
+    Editor.content = Editor.content.replace(regex, newName);
+    Editor.pushUndo(); Editor.render(); Editor.updateGutter();
+  },
+
+  _getWordUnderCursor() {
+    const lines = Editor.content.split('\n');
+    const line = lines[Editor.cursorLine - 1] || '';
+    const match = line.substring(0, Editor.cursorCol - 1).match(/(\w+)$/);
+    return match ? match[1] : '';
+  },
+
+  // ---- Command Palette ----
   toggleCommandPalette() {
     const cp = document.getElementById('command-palette');
     cp.classList.toggle('visible');
@@ -775,32 +1806,59 @@ const EditorActions = {
   },
 
   _commands: [
-    { label: 'Save File', shortcut: 'Ctrl+S', category: 'File', action: () => EditorActions.save() },
-    { label: 'Find', shortcut: 'Ctrl+F', category: 'Edit', action: () => EditorActions.toggleSearch() },
-    { label: 'Find and Replace', shortcut: 'Ctrl+H', category: 'Edit', action: () => EditorActions.showReplace() },
-    { label: 'Go to Line', shortcut: 'Ctrl+G', category: 'Navigation', action: () => EditorActions.gotoLine() },
-    { label: 'Toggle Comment', shortcut: 'Ctrl+/', category: 'Edit', action: () => EditorActions.toggleComment() },
-    { label: 'Format Document', shortcut: 'Shift+Alt+F', category: 'Edit', action: () => EditorActions.formatDocument() },
-    { label: 'Toggle Minimap', category: 'View', action: () => EditorActions.toggleMinimap() },
-    { label: 'Toggle Word Wrap', category: 'View', action: () => EditorActions.toggleWordWrap() },
-    { label: 'Duplicate Line', shortcut: 'Ctrl+Shift+D', category: 'Edit', action: () => EditorActions.duplicateLine() },
-    { label: 'Delete Line', shortcut: 'Ctrl+Shift+K', category: 'Edit', action: () => EditorActions.deleteLine() },
-    { label: 'Move Line Up', shortcut: 'Alt+Up', category: 'Edit', action: () => EditorActions.moveLineUp() },
-    { label: 'Move Line Down', shortcut: 'Alt+Down', category: 'Edit', action: () => EditorActions.moveLineDown() },
-    { label: 'Select All Occurrences', shortcut: 'Ctrl+Shift+L', category: 'Edit', action: () => EditorActions.selectAllOccurrences() },
-    { label: 'Undo', shortcut: 'Ctrl+Z', category: 'Edit', action: () => Editor.undo() },
-    { label: 'Redo', shortcut: 'Ctrl+Y', category: 'Edit', action: () => Editor.redo() },
-    { label: 'Toggle Terminal', category: 'View', action: () => document.getElementById('terminal-panel').classList.toggle('visible') },
-    { label: 'Toggle Output', category: 'View', action: () => document.getElementById('output-panel').classList.toggle('visible') },
-    { label: 'Toggle Problems', category: 'View', action: () => document.getElementById('problems-panel').classList.toggle('visible') },
+    { label: 'Save File', shortcut: 'Ctrl+S', icon: '▶', category: 'File', action: () => EditorActions.save() },
+    { label: 'Close Tab', shortcut: 'Ctrl+W', icon: '▶', category: 'File', action: () => Editor.closeTab(Editor.activeTab) },
+    { label: 'Close All Tabs', shortcut: 'Ctrl+Shift+W', icon: '▶', category: 'File', action: () => Editor.closeAllTabs() },
+    { label: 'Find', shortcut: 'Ctrl+F', icon: '▶', category: 'Edit', action: () => EditorActions.toggleSearch() },
+    { label: 'Find and Replace', shortcut: 'Ctrl+H', icon: '▶', category: 'Edit', action: () => EditorActions.showReplace() },
+    { label: 'Go to Line', shortcut: 'Ctrl+G', icon: '▶', category: 'Navigation', action: () => EditorActions.showGotoLine() },
+    { label: 'Go to Next Bookmark', shortcut: 'Ctrl+M', icon: '▶', category: 'Navigation', action: () => EditorActions.gotoNextBookmark() },
+    { label: 'Go to Previous Bookmark', icon: '▶', category: 'Navigation', action: () => EditorActions.gotoPrevBookmark() },
+    { label: 'Toggle Comment', shortcut: 'Ctrl+/', icon: '▶', category: 'Edit', action: () => EditorActions.toggleComment() },
+    { label: 'Block Comment', shortcut: 'Ctrl+Shift+/', icon: '▶', category: 'Edit', action: () => EditorActions.blockComment() },
+    { label: 'Format Document', shortcut: 'Shift+Alt+F', icon: '▶', category: 'Edit', action: () => EditorActions.formatDocument() },
+    { label: 'Toggle Minimap', shortcut: 'Ctrl+Shift+M', icon: '▶', category: 'View', action: () => EditorActions.toggleMinimap() },
+    { label: 'Toggle Word Wrap', icon: '▶', category: 'View', action: () => EditorActions.toggleWordWrap() },
+    { label: 'Toggle Outline', shortcut: 'Ctrl+Shift+O', icon: '▶', category: 'View', action: () => EditorActions.toggleOutline() },
+    { label: 'Toggle Indent Guides', icon: '▶', category: 'View', action: () => { Editor.showIndentGuides = !Editor.showIndentGuides; Editor.renderIndentGuides(); } },
+    { label: 'Toggle Trailing Whitespace', icon: '▶', category: 'View', action: () => { Editor.showTrailingWS = !Editor.showTrailingWS; Editor.highlightTrailingWhitespace(); } },
+    { label: 'Toggle Sticky Scroll', icon: '▶', category: 'View', action: () => { Editor.showStickyScroll = !Editor.showStickyScroll; Editor.updateStickyScroll(); } },
+    { label: 'Duplicate Line', shortcut: 'Ctrl+Shift+D', icon: '▶', category: 'Edit', action: () => EditorActions.duplicateLine() },
+    { label: 'Duplicate Line Up', shortcut: 'Alt+Shift+Up', icon: '▶', category: 'Edit', action: () => EditorActions.duplicateLineUp() },
+    { label: 'Duplicate Line Down', shortcut: 'Alt+Shift+Down', icon: '▶', category: 'Edit', action: () => EditorActions.duplicateLineDown() },
+    { label: 'Delete Line', shortcut: 'Ctrl+Shift+K', icon: '▶', category: 'Edit', action: () => EditorActions.deleteLine() },
+    { label: 'Move Line Up', shortcut: 'Alt+Up', icon: '▶', category: 'Edit', action: () => EditorActions.moveLineUp() },
+    { label: 'Move Line Down', shortcut: 'Alt+Down', icon: '▶', category: 'Edit', action: () => EditorActions.moveLineDown() },
+    { label: 'Select All Occurrences', shortcut: 'Ctrl+Shift+L', icon: '▶', category: 'Selection', action: () => EditorActions.selectAllOccurrences() },
+    { label: 'Select Next Occurrence', shortcut: 'Ctrl+D', icon: '▶', category: 'Selection', action: () => EditorActions.selectNextOccurrence() },
+    { label: 'Sort Lines A→Z', icon: '▶', category: 'Edit', action: () => EditorActions.sortLinesAsc() },
+    { label: 'Sort Lines Z→A', icon: '▶', category: 'Edit', action: () => EditorActions.sortLinesDesc() },
+    { label: 'Remove Duplicate Lines', icon: '▶', category: 'Edit', action: () => EditorActions.removeDuplicateLines() },
+    { label: 'Reverse Lines', icon: '▶', category: 'Edit', action: () => EditorActions.reverseLines() },
+    { label: 'Trim Trailing Whitespace', icon: '▶', category: 'Edit', action: () => EditorActions.trimTrailingWhitespace() },
+    { label: 'Undo', shortcut: 'Ctrl+Z', icon: '▶', category: 'Edit', action: () => Editor.undo() },
+    { label: 'Redo', shortcut: 'Ctrl+Y', icon: '▶', category: 'Edit', action: () => Editor.redo() },
+    { label: 'Fold All', icon: '▶', category: 'View', action: () => EditorActions.foldAll() },
+    { label: 'Unfold All', icon: '▶', category: 'View', action: () => EditorActions.unfoldAll() },
+    { label: 'Toggle Bookmark', shortcut: 'Ctrl+B', icon: '▶', category: 'Edit', action: () => EditorActions.toggleBookmark() },
+    { label: 'Clear All Bookmarks', icon: '▶', category: 'Edit', action: () => EditorActions.clearAllBookmarks() },
+    { label: 'Rename Symbol', shortcut: 'F2', icon: '▶', category: 'Refactor', action: () => EditorActions.renameSymbol() },
+    { label: 'Change Encoding', icon: '▶', category: 'File', action: () => EditorActions.showEncodingDropdown() },
+    { label: 'Toggle Terminal', icon: '▶', category: 'View', action: () => EditorActions.showPanelTab('terminal') },
+    { label: 'Toggle Output', icon: '▶', category: 'View', action: () => EditorActions.showPanelTab('output') },
+    { label: 'Toggle Problems', icon: '▶', category: 'View', action: () => EditorActions.showPanelTab('problems') },
+    { label: 'Indent with Spaces', icon: '▶', category: 'Settings', action: () => { Editor.useSpaces = true; Editor.updateStatusBar(); } },
+    { label: 'Indent with Tabs', icon: '▶', category: 'Settings', action: () => { Editor.useSpaces = false; Editor.updateStatusBar(); } },
+    { label: 'Increase Font Size', icon: '▶', category: 'View', action: () => { const s = parseInt(getComputedStyle(document.getElementById('code-display')).fontSize); Editor.setFontSize(Math.min(s + 1, 32)); } },
+    { label: 'Decrease Font Size', icon: '▶', category: 'View', action: () => { const s = parseInt(getComputedStyle(document.getElementById('code-display')).fontSize); Editor.setFontSize(Math.max(s - 1, 8)); } },
   ],
 
   _renderCommands(filter) {
-    const items = document.querySelector('#command-palette .items');
+    const items = document.getElementById('cmd-items');
     const lf = filter.toLowerCase();
     const filtered = lf ? this._commands.filter(c => c.label.toLowerCase().includes(lf) || c.category.toLowerCase().includes(lf)) : this._commands;
     items.innerHTML = filtered.map((c, i) =>
-      `<div class="item ${i === 0 ? 'selected' : ''}" onclick="EditorActions._executeCommand(${this._commands.indexOf(c)})">${c.label}<span class="shortcut">${c.shortcut || ''}</span><span class="cat">${c.category}</span></div>`
+      `<div class="item ${i === 0 ? 'selected' : ''}" onclick="EditorActions._executeCommand(${this._commands.indexOf(c)})"><span class="icon">${c.icon}</span>${c.label}<span class="shortcut">${c.shortcut || ''}</span><span class="cat">${c.category}</span></div>`
     ).join('');
   },
 
@@ -811,13 +1869,31 @@ const EditorActions = {
   },
 
   navigateToBreadcrumb(index) { /* Navigate to file path segment — callback to Kotlin */ },
+
   closeAllPanels() {
     document.getElementById('search-panel').classList.remove('visible');
     document.getElementById('command-palette').classList.remove('visible');
     document.getElementById('context-menu').classList.remove('visible');
+    document.getElementById('goto-dialog').classList.remove('visible');
+    document.getElementById('encoding-dropdown').classList.remove('visible');
   },
 
-  // ---- Panels ----
+  // ---- Bottom Panels ----
+  showPanelTab(tab) {
+    const area = document.getElementById('panel-area');
+    const isVisible = area.style.display === 'flex';
+    if (!isVisible) { area.style.display = 'flex'; }
+    document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('visible'));
+    event.target.classList.add('active');
+    document.getElementById(tab + '-panel').classList.add('visible');
+  },
+
+  closeBottomPanels() {
+    document.getElementById('panel-area').style.display = 'none';
+  },
+
+  // ---- Output ----
   appendOutput(text) {
     const panel = document.getElementById('output-panel');
     panel.classList.add('visible');
@@ -831,7 +1907,7 @@ const EditorActions = {
     const panel = document.getElementById('problems-panel');
     panel.classList.toggle('visible', problems.length > 0);
     panel.innerHTML = problems.map(p =>
-      `<div class="problem ${p.severity}"><span>${p.severity === 'error' ? '✕' : '⚠'}</span><span>${p.message}</span><span class="loc">${p.file}:${p.line}</span></div>`
+      `<div class="problem ${p.severity}" onclick="EditorActions.gotoLine(${p.line})"><span>${p.severity === 'error' ? '✕' : p.severity === 'warning' ? '⚠' : 'ℹ'}</span><span>${p.message}</span><span class="loc">${p.file}:${p.line}</span></div>`
     ).join('');
   },
 
@@ -840,23 +1916,22 @@ const EditorActions = {
     const snippets = Editor.snippets[Editor.language] || Editor.snippets['text'] || {};
     const snippet = snippets[name];
     if (!snippet) return;
-    const tabstops = snippet.match(/\$(\d+)|\$\{(\d+)(?::([^}]*))?}/g) || [];
     let text = snippet;
+    // Process tab stops
+    const tabstops = snippet.match(/\$(\d+)|\$\{(\d+)(?::([^}]*))?}/g) || [];
     tabstops.forEach(match => {
       const num = match.replace(/[${}:]/g, '');
-      text = text.replace(match, num === '0' ? '$CURSOR' : `placeholder${num}`);
+      text = text.replace(match, num === '0' ? '' : `placeholder${num}`);
     });
     Editor.insertText(text);
   },
 
-  loadSnippets(lang, snippets) { Editor.snippets[lang] = snippets; }
-};
+  loadSnippets(lang, snippets) { Editor.snippets[lang] = snippets; },
 
-// Command palette input handler
-document.getElementById('cmd-input').addEventListener('input', (e) => {
-  EditorActions._renderCommands(e.target.value);
-  // Navigate with arrow keys
-});
+  // ---- View toggles ----
+  toggleMinimap() { Editor.toggleMinimap(); },
+  toggleWordWrap() { Editor.setWordWrap(!Editor.wordWrap); },
+};
 
 // Initialize
 Editor.init();

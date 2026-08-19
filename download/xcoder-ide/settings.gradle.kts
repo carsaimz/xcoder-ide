@@ -52,6 +52,9 @@ include(":build-engine")
 include(":ai-copilot")
 include(":search-in-project")
 include(":code-formatter")
+include(":bookmarks")
+include(":apk-editor")
+include(":remote-filesystem")
 
 // ── Plugin System Modules ─────────────────────────────────────────────────
 include(":plugin-system:api")
