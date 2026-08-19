@@ -62,6 +62,7 @@ android {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
             excludes += "/META-INF/LICENSE*"
+            excludes += "/META-INF/NOTICE*"
         }
     }
 
@@ -81,22 +82,31 @@ dependencies {
     implementation(project(":core:git"))
     implementation(project(":core:settings"))
 
-    // --- Editor Modules ---
-    implementation(project(":editor:web-editor"))
-    implementation(project(":editor:native-editor"))
-    implementation(project(":visual-editor"))
+    // --- Editor (Rosemoe sora-editor) ---
+    implementation(project(":editor:sora-editor"))
 
-    // --- Engine & AI ---
+    // --- Feature Modules ---
+    implementation(project(":visual-editor"))
     implementation(project(":build-engine"))
     implementation(project(":ai-copilot"))
+    implementation(project(":search-in-project"))
+    implementation(project(":code-formatter"))
+    implementation(project(":bookmarks"))
+    implementation(project(":apk-editor"))
+    implementation(project(":remote-filesystem"))
+
+    // --- LSP (Java Language Server) ---
+    implementation(project(":lsp-java"))
 
     // --- Plugin System ---
     implementation(project(":plugin-system:loader"))
 
+    // --- AndroidTreeView (Bogdan Melnychuk) ---
+    implementation(libs.android.tree.view)
+
     // --- AndroidX Core ---
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.activity.ktx)
-    implementation(libs.androidx.fragment.ktx)
+    implementation(libs.androidx.activity.compose)
 
     // --- Compose ---
     implementation(platform(libs.androidx.compose.bom))
@@ -109,7 +119,6 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
     // --- Compose Integration ---
-    implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.navigation.compose)
 

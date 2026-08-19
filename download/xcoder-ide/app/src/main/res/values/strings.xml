@@ -4,8 +4,8 @@
     <string name="app_description">Mobile integrated development environment</string>
 
     <!-- Navigation -->
-    <string name="nav_web_editor">Web Editor</string>
-    <string name="nav_native_editor">Native Editor</string>
+    <string name="nav_web_editor">Editor</string>
+    <string name="nav_native_editor">Editor</string>
     <string name="nav_visual_editor">Visual Editor</string>
     <string name="nav_terminal">Terminal</string>
     <string name="nav_git">Git Manager</string>
@@ -15,7 +15,7 @@
     <string name="nav_projects">Projects</string>
 
     <!-- Bottom Bar -->
-    <string name="bottom_web">Web</string>
+    <string name="bottom_web">Editor</string>
     <string name="bottom_native">Native</string>
     <string name="bottom_visual">Visual</string>
     <string name="bottom_more">More</string>
@@ -144,4 +144,15 @@
     <string name="permission_storage_rationale">XCoder needs storage access to open and save project files.</string>
     <string name="permission_notification_rationale">Enable notifications for build and git status updates.</string>
     <string name="permission_grant">Grant Permission</string>
-    <string name=
+    <string name="permission_denied_forever">Permission permanently denied. Please enable it in Settings.</string>
+
+    <!-- About / Credits -->
+    <string name="about_title">About XCoder IDE</string>
+    <string name="about_version">Version %1$s</string>
+    <string name="about_description">A powerful mobile IDE for Android</string>
+    <string name="about_thanks_title">Thanks to</string>
+    <string name="about_thanks_rosemoe">Rosemoe for the awesome CodeEditor</string>
+    <string name="about_thanks_termux">Termux for Terminal Emulator</string>
+    <string name="about_thanks_bogdan">Bogdan Melnychuk for AndroidTreeView</string>
+    <string name="about_thanks_george">George Fraser for the Java Language Server</string>
+</resources>

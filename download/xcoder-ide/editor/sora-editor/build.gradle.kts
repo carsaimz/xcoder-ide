@@ -6,48 +6,41 @@ plugins {
 }
 
 android {
-    namespace = "com.xcoder.core.terminal"
+    namespace = "com.xcoder.editor.sora"
     compileSdk = 34
 
     defaultConfig {
         minSdk = 21
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        consumerProguardFiles("consumer-rules.pro")
     }
 
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-        }
-    }
-
-    buildFeatures {
-        compose = true
-    }
-
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.8"
-    }
-
+    buildTypes { release { isMinifyEnabled = false } }
+    buildFeatures { compose = true }
+    composeOptions { kotlinCompilerExtensionVersion = "1.5.8" }
     kotlinOptions { jvmTarget = "17" }
 }
 
 dependencies {
-    // ── Termux terminal-emulator ───────────────────────────────────────
-    api(libs.termux.terminal.emulator)
+    implementation(project(":core:file-manager"))
+
+    // ── Rosemoe sora-editor (CodeEditor) ───────────────────────────────
+    implementation(libs.sora.editor)
+    implementation(libs.sora.editor.lsp)
+    implementation(libs.sora.editor.language.java)
+    implementation(libs.sora.editor.language.textmate)
 
     // ── AndroidX ───────────────────────────────────────────────────────
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.activity.compose)
 
     // ── Compose ────────────────────────────────────────────────────────
-    api(platform(libs.androidx.compose.bom))
-    api(libs.androidx.compose.ui)
-    api(libs.androidx.compose.foundation)
-    api(libs.androidx.compose.material3)
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material.icons.extended)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
 
     // ── Hilt ───────────────────────────────────────────────────────────
     implementation(libs.hilt.android)
@@ -57,10 +50,12 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.core)
 
+    // ── TextMate grammars bundled as assets ─────────────────────────────
+    // We bundle common grammar JSON files in assets/textmate/
+
     // ── Testing ────────────────────────────────────────────────────────
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
 }
 
 kapt { correctErrorTypes = true }
