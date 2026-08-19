@@ -50,6 +50,8 @@ include(":editor:native-editor")
 include(":visual-editor")
 include(":build-engine")
 include(":ai-copilot")
+include(":search-in-project")
+include(":code-formatter")
 
 // ── Plugin System Modules ─────────────────────────────────────────────────
 include(":plugin-system:api")

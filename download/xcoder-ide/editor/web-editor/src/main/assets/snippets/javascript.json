@@ -1,0 +1,217 @@
+{
+  "console.log": {
+    "prefix": "clg",
+    "body": ["console.log(${1:message});", "$0"],
+    "description": "Log a message to the console"
+  },
+  "console.warn": {
+    "prefix": "clw",
+    "body": ["console.warn(${1:message});", "$0"],
+    "description": "Log a warning to the console"
+  },
+  "console.error": {
+    "prefix": "cle",
+    "body": ["console.error(${1:message});", "$0"],
+    "description": "Log an error to the console"
+  },
+  "console.table": {
+    "prefix": "clt",
+    "body": ["console.table(${1:data});", "$0"],
+    "description": "Log data as a table to the console"
+  },
+  "function declaration": {
+    "prefix": "fn",
+    "body": ["function ${1:functionName}(${2:params}) {", "\t$0", "}"],
+    "description": "Function declaration"
+  },
+  "arrow function": {
+    "prefix": "af",
+    "body": ["const ${1:functionName} = (${2:params}) => {", "\t$0", "};"],
+    "description": "Arrow function"
+  },
+  "arrow function expression": {
+    "prefix": "afe",
+    "body": ["(${1:params}) => ${2:expression}"],
+    "description": "Arrow function expression (single line)"
+  },
+  "class": {
+    "prefix": "cls",
+    "body": ["class ${1:ClassName} {", "\tconstructor(${2:params}) {", "\t\t$0", "\t}", "}"],
+    "description": "ES6 class with constructor"
+  },
+  "class with method": {
+    "prefix": "clsm",
+    "body": ["class ${1:ClassName} {", "\tconstructor(${2:params}) {", "\t\tthis.${3:prop} = ${4:value};", "\t}", "", "\t${5:methodName}(${6:params}) {", "\t\t$0", "\t}", "}"],
+    "description": "ES6 class with constructor and method"
+  },
+  "if statement": {
+    "prefix": "if",
+    "body": ["if (${1:condition}) {", "\t$0", "}"],
+    "description": "If statement"
+  },
+  "if/else statement": {
+    "prefix": "ife",
+    "body": ["if (${1:condition}) {", "\t$0", "} else {", "\t", "}"],
+    "description": "If/else statement"
+  },
+  "if/else if/else": {
+    "prefix": "ifee",
+    "body": ["if (${1:condition}) {", "\t$0", "} else if (${2:condition2}) {", "\t", "} else {", "\t", "}"],
+    "description": "If/else if/else statement"
+  },
+  "ternary": {
+    "prefix": "ter",
+    "body": ["${1:condition} ? ${2:trueValue} : ${3:falseValue}"],
+    "description": "Ternary operator"
+  },
+  "for loop": {
+    "prefix": "for",
+    "body": ["for (let ${1:i} = 0; ${1:i} < ${2:length}; ${1:i}++) {", "\t$0", "}"],
+    "description": "For loop"
+  },
+  "for...of loop": {
+    "prefix": "forof",
+    "body": ["for (const ${1:item} of ${2:iterable}) {", "\t$0", "}"],
+    "description": "For...of loop"
+  },
+  "for...in loop": {
+    "prefix": "forin",
+    "body": ["for (const ${1:key} in ${2:object}) {", "\t$0", "}"],
+    "description": "For...in loop"
+  },
+  "while loop": {
+    "prefix": "while",
+    "body": ["while (${1:condition}) {", "\t$0", "}"],
+    "description": "While loop"
+  },
+  "do...while loop": {
+    "prefix": "dowhile",
+    "body": ["do {", "\t$0", "} while (${1:condition});"],
+    "description": "Do...while loop"
+  },
+  "try/catch": {
+    "prefix": "try",
+    "body": ["try {", "\t$0", "} catch (${1:error}) {", "\tconsole.error(${1:error});", "}"],
+    "description": "Try/catch block"
+  },
+  "try/catch/finally": {
+    "prefix": "tryf",
+    "body": ["try {", "\t$0", "} catch (${1:error}) {", "\tconsole.error(${1:error});", "} finally {", "\t", "}"],
+    "description": "Try/catch/finally block"
+  },
+  "import default": {
+    "prefix": "imp",
+    "body": ["import ${1:name} from '${2:module}';"],
+    "description": "Import default export"
+  },
+  "import named": {
+    "prefix": "imn",
+    "body": ["import { ${1:name} } from '${2:module}';"],
+    "description": "Import named export"
+  },
+  "import everything": {
+    "prefix": "ima",
+    "body": ["import * as ${1:name} from '${2:module}';"],
+    "description": "Import everything as namespace"
+  },
+  "export default": {
+    "prefix": "exp",
+    "body": ["export default ${1:name};"],
+    "description": "Export default"
+  },
+  "export named": {
+    "prefix": "exn",
+    "body": ["export const ${1:name} = ${2:value};"],
+    "description": "Export named const"
+  },
+  "export function": {
+    "prefix": "exf",
+    "body": ["export function ${1:functionName}(${2:params}) {", "\t$0", "}"],
+    "description": "Export function"
+  },
+  "async function": {
+    "prefix": "afn",
+    "body": ["async function ${1:functionName}(${2:params}) {", "\t$0", "}"],
+    "description": "Async function declaration"
+  },
+  "promise": {
+    "prefix": "prom",
+    "body": ["new Promise((resolve, reject) => {", "\t$0", "});"],
+    "description": "New Promise"
+  },
+  "async/await": {
+    "prefix": "aa",
+    "body": ["const ${1:result} = await ${2:promise};", "$0"],
+    "description": "Await a promise"
+  },
+  "map": {
+    "prefix": ".map",
+    "body": ["${1:array}.map((${2:item}) => {", "\t$0", "});"],
+    "description": "Array.map()"
+  },
+  "filter": {
+    "prefix": ".filter",
+    "body": ["${1:array}.filter((${2:item}) => ${3:condition});"],
+    "description": "Array.filter()"
+  },
+  "reduce": {
+    "prefix": ".reduce",
+    "body": ["${1:array}.reduce((${2:acc}, ${3:item}) => {", "\t$0", "\treturn ${2:acc};", "}, ${4:initialValue});"],
+    "description": "Array.reduce()"
+  },
+  "forEach": {
+    "prefix": ".fe",
+    "body": ["${1:array}.forEach((${2:item}) => {", "\t$0", "});"],
+    "description": "Array.forEach()"
+  },
+  "find": {
+    "prefix": ".find",
+    "body": ["${1:array}.find((${2:item}) => ${3:condition});"],
+    "description": "Array.find()"
+  },
+  "fetch": {
+    "prefix": "fetch",
+    "body": ["const response = await fetch('${1:url}', {", "\tmethod: '${2:GET}',", "\theaders: {", "\t\t'Content-Type': 'application/json',", "\t},", "\tbody: JSON.stringify(${3:body}),", "});", "const data = await response.json();", "$0"],
+    "description": "Fetch with async/await"
+  },
+  "event listener": {
+    "prefix": "ael",
+    "body": ["${1:document}.addEventListener('${2:event}', (${3:e}) => {", "\t$0", "});"],
+    "description": "Add event listener"
+  },
+  "setTimeout": {
+    "prefix": "st",
+    "body": ["setTimeout(() => {", "\t$0", "}, ${1:1000});"],
+    "description": "setTimeout"
+  },
+  "setInterval": {
+    "prefix": "si",
+    "body": ["setInterval(() => {", "\t$0", "}, ${1:1000});"],
+    "description": "setInterval"
+  },
+  "switch": {
+    "prefix": "switch",
+    "body": ["switch (${1:expression}) {", "\tcase '${2:value}':", "\t\t$0", "\t\tbreak;", "\tdefault:", "\t\tbreak;", "}"],
+    "description": "Switch statement"
+  },
+  "array destructuring": {
+    "prefix": "adst",
+    "body": ["const [${1:first}, ${2:second}, ...${3:rest}] = ${4:array};", "$0"],
+    "description": "Array destructuring assignment"
+  },
+  "object destructuring": {
+    "prefix": "odst",
+    "body": ["const { ${1:prop1}, ${2:prop2} } = ${3:object};", "$0"],
+    "description": "Object destructuring assignment"
+  },
+  "template literal": {
+    "prefix": "tl",
+    "body": ["`\${${1:variable}} ${2:text}`", "$0"],
+    "description": "Template literal string"
+  },
+  "optional chaining": {
+    "prefix": "oc",
+    "body": ["${1:object}?.${2:property}?.${3:method}()", "$0"],
+    "description": "Optional chaining operator"
+  }
+}

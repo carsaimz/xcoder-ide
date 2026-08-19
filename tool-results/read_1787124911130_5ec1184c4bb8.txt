@@ -1,0 +1,919 @@
+     1→<!DOCTYPE html>
+     2→<html lang="en">
+     3→<head>
+     4→    <meta charset="UTF-8">
+     5→    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+     6→    <title>XCoder Editor</title>
+     7→    <style>
+     8→        * {
+     9→            margin: 0;
+    10→            padding: 0;
+    11→            box-sizing: border-box;
+    12→        }
+    13→        html, body {
+    14→            width: 100%;
+    15→            height: 100%;
+    16→            overflow: hidden;
+    17→            background-color: #282c34;
+    18→            font-family: 'Fira Code', 'JetBrains Mono', 'Consolas', 'Monaco', monospace;
+    19→        }
+    20→        #editor-container {
+    21→            width: 100%;
+    22→            height: 100%;
+    23→            position: absolute;
+    24→            top: 0;
+    25→            left: 0;
+    26→            right: 0;
+    27→            bottom: 0;
+    28→        }
+    29→        #editor {
+    30→            width: 100%;
+    31→            height: 100%;
+    32→            font-size: 14px;
+    33→            line-height: 1.6;
+    34→        }
+    35→        /* Search panel styling */
+    36→        #search-panel {
+    37→            display: none;
+    38→            position: fixed;
+    39→            top: 0;
+    40→            right: 0;
+    41→            z-index: 1000;
+    42→            background: #21252b;
+    43→            border: 1px solid #3e4451;
+    44→            border-top: none;
+    45→            border-radius: 0 0 6px 6px;
+    46→            padding: 10px 14px;
+    47→            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    48→            min-width: 340px;
+    49→        }
+    50→        #search-panel.visible {
+    51→            display: flex;
+    52→            flex-wrap: wrap;
+    53→            align-items: center;
+    54→            gap: 6px;
+    55→        }
+    56→        #search-panel input {
+    57→            background: #282c34;
+    58→            border: 1px solid #3e4451;
+    59→            color: #abb2bf;
+    60→            padding: 6px 10px;
+    61→            border-radius: 4px;
+    62→            font-size: 13px;
+    63→            font-family: inherit;
+    64→            outline: none;
+    65→            flex: 1;
+    66→            min-width: 120px;
+    67→        }
+    68→        #search-panel input:focus {
+    69→            border-color: #61afef;
+    70→        }
+    71→        #search-panel button {
+    72→            background: #3e4451;
+    73→            border: 1px solid #4b5263;
+    74→            color: #abb2bf;
+    75→            padding: 6px 12px;
+    76→            border-radius: 4px;
+    77→            cursor: pointer;
+    78→            font-size: 12px;
+    79→            font-family: inherit;
+    80→        }
+    81→        #search-panel button:active {
+    82→            background: #4b5263;
+    83→        }
+    84→        #search-panel button.close-btn {
+    85→            background: none;
+    86→            border: none;
+    87→            color: #e06c75;
+    88→            font-size: 16px;
+    89→            padding: 4px 8px;
+    90→            cursor: pointer;
+    91→        }
+    92→        #search-count {
+    93→            color: #5c6370;
+    94→            font-size: 11px;
+    95→            min-width: 50px;
+    96→            text-align: center;
+    97→        }
+    98→    </style>
+    99→</head>
+   100→<body>
+   101→    <div id="editor-container">
+   102→        <div id="editor">// Welcome to XCoder IDE\n// Start coding...</div>
+   103→    </div>
+   104→
+   105→    <div id="search-panel">
+   106→        <input type="text" id="search-input" placeholder="Search..." />
+   107→        <input type="text" id="replace-input" placeholder="Replace..." style="display:none" />
+   108→        <span id="search-count"></span>
+   109→        <button id="btn-prev">▲</button>
+   110→        <button id="btn-next">▼</button>
+   111→        <button id="btn-replace" style="display:none">Replace</button>
+   112→        <button id="btn-replace-all" style="display:none">All</button>
+   113→        <button id="btn-toggle-replace" title="Toggle Replace">≡</button>
+   114→        <button class="close-btn" id="btn-close-search">✕</button>
+   115→    </div>
+   116→
+   117→    <script>
+   118→    (function() {
+   119→        'use strict';
+   120→
+   121→        // ─── State ───
+   122→        var editor = null;
+   123→        var searchEditor = null;
+   124→        var currentLanguage = 'kotlin';
+   125→        var isReadOnly = false;
+   126→        var changeTimeout = null;
+   127→        var cursorChangeTimeout = null;
+   128→        var lastSaveTime = 0;
+   129→
+   130→        // ─── Supported language modes ───
+   131→        var languageModes = {
+   132→            'java':         'ace/mode/java',
+   133→            'kt':           'ace/mode/kotlin',
+   134→            'kotlin':       'ace/mode/kotlin',
+   135→            'xml':          'ace/mode/xml',
+   136→            'json':         'ace/mode/json',
+   137→            'js':           'ace/mode/javascript',
+   138→            'javascript':   'ace/mode/javascript',
+   139→            'ts':           'ace/mode/typescript',
+   140→            'typescript':   'ace/mode/typescript',
+   141→            'css':          'ace/mode/css',
+   142→            'html':         'ace/mode/html',
+   143→            'py':           'ace/mode/python',
+   144→            'python':       'ace/mode/python',
+   145→            'c':            'ace/mode/c_cpp',
+   146→            'cpp':          'ace/mode/c_cpp',
+   147→            'h':            'ace/mode/c_cpp',
+   148→            'hpp':          'ace/mode/c_cpp',
+   149→            'md':           'ace/mode/markdown',
+   150→            'markdown':     'ace/mode/markdown',
+   151→            'sql':          'ace/mode/sql',
+   152→            'sh':           'ace/mode/sh',
+   153→            'bash':         'ace/mode/sh',
+   154→            'yml':          'ace/mode/yaml',
+   155→            'yaml':         'ace/mode/yaml',
+   156→            'properties':   'ace/mode/properties',
+   157→            'groovy':       'ace/mode/groovy',
+   158→            'gradle':       'ace/mode/groovy',
+   159→            'dart':         'ace/mode/dart',
+   160→            'txt':          'ace/mode/text',
+   161→            'text':         'ace/mode/text',
+   162→            'gradle.kts':   'ace/mode/kotlin'
+   163→        };
+   164→
+   165→        var extensionToMode = {
+   166→            'java': 'java',
+   167→            'kt': 'kotlin',
+   168→            'xml': 'xml',
+   169→            'json': 'json',
+   170→            'js': 'javascript',
+   171→            'jsx': 'javascript',
+   172→            'ts': 'typescript',
+   173→            'tsx': 'typescript',
+   174→            'css': 'css',
+   175→            'scss': 'css',
+   176→            'less': 'css',
+   177→            'html': 'html',
+   178→            'htm': 'html',
+   179→            'py': 'python',
+   180→            'c': 'c_cpp',
+   181→            'cpp': 'c_cpp',
+   182→            'cc': 'c_cpp',
+   183→            'cxx': 'c_cpp',
+   184→            'h': 'c_cpp',
+   185→            'hpp': 'c_cpp',
+   186→            'md': 'markdown',
+   187→            'sql': 'sql',
+   188→            'sh': 'bash',
+   189→            'bash': 'bash',
+   190→            'zsh': 'bash',
+   191→            'yml': 'yaml',
+   192→            'yaml': 'yaml',
+   193→            'properties': 'properties',
+   194→            'groovy': 'groovy',
+   195→            'gradle': 'groovy',
+   196→            'dart': 'dart',
+   197→            'txt': 'text',
+   198→            'log': 'text',
+   199→            'ini': 'properties',
+   200→            'cfg': 'properties',
+   201→            'toml': 'yaml',
+   202→            'proto': 'java',
+   203→            'smali': 'java'
+   204→        };
+   205→
+   206→        // ─── Utility: detect mode from filename ───
+   207→        function detectLanguage(filename) {
+   208→            if (!filename) return 'text';
+   209→            var lower = filename.toLowerCase();
+   210→
+   211→            // Check for compound extensions like .gradle.kts
+   212→            if (lower.endsWith('.gradle.kts')) return 'kotlin';
+   213→            if (lower.endsWith('.build.gradle.kts')) return 'kotlin';
+   214→
+   215→            // Check direct language name
+   216→            if (languageModes[lower]) return lower;
+   217→
+   218→            // Extract extension
+   219→            var parts = lower.split('.');
+   220→            if (parts.length > 1) {
+   221→                var ext = parts[parts.length - 1];
+   222→                if (extensionToMode[ext]) return extensionToMode[ext];
+   223→            }
+   224→
+   225→            return 'text';
+   226→        }
+   227→
+   228→        function modePath(language) {
+   229→            if (languageModes[language]) return languageModes[language];
+   230→            return 'ace/mode/text';
+   231→        }
+   232→
+   233→        // ─── Initialize Ace Editor ───
+   234→        function initEditor() {
+   235→            try {
+   236→                editor = ace.edit('editor');
+   237→            } catch (e) {
+   238→                console.log('Ace editor not found locally, attempting CDN fallback');
+   239→                loadAceFromCDN();
+   240→                return;
+   241→            }
+   242→
+   243→            configureEditor();
+   244→        }
+   245→
+   246→        function loadAceFromCDN() {
+   247→            var script = document.createElement('script');
+   248→            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.6/ace.js';
+   249→            script.onload = function() {
+   250→                editor = ace.edit('editor');
+   251→                configureEditor();
+   252→            };
+   253→            script.onerror = function() {
+   254→                document.getElementById('editor').innerText = 
+   255→                    'Failed to load Ace Editor. Please check your network connection.';
+   256→                notifyKotlin('onConsoleLog', 'ERROR: Failed to load Ace Editor from CDN');
+   257→            };
+   258→            document.head.appendChild(script);
+   259→        }
+   260→
+   261→        function configureEditor() {
+   262→            if (!editor) return;
+   263→
+   264→            // Set default theme
+   265→            editor.setTheme('ace/theme/monokai');
+   266→
+   267→            // Set default mode
+   268→            editor.session.setMode(modePath(currentLanguage));
+   269→
+   270→            // Editor settings
+   271→            editor.setOptions({
+   272→                fontSize: '14px',
+   273→                fontFamily: '"Fira Code", "JetBrains Mono", "Consolas", "Monaco", "Courier New", monospace',
+   274→                showPrintMargin: false,
+   275→                enableBasicAutocompletion: true,
+   276→                enableLiveAutocompletion: true,
+   277→                enableSnippets: true,
+   278→                enableEmmet: false,
+   279→                scrollPastEnd: 0.5,
+   280→                wrap: false,
+   281→                tabSize: 4,
+   282→                useSoftTabs: true,
+   283→                showGutter: true,
+   284→                displayIndentGuides: true,
+   285→                highlightActiveLine: true,
+   286→                highlightSelectedWord: true,
+   287→                highlightGutterLine: true,
+   288→                animatedScroll: true,
+   289→                showFoldWidgets: true,
+   290→                fadeFoldWidgets: true,
+   291→                foldStyle: 'markbegin',
+   292→                showLineNumbers: true,
+   293→                relativeLineNumbers: false,
+   294→                cursorStyle: 'smooth',
+   295→                behavioursEnabled: true,
+   296→                wrapBehavioursEnabled: true,
+   297→                autoScrollEditorIntoView: true,
+   298→                copyWithEmptySelection: false,
+   299→                useTextareaForIME: true,
+   300→                tooltipFollowsMouse: true,
+   301→                firstLineNumber: 1,
+   302→                overwrite: false,
+   303→                scrollSpeed: 2,
+   304→                dragDelay: 0,
+   305→                dragEnabled: true,
+   306→                focusTimeout: 0,
+   307→                mouseDelay: 0,
+   308→                selectionStyle: 'line',
+   309→                highlightActiveLine: true,
+   310→                hScrollBarAlwaysVisible: false,
+   311→                vScrollBarAlwaysVisible: false,
+   312→                fixedWidthGutter: true,
+   313→                customScrollbar: false,
+   314→                keyboardHandler: null
+   315→            });
+   316→
+   317→            // Set default content
+   318→            editor.setValue('// Welcome to XCoder IDE\n// Start coding...', -1);
+   319→
+   320→            // ─── Event listeners ───
+   321→            editor.session.on('change', function(delta) {
+   322→                clearTimeout(changeTimeout);
+   323→                changeTimeout = setTimeout(function() {
+   324→                    notifyKotlin('onContentChanged', editor.getValue());
+   325→                }, 150);
+   326→            });
+   327→
+   328→            editor.session.selection.on('changeCursor', function() {
+   329→                clearTimeout(cursorChangeTimeout);
+   330→                cursorChangeTimeout = setTimeout(function() {
+   331→                    var pos = editor.getCursorPosition();
+   332→                    notifyKotlin('onCursorChanged', JSON.stringify({
+   333→                        row: pos.row,
+   334→                        column: pos.column,
+   335→                        line: editor.session.getLine(pos.row)
+   336→                    }));
+   337→                }, 100);
+   338→            });
+   339→
+   340→            // ─── Keyboard shortcuts ───
+   341→            editor.commands.addCommand({
+   342→                name: 'save',
+   343→                bindKey: { win: 'Ctrl-S', mac: 'Cmd-S' },
+   344→                exec: function() {
+   345→                    var now = Date.now();
+   346→                    if (now - lastSaveTime < 500) return;
+   347→                    lastSaveTime = now;
+   348→                    notifyKotlin('onSave', editor.getValue());
+   349→                }
+   350→            });
+   351→
+   352→            editor.commands.addCommand({
+   353→                name: 'closeSearch',
+   354→                bindKey: { win: 'Escape', mac: 'Escape' },
+   355→                exec: function() {
+   356→                    var panel = document.getElementById('search-panel');
+   357→                    if (panel.classList.contains('visible')) {
+   358→                        panel.classList.remove('visible');
+   359→                        editor.focus();
+   360→                    }
+   361→                }
+   362→            });
+   363→
+   364→            editor.commands.addCommand({
+   365→                name: 'find',
+   366→                bindKey: { win: 'Ctrl-F', mac: 'Cmd-F' },
+   367→                exec: function() {
+   368→                    showSearchPanel(false);
+   369→                }
+   370→            });
+   371→
+   372→            editor.commands.addCommand({
+   373→                name: 'findAndReplace',
+   374→                bindKey: { win: 'Ctrl-H', mac: 'Cmd-Option-F' },
+   375→                exec: function() {
+   376→                    showSearchPanel(true);
+   377→                }
+   378→            });
+   379→
+   380→            // Go to line
+   381→            editor.commands.addCommand({
+   382→                name: 'gotoLine',
+   383→                bindKey: { win: 'Ctrl-G', mac: 'Cmd-G' },
+   384→                exec: function() {
+   385→                    var row = editor.getCursorPosition().row + 1;
+   386→                    var gotoInput = prompt('Go to line:', row);
+   387→                    if (gotoInput !== null) {
+   388→                        var lineNum = parseInt(gotoInput, 10);
+   389→                        if (!isNaN(lineNum) && lineNum > 0) {
+   390→                            editor.gotoLine(lineNum);
+   391→                            editor.focus();
+   392→                        }
+   393→                    }
+   394→                }
+   395→            });
+   396→
+   397→            // Toggle comment
+   398→            editor.commands.addCommand({
+   399→                name: 'toggleComment',
+   400→                bindKey: { win: 'Ctrl-/', mac: 'Cmd-/' },
+   401→                exec: function() {
+   402→                    editor.toggleCommentLines();
+   403→                }
+   404→            });
+   405→
+   406→            // Duplicate line
+   407→            editor.commands.addCommand({
+   408→                name: 'duplicateLine',
+   409→                bindKey: { win: 'Ctrl-Shift-D', mac: 'Cmd-Shift-D' },
+   410→                exec: function() {
+   411→                    editor.duplicateLines();
+   412→                }
+   413→            });
+   414→
+   415→            // Move lines
+   416→            editor.commands.addCommand({
+   417→                name: 'moveLinesUp',
+   418→                bindKey: { win: 'Alt-Up', mac: 'Option-Up' },
+   419→                exec: function() {
+   420→                    editor.moveLinesUp();
+   421→                }
+   422→            });
+   423→
+   424→            editor.commands.addCommand({
+   425→                name: 'moveLinesDown',
+   426→                bindKey: { win: 'Alt-Down', mac: 'Option-Down' },
+   427→                exec: function() {
+   428→                    editor.moveLinesDown();
+   429→                }
+   430→            });
+   431→
+   432→            // Indent/outdent
+   433→            editor.commands.addCommand({
+   434→                name: 'indent',
+   435→                bindKey: { win: 'Tab', mac: 'Tab' },
+   436→                exec: function() {
+   437→                    editor.indent();
+   438→                }
+   439→            });
+   440→
+   441→            // Remove line
+   442→            editor.commands.addCommand({
+   443→                name: 'removeLine',
+   444→                bindKey: { win: 'Ctrl-Shift-K', mac: 'Cmd-Shift-K' },
+   445→                exec: function() {
+   446→                    editor.removeLines();
+   447→                }
+   448→            });
+   449→
+   450→            // Select all
+   451→            editor.commands.addCommand({
+   452→                name: 'selectall',
+   453→                bindKey: { win: 'Ctrl-A', mac: 'Cmd-A' },
+   454→                exec: function() {
+   455→                    editor.selectAll();
+   456→                }
+   457→            });
+   458→
+   459→            // ─── Search panel setup ───
+   460→            setupSearchPanel();
+   461→
+   462→            // Focus editor
+   463→            editor.focus();
+   464→
+   465→            notifyKotlin('onConsoleLog', 'Ace Editor initialized successfully');
+   466→        }
+   467→
+   468→        // ─── Search panel ───
+   469→        function setupSearchPanel() {
+   470→            var searchInput = document.getElementById('search-input');
+   471→            var replaceInput = document.getElementById('replace-input');
+   472→            var searchCount = document.getElementById('search-count');
+   473→            var btnPrev = document.getElementById('btn-prev');
+   474→            var btnNext = document.getElementById('btn-next');
+   475→            var btnReplace = document.getElementById('btn-replace');
+   476→            var btnReplaceAll = document.getElementById('btn-replace-all');
+   477→            var btnToggleReplace = document.getElementById('btn-toggle-replace');
+   478→            var btnCloseSearch = document.getElementById('btn-close-search');
+   479→            var panel = document.getElementById('search-panel');
+   480→            var replaceVisible = false;
+   481→
+   482→            function updateSearchCount() {
+   483→                var query = searchInput.value;
+   484→                if (!query) {
+   485→                    searchCount.textContent = '';
+   486→                    return;
+   487→                }
+   488→                var count = 0;
+   489→                var content = editor.getValue();
+   490→                var pos = content.indexOf(query);
+   491→                while (pos !== -1) {
+   492→                    count++;
+   493→                    pos = content.indexOf(query, pos + 1);
+   494→                }
+   495→                if (count === 0) {
+   496→                    searchCount.textContent = 'No results';
+   497→                } else {
+   498→                    searchCount.textContent = count + ' found';
+   499→                }
+   500→            }
+   501→
+   502→            searchInput.addEventListener('input', function() {
+   503→                var query = searchInput.value;
+   504→                editor.find(query, {
+   505→                    backwards: false,
+   506→                    wrap: true,
+   507→                    caseSensitive: false,
+   508→                    wholeWord: false,
+   509→                    regExp: false,
+   510→                    showCursor: true
+   511→                });
+   512→                updateSearchCount();
+   513→            });
+   514→
+   515→            searchInput.addEventListener('keydown', function(e) {
+   516→                if (e.key === 'Enter') {
+   517→                    if (e.shiftKey) {
+   518→                        editor.findPrevious();
+   519→                    } else {
+   520→                        editor.findNext();
+   521→                    }
+   522→                } else if (e.key === 'Escape') {
+   523→                    panel.classList.remove('visible');
+   524→                    editor.focus();
+   525→                }
+   526→            });
+   527→
+   528→            btnPrev.addEventListener('click', function() {
+   529→                editor.findPrevious();
+   530→            });
+   531→
+   532→            btnNext.addEventListener('click', function() {
+   533→                editor.findNext();
+   534→            });
+   535→
+   536→            btnToggleReplace.addEventListener('click', function() {
+   537→                replaceVisible = !replaceVisible;
+   538→                replaceInput.style.display = replaceVisible ? 'inline-block' : 'none';
+   539→                btnReplace.style.display = replaceVisible ? 'inline-block' : 'none';
+   540→                btnReplaceAll.style.display = replaceVisible ? 'inline-block' : 'none';
+   541→                if (replaceVisible) {
+   542→                    replaceInput.focus();
+   543→                }
+   544→            });
+   545→
+   546→            btnReplace.addEventListener('click', function() {
+   547→                var replacement = replaceInput.value;
+   548→                editor.replace(replacement);
+   549→                updateSearchCount();
+   550→            });
+   551→
+   552→            btnReplaceAll.addEventListener('click', function() {
+   553→                var query = searchInput.value;
+   554→                var replacement = replaceInput.value;
+   555→                if (query) {
+   556→                    editor.findAll(query, {
+   557→                        wrap: true,
+   558→                        caseSensitive: false,
+   559→                        wholeWord: false,
+   560→                        regExp: false
+   561→                    });
+   562→                    editor.replace(replacement);
+   563→                    updateSearchCount();
+   564→                }
+   565→            });
+   566→
+   567→            btnCloseSearch.addEventListener('click', function() {
+   568→                panel.classList.remove('visible');
+   569→                editor.focus();
+   570→            });
+   571→        }
+   572→
+   573→        function showSearchPanel(withReplace) {
+   574→            var panel = document.getElementById('search-panel');
+   575→            panel.classList.add('visible');
+   576→
+   577→            if (withReplace) {
+   578→                var btnToggle = document.getElementById('btn-toggle-replace');
+   579→                if (!document.getElementById('replace-input').style.display ||
+   580→                    document.getElementById('replace-input').style.display === 'none') {
+   581→                    btnToggle.click();
+   582→                }
+   583→            }
+   584→
+   585→            var selectedText = editor.getSelectedText();
+   586→            if (selectedText && selectedText.length < 100) {
+   587→                var searchInput = document.getElementById('search-input');
+   588→                searchInput.value = selectedText;
+   589→                // Trigger search
+   590→                editor.find(selectedText, {
+   591→                    backwards: false,
+   592→                    wrap: true,
+   593→                    caseSensitive: false,
+   594→                    wholeWord: false,
+   595→                    regExp: false,
+   596→                    showCursor: true
+   597→                });
+   598→            }
+   599→
+   600→            document.getElementById('search-input').focus();
+   601→            document.getElementById('search-input').select();
+   602→        }
+   603→
+   604→        // ─── Notify Kotlin side ───
+   605→        function notifyKotlin(event, data) {
+   606→            if (window.EditorBridge && typeof window.EditorBridge[event] === 'function') {
+   607→                try {
+   608→                    window.EditorBridge[event](data || '');
+   609→                } catch (e) {
+   610→                    console.log('Bridge error for ' + event + ': ' + e.message);
+   611→                }
+   612→            }
+   613→        }
+   614→
+   615→        // ─── Expose EditorBridge API ───
+   616→        window.EditorBridge = {
+   617→            onContentChanged: function(data) { console.log('onContentChanged: ' + data.substring(0, 50)); },
+   618→            onCursorChanged: function(data) { console.log('onCursorChanged: ' + data); },
+   619→            onSave: function(data) { console.log('onSave triggered'); },
+   620→            onConsoleLog: function(data) { console.log('Bridge: ' + data); }
+   621→        };
+   622→
+   623→        // ─── Bridge functions called from Kotlin ───
+   624→        window.loadFile = function(content, language, readonly) {
+   625→            if (!editor) return;
+   626→            currentLanguage = language || 'text';
+   627→            isReadOnly = readonly === true || readonly === 'true';
+   628→
+   629→            editor.setReadOnly(isReadOnly);
+   630→            editor.setValue(content || '', -1);
+   631→            editor.clearSelection();
+   632→            editor.session.setMode(modePath(currentLanguage));
+   633→            editor.gotoLine(1);
+   634→            editor.focus();
+   635→
+   636→            notifyKotlin('onConsoleLog', 'File loaded: language=' + currentLanguage + ', readonly=' + isReadOnly);
+   637→        };
+   638→
+   639→        window.getCursorPosition = function() {
+   640→            if (!editor) return JSON.stringify({ row: 0, column: 0 });
+   641→            var pos = editor.getCursorPosition();
+   642→            return JSON.stringify({
+   643→                row: pos.row,
+   644→                column: pos.column
+   645→            });
+   646→        };
+   647→
+   648→        window.setTheme = function(theme) {
+   649→            if (!editor) return;
+   650→            var themeMap = {
+   651→                'monokai': 'ace/theme/monokai',
+   652→                'dracula': 'ace/theme/dracula',
+   653→                'github_dark': 'ace/theme/github_dark',
+   654→                'one_dark': 'ace/theme/one_dark',
+   655→                'tomorrow_night': 'ace/theme/tomorrow_night_eighties',
+   656→                'twilight': 'ace/theme/twilight',
+   657→                'terminal': 'ace/theme/terminal',
+   658→                'solarized_dark': 'ace/theme/solarized_dark',
+   659→                'cobalt': 'ace/theme/cobalt',
+   660→                'nord_dark': 'ace/theme/nord_dark',
+   661→                'chrome': 'ace/theme/chrome',
+   662→                'github': 'ace/theme/github',
+   663→                'solarized_light': 'ace/theme/solarized_light',
+   664→                'tomorrow': 'ace/theme/tomorrow',
+   665→                'xcode': 'ace/theme/xcode'
+   666→            };
+   667→            var themePath = themeMap[theme] || ('ace/theme/' + theme);
+   668→            editor.setTheme(themePath);
+   669→            notifyKotlin('onConsoleLog', 'Theme set to: ' + theme);
+   670→        };
+   671→
+   672→        window.setFontSize = function(size) {
+   673→            if (!editor) return;
+   674→            var pxSize = parseInt(size, 10);
+   675→            if (pxSize >= 8 && pxSize <= 72) {
+   676→                editor.setFontSize(pxSize + 'px');
+   677→            }
+   678→        };
+   679→
+   680→        window.setTabSize = function(size) {
+   681→            if (!editor) return;
+   682→            var tabSize = parseInt(size, 10);
+   683→            if (tabSize >= 1 && tabSize <= 16) {
+   684→                editor.getSession().setTabSize(tabSize);
+   685→            }
+   686→        };
+   687→
+   688→        window.setWordWrap = function(enabled) {
+   689→            if (!editor) return;
+   690→            var wrap = enabled === true || enabled === 'true';
+   691→            editor.getSession().setUseWrapMode(wrap);
+   692→        };
+   693→
+   694→        window.insertText = function(text) {
+   695→            if (!editor) return;
+   696→            editor.insert(text);
+   697→            editor.focus();
+   698→        };
+   699→
+   700→        window.replaceSelection = function(text) {
+   701→            if (!editor) return;
+   702→            var selection = editor.getSelectedText();
+   703→            if (selection) {
+   704→                editor.insert(text);
+   705→            } else {
+   706→                editor.insert(text);
+   707→            }
+   708→            editor.focus();
+   709→        };
+   710→
+   711→        window.getContent = function() {
+   712→            if (!editor) return '';
+   713→            return editor.getValue();
+   714→        };
+   715→
+   716→        window.setLanguage = function(mode) {
+   717→            if (!editor) return;
+   718→            currentLanguage = mode || 'text';
+   719→            editor.session.setMode(modePath(currentLanguage));
+   720→            notifyKotlin('onConsoleLog', 'Language set to: ' + currentLanguage);
+   721→        };
+   722→
+   723→        window.search = function(query, optionsJson) {
+   724→            if (!editor || !query) return '0';
+   725→            var options = {};
+   726→            if (optionsJson) {
+   727→                try {
+   728→                    options = JSON.parse(optionsJson);
+   729→                } catch (e) {
+   730→                    options = {};
+   731→                }
+   732→            }
+   733→            editor.search(query, {
+   734→                backwards: options.backwards || false,
+   735→                wrap: options.wrap !== false,
+   736→                caseSensitive: options.caseSensitive || false,
+   737→                wholeWord: options.wholeWord || false,
+   738→                regExp: options.regExp || false,
+   739→                showCursor: true
+   740→            });
+   741→
+   742→            // Count results
+   743→            var count = 0;
+   744→            var content = editor.getValue();
+   745→            var caseSensitive = options.caseSensitive || false;
+   746→            var searchContent = caseSensitive ? content : content.toLowerCase();
+   747→            var searchQuery = caseSensitive ? query : query.toLowerCase();
+   748→            var pos = searchContent.indexOf(searchQuery);
+   749→            while (pos !== -1) {
+   750→                count++;
+   751→                pos = searchContent.indexOf(searchQuery, pos + 1);
+   752→            }
+   753→            return String(count);
+   754→        };
+   755→
+   756→        window.replaceAll = function(query, replacement) {
+   757→            if (!editor || !query) return '0';
+   758→            var content = editor.getValue();
+   759→            var count = 0;
+   760→            var pos = content.indexOf(query);
+   761→            while (pos !== -1) {
+   762→                count++;
+   763→                pos = content.indexOf(query, pos + 1);
+   764→            }
+   765→            var newValue = content.split(query).join(replacement);
+   766→            editor.setValue(newValue, -1);
+   767→            editor.clearSelection();
+   768→            notifyKotlin('onContentChanged', newValue);
+   769→            return String(count);
+   770→        };
+   771→
+   772→        window.undo = function() {
+   773→            if (!editor) return;
+   774→            editor.undo();
+   775→        };
+   776→
+   777→        window.redo = function() {
+   778→            if (!editor) return;
+   779→            editor.redo();
+   780→        };
+   781→
+   782→        window.format = function() {
+   783→            if (!editor) return;
+   784→            // Basic formatting: trim trailing whitespace and ensure final newline
+   785→            var content = editor.getValue();
+   786→            var lines = content.split('\n');
+   787→            var formatted = [];
+   788→            for (var i = 0; i < lines.length; i++) {
+   789→                formatted.push(lines[i].replace(/\s+$/, ''));
+   790→            }
+   791→            var result = formatted.join('\n');
+   792→            if (result.length > 0 && !result.endsWith('\n')) {
+   793→                result += '\n';
+   794→            }
+   795→            editor.setValue(result, -1);
+   796→            editor.clearSelection();
+   797→            editor.gotoLine(1);
+   798→            notifyKotlin('onContentChanged', result);
+   799→            notifyKotlin('onConsoleLog', 'Document formatted (trailing whitespace removed)');
+   800→        };
+   801→
+   802→        window.setReadOnly = function(readonly) {
+   803→            if (!editor) return;
+   804→            isReadOnly = readonly === true || readonly === 'true';
+   805→            editor.setReadOnly(isReadOnly);
+   806→        };
+   807→
+   808→        window.focus = function() {
+   809→            if (editor) editor.focus();
+   810→        };
+   811→
+   812→        window.clearSelection = function() {
+   813→            if (editor) editor.clearSelection();
+   814→        };
+   815→
+   816→        window.selectAll = function() {
+   817→            if (editor) editor.selectAll();
+   818→        };
+   819→
+   820→        window.gotoLine = function(line) {
+   821→            if (editor) {
+   822→                var lineNum = parseInt(line, 10);
+   823→                if (!isNaN(lineNum) && lineNum > 0) {
+   824→                    editor.gotoLine(lineNum);
+   825→                }
+   826→            }
+   827→        };
+   828→
+   829→        window.getLineNumber = function() {
+   830→            if (!editor) return '0';
+   831→            return String(editor.getCursorPosition().row + 1);
+   832→        };
+   833→
+   834→        window.getColumnNumber = function() {
+   835→            if (!editor) return '0';
+   836→            return String(editor.getCursorPosition().column + 1);
+   837→        };
+   838→
+   839→        window.getSelectedText = function() {
+   840→            if (!editor) return '';
+   841→            return editor.getSelectedText();
+   842→        };
+   843→
+   844→        window.getLineCount = function() {
+   845→            if (!editor) return '0';
+   846→            return String(editor.session.getLength());
+   847→        };
+   848→
+   849→        window.getModified = function() {
+   850→            if (!editor) return 'false';
+   851→            return String(editor.session.getUndoManager().hasUndo());
+   852→        };
+   853→
+   854→        window.showSearch = function(withReplace) {
+   855→            showSearchPanel(withReplace === true || withReplace === 'true');
+   856→        };
+   857→
+   858→        window.hideSearch = function() {
+   859→            document.getElementById('search-panel').classList.remove('visible');
+   860→        };
+   861→
+   862→        // ─── Resize handling ───
+   863→        function handleResize() {
+   864→            if (editor) {
+   865→                editor.resize();
+   866→            }
+   867→        }
+   868→
+   869→        window.addEventListener('resize', handleResize);
+   870→
+   871→        // Also handle orientation change
+   872→        window.addEventListener('orientationchange', function() {
+   873→            setTimeout(handleResize, 100);
+   874→        });
+   875→
+   876→        // ─── Prevent default touch behaviors for better mobile editing ───
+   877→        document.addEventListener('gesturestart', function(e) {
+   878→            e.preventDefault();
+   879→        });
+   880→
+   881→        // ─── Override console.log to bridge ───
+   882→        var originalLog = console.log;
+   883→        console.log = function() {
+   884→            var args = Array.prototype.slice.call(arguments);
+   885→            var message = args.join(' ');
+   886→            originalLog.apply(console, arguments);
+   887→            if (message.length < 2000) {
+   888→                notifyKotlin('onConsoleLog', message);
+   889→            }
+   890→        };
+   891→
+   892→        var originalError = console.error;
+   893→        console.error = function() {
+   894→            var args = Array.prototype.slice.call(arguments);
+   895→            var message = args.join(' ');
+   896→            originalError.apply(console, arguments);
+   897→            notifyKotlin('onConsoleLog', 'ERROR: ' + message);
+   898→        };
+   899→
+   900→        var originalWarn = console.warn;
+   901→        console.warn = function() {
+   902→            var args = Array.prototype.slice.call(arguments);
+   903→            var message = args.join(' ');
+   904→            originalWarn.apply(console, arguments);
+   905→            notifyKotlin('onConsoleLog', 'WARN: ' + message);
+   906→        };
+   907→
+   908→        // ─── Bootstrap ───
+   909→        if (document.readyState === 'loading') {
+   910→            document.addEventListener('DOMContentLoaded', initEditor);
+   911→        } else {
+   912→            initEditor();
+   913→        }
+   914→
+   915→    })();
+   916→    </script>
+   917→</body>
+   918→</html>
+   919→

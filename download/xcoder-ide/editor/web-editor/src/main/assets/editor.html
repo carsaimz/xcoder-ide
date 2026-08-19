@@ -1,918 +1,865 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>XCoder Editor</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        html, body {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background-color: #282c34;
-            font-family: 'Fira Code', 'JetBrains Mono', 'Consolas', 'Monaco', monospace;
-        }
-        #editor-container {
-            width: 100%;
-            height: 100%;
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-        }
-        #editor {
-            width: 100%;
-            height: 100%;
-            font-size: 14px;
-            line-height: 1.6;
-        }
-        /* Search panel styling */
-        #search-panel {
-            display: none;
-            position: fixed;
-            top: 0;
-            right: 0;
-            z-index: 1000;
-            background: #21252b;
-            border: 1px solid #3e4451;
-            border-top: none;
-            border-radius: 0 0 6px 6px;
-            padding: 10px 14px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-            min-width: 340px;
-        }
-        #search-panel.visible {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 6px;
-        }
-        #search-panel input {
-            background: #282c34;
-            border: 1px solid #3e4451;
-            color: #abb2bf;
-            padding: 6px 10px;
-            border-radius: 4px;
-            font-size: 13px;
-            font-family: inherit;
-            outline: none;
-            flex: 1;
-            min-width: 120px;
-        }
-        #search-panel input:focus {
-            border-color: #61afef;
-        }
-        #search-panel button {
-            background: #3e4451;
-            border: 1px solid #4b5263;
-            color: #abb2bf;
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            font-family: inherit;
-        }
-        #search-panel button:active {
-            background: #4b5263;
-        }
-        #search-panel button.close-btn {
-            background: none;
-            border: none;
-            color: #e06c75;
-            font-size: 16px;
-            padding: 4px 8px;
-            cursor: pointer;
-        }
-        #search-count {
-            color: #5c6370;
-            font-size: 11px;
-            min-width: 50px;
-            text-align: center;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:100%; height:100%; overflow:hidden; font-family:'JetBrains Mono',monospace; background:#1e1e2e; color:#cdd6f4; }
+
+/* Breadcrumb Bar */
+#breadcrumb { height:28px; background:#181825; display:flex; align-items:center; padding:0 8px; font-size:12px; color:#a6adc8; border-bottom:1px solid #313244; overflow-x:auto; white-space:nowrap; gap:2px; }
+#breadcrumb .crumb { cursor:pointer; padding:2px 6px; border-radius:3px; }
+#breadcrumb .crumb:hover { background:#313244; color:#cdd6f4; }
+#breadcrumb .sep { color:#585b70; margin:0 1px; }
+
+/* Tab Bar */
+#tabbar { height:36px; background:#11111b; display:flex; align-items:stretch; overflow-x:auto; border-bottom:1px solid #313244; }
+#tabbar::-webkit-scrollbar { height:0; }
+.tab { display:flex; align-items:center; gap:6px; padding:0 12px; font-size:12px; color:#a6adc8; cursor:pointer; border-right:1px solid #313244; min-width:0; max-width:180px; position:relative; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.tab.active { background:#1e1e2e; color:#cdd6f4; }
+.tab.modified::after { content:''; position:absolute; top:4px; right:8px; width:6px; height:6px; border-radius:50%; background:#f9e2af; }
+.tab .close { font-size:14px; opacity:0; margin-left:auto; padding:0 2px; border-radius:3px; }
+.tab:hover .close, .tab.active .close { opacity:0.7; }
+.tab .close:hover { opacity:1; background:#45475a; }
+.tab .dot { width:8px; height:8px; border-radius:2px; flex-shrink:0; }
+
+/* Editor Container */
+#editor-wrap { display:flex; flex:1; overflow:hidden; position:relative; }
+
+/* Gutter + Code area */
+#editor-area { flex:1; display:flex; position:relative; }
+#gutter { width:50px; background:#181825; text-align:right; padding:4px 8px 4px 0; font-size:13px; line-height:1.6; color:#585b70; overflow:hidden; user-select:none; border-right:1px solid #313244; }
+#gutter .active-line { color:#cdd6f4; font-weight:bold; }
+
+#code-area { flex:1; position:relative; overflow:auto; }
+#code-display { min-height:100%; padding:4px 8px; font-size:13px; line-height:1.6; white-space:pre; tab-size:4; outline:none; caret-color:#f5e0dc; }
+#code-display::selection { background:#45475a; }
+
+/* Indent Guides */
+.indent-guide { position:absolute; top:0; bottom:0; width:1px; background:#313244; pointer-events:none; }
+
+/* Active line highlight */
+.line-highlight { position:absolute; left:0; right:0; height:20.8px; background:rgba(69,71,90,0.3); pointer-events:none; }
+
+/* Bracket match highlight */
+.bracket-match { background:rgba(166,227,161,0.2) !important; outline:1px solid rgba(166,227,161,0.4); }
+
+/* Trailing whitespace */
+.trailing-ws { background:rgba(243,139,168,0.3); }
+
+/* Minimap */
+#minimap { width:80px; background:#181825; position:relative; overflow:hidden; cursor:pointer; border-left:1px solid #313244; display:none; }
+#minimap.visible { display:block; }
+#minimap canvas { width:100%; }
+#minimap-viewport { position:absolute; left:0; right:0; background:rgba(205,214,244,0.08); border:1px solid rgba(205,214,244,0.15); pointer-events:none; transition:top 0.1s; }
+
+/* Search Panel */
+#search-panel { display:none; padding:8px; background:#1e1e2e; border-bottom:1px solid #313244; z-index:10; }
+#search-panel.visible { display:block; }
+#search-panel input { width:100%; background:#313244; border:1px solid #45475a; color:#cdd6f4; padding:6px 8px; border-radius:4px; font-size:12px; outline:none; font-family:inherit; }
+#search-panel input:focus { border-color:#89b4fa; }
+#search-panel .row { display:flex; gap:6px; margin-bottom:6px; align-items:center; }
+#search-panel .row label { font-size:11px; color:#a6adc8; cursor:pointer; display:flex; align-items:center; gap:3px; }
+#search-panel .row label input { width:auto; }
+#search-panel .btn { padding:4px 10px; background:#313244; color:#cdd6f4; border:1px solid #45475a; border-radius:4px; font-size:11px; cursor:pointer; }
+#search-panel .btn:hover { background:#45475a; }
+#search-panel .match-count { font-size:11px; color:#a6adc8; margin-left:auto; }
+
+/* Command Palette */
+#command-palette { display:none; position:absolute; top:40px; left:50%; transform:translateX(-50%); width:500px; max-width:90vw; background:#1e1e2e; border:1px solid #45475a; border-radius:8px; box-shadow:0 8px 32px rgba(0,0,0,0.5); z-index:100; max-height:400px; overflow:hidden; }
+#command-palette.visible { display:block; }
+#command-palette input { width:100%; background:transparent; border:none; border-bottom:1px solid #313244; color:#cdd6f4; padding:12px 16px; font-size:14px; outline:none; font-family:inherit; }
+#command-palette .items { overflow-y:auto; max-height:340px; }
+#command-palette .item { padding:8px 16px; cursor:pointer; display:flex; align-items:center; gap:10px; font-size:13px; color:#cdd6f4; }
+#command-palette .item:hover, #command-palette .item.selected { background:#313244; }
+#command-palette .item .shortcut { margin-left:auto; font-size:11px; color:#585b70; }
+#command-palette .item .cat { font-size:10px; color:#89b4fa; margin-left:6px; }
+
+/* Status Bar */
+#statusbar { height:24px; background:#181825; display:flex; align-items:center; padding:0 12px; font-size:11px; color:#a6adc8; border-top:1px solid #313244; gap:16px; }
+#statusbar .right { margin-left:auto; display:flex; gap:16px; }
+#statusbar span { cursor:default; }
+
+/* Panels */
+.panel { display:none; background:#11111b; border-top:1px solid #313244; }
+.panel.visible { display:block; }
+#output-panel, #problems-panel, #terminal-panel { height:150px; overflow-y:auto; padding:8px; font-size:12px; font-family:inherit; }
+#problems-panel .problem { padding:2px 4px; display:flex; gap:8px; align-items:center; }
+#problems-panel .problem.error { color:#f38ba8; }
+#problems-panel .problem.warning { color:#f9e2af; }
+#problems-panel .problem .loc { color:#585b70; font-size:11px; }
+
+/* Scrollbars */
+::-webkit-scrollbar { width:8px; height:8px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:#45475a; border-radius:4px; }
+::-webkit-scrollbar-thumb:hover { background:#585b70; }
+
+/* Context Menu */
+#context-menu { display:none; position:fixed; background:#1e1e2e; border:1px solid #45475a; border-radius:6px; box-shadow:0 4px 16px rgba(0,0,0,0.4); z-index:200; min-width:200px; padding:4px 0; }
+#context-menu.visible { display:block; }
+#context-menu .item { padding:6px 16px; font-size:12px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; }
+#context-menu .item:hover { background:#313244; }
+#context-menu .shortcut { color:#585b70; font-size:11px; }
+#context-menu .sep { height:1px; background:#313244; margin:4px 0; }
+</style>
 </head>
 <body>
-    <div id="editor-container">
-        <div id="editor">// Welcome to XCoder IDE\n// Start coding...</div>
+
+<div id="breadcrumb"><span class="crumb">XCoder IDE</span></div>
+<div id="tabbar"></div>
+<div id="editor-wrap">
+  <div id="editor-area">
+    <div id="gutter"></div>
+    <div id="code-area">
+      <div id="search-panel">
+        <div class="row">
+          <input type="text" id="search-input" placeholder="Find..." autocomplete="off">
+          <span class="match-count" id="match-count"></span>
+        </div>
+        <div class="row">
+          <input type="text" id="replace-input" placeholder="Replace..." autocomplete="off">
+          <label><input type="checkbox" id="regex-toggle">Regex</label>
+          <label><input type="checkbox" id="case-toggle" checked>Case</label>
+          <label><input type="checkbox" id="word-toggle">Word</label>
+        </div>
+        <div class="row">
+          <button class="btn" onclick="EditorActions.findNext()">Next</button>
+          <button class="btn" onclick="EditorActions.findPrev()">Prev</button>
+          <button class="btn" onclick="EditorActions.replaceOne()">Replace</button>
+          <button class="btn" onclick="EditorActions.replaceAll()">Replace All</button>
+        </div>
+      </div>
+      <div id="code-display" contenteditable="true" spellcheck="false"></div>
     </div>
-
-    <div id="search-panel">
-        <input type="text" id="search-input" placeholder="Search..." />
-        <input type="text" id="replace-input" placeholder="Replace..." style="display:none" />
-        <span id="search-count"></span>
-        <button id="btn-prev">▲</button>
-        <button id="btn-next">▼</button>
-        <button id="btn-replace" style="display:none">Replace</button>
-        <button id="btn-replace-all" style="display:none">All</button>
-        <button id="btn-toggle-replace" title="Toggle Replace">≡</button>
-        <button class="close-btn" id="btn-close-search">✕</button>
-    </div>
-
-    <script>
-    (function() {
-        'use strict';
-
-        // ─── State ───
-        var editor = null;
-        var searchEditor = null;
-        var currentLanguage = 'kotlin';
-        var isReadOnly = false;
-        var changeTimeout = null;
-        var cursorChangeTimeout = null;
-        var lastSaveTime = 0;
-
-        // ─── Supported language modes ───
-        var languageModes = {
-            'java':         'ace/mode/java',
-            'kt':           'ace/mode/kotlin',
-            'kotlin':       'ace/mode/kotlin',
-            'xml':          'ace/mode/xml',
-            'json':         'ace/mode/json',
-            'js':           'ace/mode/javascript',
-            'javascript':   'ace/mode/javascript',
-            'ts':           'ace/mode/typescript',
-            'typescript':   'ace/mode/typescript',
-            'css':          'ace/mode/css',
-            'html':         'ace/mode/html',
-            'py':           'ace/mode/python',
-            'python':       'ace/mode/python',
-            'c':            'ace/mode/c_cpp',
-            'cpp':          'ace/mode/c_cpp',
-            'h':            'ace/mode/c_cpp',
-            'hpp':          'ace/mode/c_cpp',
-            'md':           'ace/mode/markdown',
-            'markdown':     'ace/mode/markdown',
-            'sql':          'ace/mode/sql',
-            'sh':           'ace/mode/sh',
-            'bash':         'ace/mode/sh',
-            'yml':          'ace/mode/yaml',
-            'yaml':         'ace/mode/yaml',
-            'properties':   'ace/mode/properties',
-            'groovy':       'ace/mode/groovy',
-            'gradle':       'ace/mode/groovy',
-            'dart':         'ace/mode/dart',
-            'txt':          'ace/mode/text',
-            'text':         'ace/mode/text',
-            'gradle.kts':   'ace/mode/kotlin'
-        };
-
-        var extensionToMode = {
-            'java': 'java',
-            'kt': 'kotlin',
-            'xml': 'xml',
-            'json': 'json',
-            'js': 'javascript',
-            'jsx': 'javascript',
-            'ts': 'typescript',
-            'tsx': 'typescript',
-            'css': 'css',
-            'scss': 'css',
-            'less': 'css',
-            'html': 'html',
-            'htm': 'html',
-            'py': 'python',
-            'c': 'c_cpp',
-            'cpp': 'c_cpp',
-            'cc': 'c_cpp',
-            'cxx': 'c_cpp',
-            'h': 'c_cpp',
-            'hpp': 'c_cpp',
-            'md': 'markdown',
-            'sql': 'sql',
-            'sh': 'bash',
-            'bash': 'bash',
-            'zsh': 'bash',
-            'yml': 'yaml',
-            'yaml': 'yaml',
-            'properties': 'properties',
-            'groovy': 'groovy',
-            'gradle': 'groovy',
-            'dart': 'dart',
-            'txt': 'text',
-            'log': 'text',
-            'ini': 'properties',
-            'cfg': 'properties',
-            'toml': 'yaml',
-            'proto': 'java',
-            'smali': 'java'
-        };
-
-        // ─── Utility: detect mode from filename ───
-        function detectLanguage(filename) {
-            if (!filename) return 'text';
-            var lower = filename.toLowerCase();
-
-            // Check for compound extensions like .gradle.kts
-            if (lower.endsWith('.gradle.kts')) return 'kotlin';
-            if (lower.endsWith('.build.gradle.kts')) return 'kotlin';
-
-            // Check direct language name
-            if (languageModes[lower]) return lower;
-
-            // Extract extension
-            var parts = lower.split('.');
-            if (parts.length > 1) {
-                var ext = parts[parts.length - 1];
-                if (extensionToMode[ext]) return extensionToMode[ext];
-            }
-
-            return 'text';
-        }
-
-        function modePath(language) {
-            if (languageModes[language]) return languageModes[language];
-            return 'ace/mode/text';
-        }
-
-        // ─── Initialize Ace Editor ───
-        function initEditor() {
-            try {
-                editor = ace.edit('editor');
-            } catch (e) {
-                console.log('Ace editor not found locally, attempting CDN fallback');
-                loadAceFromCDN();
-                return;
-            }
-
-            configureEditor();
-        }
-
-        function loadAceFromCDN() {
-            var script = document.createElement('script');
-            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.6/ace.js';
-            script.onload = function() {
-                editor = ace.edit('editor');
-                configureEditor();
-            };
-            script.onerror = function() {
-                document.getElementById('editor').innerText = 
-                    'Failed to load Ace Editor. Please check your network connection.';
-                notifyKotlin('onConsoleLog', 'ERROR: Failed to load Ace Editor from CDN');
-            };
-            document.head.appendChild(script);
-        }
-
-        function configureEditor() {
-            if (!editor) return;
-
-            // Set default theme
-            editor.setTheme('ace/theme/monokai');
-
-            // Set default mode
-            editor.session.setMode(modePath(currentLanguage));
-
-            // Editor settings
-            editor.setOptions({
-                fontSize: '14px',
-                fontFamily: '"Fira Code", "JetBrains Mono", "Consolas", "Monaco", "Courier New", monospace',
-                showPrintMargin: false,
-                enableBasicAutocompletion: true,
-                enableLiveAutocompletion: true,
-                enableSnippets: true,
-                enableEmmet: false,
-                scrollPastEnd: 0.5,
-                wrap: false,
-                tabSize: 4,
-                useSoftTabs: true,
-                showGutter: true,
-                displayIndentGuides: true,
-                highlightActiveLine: true,
-                highlightSelectedWord: true,
-                highlightGutterLine: true,
-                animatedScroll: true,
-                showFoldWidgets: true,
-                fadeFoldWidgets: true,
-                foldStyle: 'markbegin',
-                showLineNumbers: true,
-                relativeLineNumbers: false,
-                cursorStyle: 'smooth',
-                behavioursEnabled: true,
-                wrapBehavioursEnabled: true,
-                autoScrollEditorIntoView: true,
-                copyWithEmptySelection: false,
-                useTextareaForIME: true,
-                tooltipFollowsMouse: true,
-                firstLineNumber: 1,
-                overwrite: false,
-                scrollSpeed: 2,
-                dragDelay: 0,
-                dragEnabled: true,
-                focusTimeout: 0,
-                mouseDelay: 0,
-                selectionStyle: 'line',
-                highlightActiveLine: true,
-                hScrollBarAlwaysVisible: false,
-                vScrollBarAlwaysVisible: false,
-                fixedWidthGutter: true,
-                customScrollbar: false,
-                keyboardHandler: null
-            });
-
-            // Set default content
-            editor.setValue('// Welcome to XCoder IDE\n// Start coding...', -1);
-
-            // ─── Event listeners ───
-            editor.session.on('change', function(delta) {
-                clearTimeout(changeTimeout);
-                changeTimeout = setTimeout(function() {
-                    notifyKotlin('onContentChanged', editor.getValue());
-                }, 150);
-            });
-
-            editor.session.selection.on('changeCursor', function() {
-                clearTimeout(cursorChangeTimeout);
-                cursorChangeTimeout = setTimeout(function() {
-                    var pos = editor.getCursorPosition();
-                    notifyKotlin('onCursorChanged', JSON.stringify({
-                        row: pos.row,
-                        column: pos.column,
-                        line: editor.session.getLine(pos.row)
-                    }));
-                }, 100);
-            });
-
-            // ─── Keyboard shortcuts ───
-            editor.commands.addCommand({
-                name: 'save',
-                bindKey: { win: 'Ctrl-S', mac: 'Cmd-S' },
-                exec: function() {
-                    var now = Date.now();
-                    if (now - lastSaveTime < 500) return;
-                    lastSaveTime = now;
-                    notifyKotlin('onSave', editor.getValue());
-                }
-            });
-
-            editor.commands.addCommand({
-                name: 'closeSearch',
-                bindKey: { win: 'Escape', mac: 'Escape' },
-                exec: function() {
-                    var panel = document.getElementById('search-panel');
-                    if (panel.classList.contains('visible')) {
-                        panel.classList.remove('visible');
-                        editor.focus();
-                    }
-                }
-            });
-
-            editor.commands.addCommand({
-                name: 'find',
-                bindKey: { win: 'Ctrl-F', mac: 'Cmd-F' },
-                exec: function() {
-                    showSearchPanel(false);
-                }
-            });
-
-            editor.commands.addCommand({
-                name: 'findAndReplace',
-                bindKey: { win: 'Ctrl-H', mac: 'Cmd-Option-F' },
-                exec: function() {
-                    showSearchPanel(true);
-                }
-            });
-
-            // Go to line
-            editor.commands.addCommand({
-                name: 'gotoLine',
-                bindKey: { win: 'Ctrl-G', mac: 'Cmd-G' },
-                exec: function() {
-                    var row = editor.getCursorPosition().row + 1;
-                    var gotoInput = prompt('Go to line:', row);
-                    if (gotoInput !== null) {
-                        var lineNum = parseInt(gotoInput, 10);
-                        if (!isNaN(lineNum) && lineNum > 0) {
-                            editor.gotoLine(lineNum);
-                            editor.focus();
-                        }
-                    }
-                }
-            });
-
-            // Toggle comment
-            editor.commands.addCommand({
-                name: 'toggleComment',
-                bindKey: { win: 'Ctrl-/', mac: 'Cmd-/' },
-                exec: function() {
-                    editor.toggleCommentLines();
-                }
-            });
-
-            // Duplicate line
-            editor.commands.addCommand({
-                name: 'duplicateLine',
-                bindKey: { win: 'Ctrl-Shift-D', mac: 'Cmd-Shift-D' },
-                exec: function() {
-                    editor.duplicateLines();
-                }
-            });
-
-            // Move lines
-            editor.commands.addCommand({
-                name: 'moveLinesUp',
-                bindKey: { win: 'Alt-Up', mac: 'Option-Up' },
-                exec: function() {
-                    editor.moveLinesUp();
-                }
-            });
-
-            editor.commands.addCommand({
-                name: 'moveLinesDown',
-                bindKey: { win: 'Alt-Down', mac: 'Option-Down' },
-                exec: function() {
-                    editor.moveLinesDown();
-                }
-            });
-
-            // Indent/outdent
-            editor.commands.addCommand({
-                name: 'indent',
-                bindKey: { win: 'Tab', mac: 'Tab' },
-                exec: function() {
-                    editor.indent();
-                }
-            });
-
-            // Remove line
-            editor.commands.addCommand({
-                name: 'removeLine',
-                bindKey: { win: 'Ctrl-Shift-K', mac: 'Cmd-Shift-K' },
-                exec: function() {
-                    editor.removeLines();
-                }
-            });
-
-            // Select all
-            editor.commands.addCommand({
-                name: 'selectall',
-                bindKey: { win: 'Ctrl-A', mac: 'Cmd-A' },
-                exec: function() {
-                    editor.selectAll();
-                }
-            });
-
-            // ─── Search panel setup ───
-            setupSearchPanel();
-
-            // Focus editor
-            editor.focus();
-
-            notifyKotlin('onConsoleLog', 'Ace Editor initialized successfully');
-        }
-
-        // ─── Search panel ───
-        function setupSearchPanel() {
-            var searchInput = document.getElementById('search-input');
-            var replaceInput = document.getElementById('replace-input');
-            var searchCount = document.getElementById('search-count');
-            var btnPrev = document.getElementById('btn-prev');
-            var btnNext = document.getElementById('btn-next');
-            var btnReplace = document.getElementById('btn-replace');
-            var btnReplaceAll = document.getElementById('btn-replace-all');
-            var btnToggleReplace = document.getElementById('btn-toggle-replace');
-            var btnCloseSearch = document.getElementById('btn-close-search');
-            var panel = document.getElementById('search-panel');
-            var replaceVisible = false;
-
-            function updateSearchCount() {
-                var query = searchInput.value;
-                if (!query) {
-                    searchCount.textContent = '';
-                    return;
-                }
-                var count = 0;
-                var content = editor.getValue();
-                var pos = content.indexOf(query);
-                while (pos !== -1) {
-                    count++;
-                    pos = content.indexOf(query, pos + 1);
-                }
-                if (count === 0) {
-                    searchCount.textContent = 'No results';
-                } else {
-                    searchCount.textContent = count + ' found';
-                }
-            }
-
-            searchInput.addEventListener('input', function() {
-                var query = searchInput.value;
-                editor.find(query, {
-                    backwards: false,
-                    wrap: true,
-                    caseSensitive: false,
-                    wholeWord: false,
-                    regExp: false,
-                    showCursor: true
-                });
-                updateSearchCount();
-            });
-
-            searchInput.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') {
-                    if (e.shiftKey) {
-                        editor.findPrevious();
-                    } else {
-                        editor.findNext();
-                    }
-                } else if (e.key === 'Escape') {
-                    panel.classList.remove('visible');
-                    editor.focus();
-                }
-            });
-
-            btnPrev.addEventListener('click', function() {
-                editor.findPrevious();
-            });
-
-            btnNext.addEventListener('click', function() {
-                editor.findNext();
-            });
-
-            btnToggleReplace.addEventListener('click', function() {
-                replaceVisible = !replaceVisible;
-                replaceInput.style.display = replaceVisible ? 'inline-block' : 'none';
-                btnReplace.style.display = replaceVisible ? 'inline-block' : 'none';
-                btnReplaceAll.style.display = replaceVisible ? 'inline-block' : 'none';
-                if (replaceVisible) {
-                    replaceInput.focus();
-                }
-            });
-
-            btnReplace.addEventListener('click', function() {
-                var replacement = replaceInput.value;
-                editor.replace(replacement);
-                updateSearchCount();
-            });
-
-            btnReplaceAll.addEventListener('click', function() {
-                var query = searchInput.value;
-                var replacement = replaceInput.value;
-                if (query) {
-                    editor.findAll(query, {
-                        wrap: true,
-                        caseSensitive: false,
-                        wholeWord: false,
-                        regExp: false
-                    });
-                    editor.replace(replacement);
-                    updateSearchCount();
-                }
-            });
-
-            btnCloseSearch.addEventListener('click', function() {
-                panel.classList.remove('visible');
-                editor.focus();
-            });
-        }
-
-        function showSearchPanel(withReplace) {
-            var panel = document.getElementById('search-panel');
-            panel.classList.add('visible');
-
-            if (withReplace) {
-                var btnToggle = document.getElementById('btn-toggle-replace');
-                if (!document.getElementById('replace-input').style.display ||
-                    document.getElementById('replace-input').style.display === 'none') {
-                    btnToggle.click();
-                }
-            }
-
-            var selectedText = editor.getSelectedText();
-            if (selectedText && selectedText.length < 100) {
-                var searchInput = document.getElementById('search-input');
-                searchInput.value = selectedText;
-                // Trigger search
-                editor.find(selectedText, {
-                    backwards: false,
-                    wrap: true,
-                    caseSensitive: false,
-                    wholeWord: false,
-                    regExp: false,
-                    showCursor: true
-                });
-            }
-
-            document.getElementById('search-input').focus();
-            document.getElementById('search-input').select();
-        }
-
-        // ─── Notify Kotlin side ───
-        function notifyKotlin(event, data) {
-            if (window.EditorBridge && typeof window.EditorBridge[event] === 'function') {
-                try {
-                    window.EditorBridge[event](data || '');
-                } catch (e) {
-                    console.log('Bridge error for ' + event + ': ' + e.message);
-                }
-            }
-        }
-
-        // ─── Expose EditorBridge API ───
-        window.EditorBridge = {
-            onContentChanged: function(data) { console.log('onContentChanged: ' + data.substring(0, 50)); },
-            onCursorChanged: function(data) { console.log('onCursorChanged: ' + data); },
-            onSave: function(data) { console.log('onSave triggered'); },
-            onConsoleLog: function(data) { console.log('Bridge: ' + data); }
-        };
-
-        // ─── Bridge functions called from Kotlin ───
-        window.loadFile = function(content, language, readonly) {
-            if (!editor) return;
-            currentLanguage = language || 'text';
-            isReadOnly = readonly === true || readonly === 'true';
-
-            editor.setReadOnly(isReadOnly);
-            editor.setValue(content || '', -1);
-            editor.clearSelection();
-            editor.session.setMode(modePath(currentLanguage));
-            editor.gotoLine(1);
-            editor.focus();
-
-            notifyKotlin('onConsoleLog', 'File loaded: language=' + currentLanguage + ', readonly=' + isReadOnly);
-        };
-
-        window.getCursorPosition = function() {
-            if (!editor) return JSON.stringify({ row: 0, column: 0 });
-            var pos = editor.getCursorPosition();
-            return JSON.stringify({
-                row: pos.row,
-                column: pos.column
-            });
-        };
-
-        window.setTheme = function(theme) {
-            if (!editor) return;
-            var themeMap = {
-                'monokai': 'ace/theme/monokai',
-                'dracula': 'ace/theme/dracula',
-                'github_dark': 'ace/theme/github_dark',
-                'one_dark': 'ace/theme/one_dark',
-                'tomorrow_night': 'ace/theme/tomorrow_night_eighties',
-                'twilight': 'ace/theme/twilight',
-                'terminal': 'ace/theme/terminal',
-                'solarized_dark': 'ace/theme/solarized_dark',
-                'cobalt': 'ace/theme/cobalt',
-                'nord_dark': 'ace/theme/nord_dark',
-                'chrome': 'ace/theme/chrome',
-                'github': 'ace/theme/github',
-                'solarized_light': 'ace/theme/solarized_light',
-                'tomorrow': 'ace/theme/tomorrow',
-                'xcode': 'ace/theme/xcode'
-            };
-            var themePath = themeMap[theme] || ('ace/theme/' + theme);
-            editor.setTheme(themePath);
-            notifyKotlin('onConsoleLog', 'Theme set to: ' + theme);
-        };
-
-        window.setFontSize = function(size) {
-            if (!editor) return;
-            var pxSize = parseInt(size, 10);
-            if (pxSize >= 8 && pxSize <= 72) {
-                editor.setFontSize(pxSize + 'px');
-            }
-        };
-
-        window.setTabSize = function(size) {
-            if (!editor) return;
-            var tabSize = parseInt(size, 10);
-            if (tabSize >= 1 && tabSize <= 16) {
-                editor.getSession().setTabSize(tabSize);
-            }
-        };
-
-        window.setWordWrap = function(enabled) {
-            if (!editor) return;
-            var wrap = enabled === true || enabled === 'true';
-            editor.getSession().setUseWrapMode(wrap);
-        };
-
-        window.insertText = function(text) {
-            if (!editor) return;
-            editor.insert(text);
-            editor.focus();
-        };
-
-        window.replaceSelection = function(text) {
-            if (!editor) return;
-            var selection = editor.getSelectedText();
-            if (selection) {
-                editor.insert(text);
-            } else {
-                editor.insert(text);
-            }
-            editor.focus();
-        };
-
-        window.getContent = function() {
-            if (!editor) return '';
-            return editor.getValue();
-        };
-
-        window.setLanguage = function(mode) {
-            if (!editor) return;
-            currentLanguage = mode || 'text';
-            editor.session.setMode(modePath(currentLanguage));
-            notifyKotlin('onConsoleLog', 'Language set to: ' + currentLanguage);
-        };
-
-        window.search = function(query, optionsJson) {
-            if (!editor || !query) return '0';
-            var options = {};
-            if (optionsJson) {
-                try {
-                    options = JSON.parse(optionsJson);
-                } catch (e) {
-                    options = {};
-                }
-            }
-            editor.search(query, {
-                backwards: options.backwards || false,
-                wrap: options.wrap !== false,
-                caseSensitive: options.caseSensitive || false,
-                wholeWord: options.wholeWord || false,
-                regExp: options.regExp || false,
-                showCursor: true
-            });
-
-            // Count results
-            var count = 0;
-            var content = editor.getValue();
-            var caseSensitive = options.caseSensitive || false;
-            var searchContent = caseSensitive ? content : content.toLowerCase();
-            var searchQuery = caseSensitive ? query : query.toLowerCase();
-            var pos = searchContent.indexOf(searchQuery);
-            while (pos !== -1) {
-                count++;
-                pos = searchContent.indexOf(searchQuery, pos + 1);
-            }
-            return String(count);
-        };
-
-        window.replaceAll = function(query, replacement) {
-            if (!editor || !query) return '0';
-            var content = editor.getValue();
-            var count = 0;
-            var pos = content.indexOf(query);
-            while (pos !== -1) {
-                count++;
-                pos = content.indexOf(query, pos + 1);
-            }
-            var newValue = content.split(query).join(replacement);
-            editor.setValue(newValue, -1);
-            editor.clearSelection();
-            notifyKotlin('onContentChanged', newValue);
-            return String(count);
-        };
-
-        window.undo = function() {
-            if (!editor) return;
-            editor.undo();
-        };
-
-        window.redo = function() {
-            if (!editor) return;
-            editor.redo();
-        };
-
-        window.format = function() {
-            if (!editor) return;
-            // Basic formatting: trim trailing whitespace and ensure final newline
-            var content = editor.getValue();
-            var lines = content.split('\n');
-            var formatted = [];
-            for (var i = 0; i < lines.length; i++) {
-                formatted.push(lines[i].replace(/\s+$/, ''));
-            }
-            var result = formatted.join('\n');
-            if (result.length > 0 && !result.endsWith('\n')) {
-                result += '\n';
-            }
-            editor.setValue(result, -1);
-            editor.clearSelection();
-            editor.gotoLine(1);
-            notifyKotlin('onContentChanged', result);
-            notifyKotlin('onConsoleLog', 'Document formatted (trailing whitespace removed)');
-        };
-
-        window.setReadOnly = function(readonly) {
-            if (!editor) return;
-            isReadOnly = readonly === true || readonly === 'true';
-            editor.setReadOnly(isReadOnly);
-        };
-
-        window.focus = function() {
-            if (editor) editor.focus();
-        };
-
-        window.clearSelection = function() {
-            if (editor) editor.clearSelection();
-        };
-
-        window.selectAll = function() {
-            if (editor) editor.selectAll();
-        };
-
-        window.gotoLine = function(line) {
-            if (editor) {
-                var lineNum = parseInt(line, 10);
-                if (!isNaN(lineNum) && lineNum > 0) {
-                    editor.gotoLine(lineNum);
-                }
-            }
-        };
-
-        window.getLineNumber = function() {
-            if (!editor) return '0';
-            return String(editor.getCursorPosition().row + 1);
-        };
-
-        window.getColumnNumber = function() {
-            if (!editor) return '0';
-            return String(editor.getCursorPosition().column + 1);
-        };
-
-        window.getSelectedText = function() {
-            if (!editor) return '';
-            return editor.getSelectedText();
-        };
-
-        window.getLineCount = function() {
-            if (!editor) return '0';
-            return String(editor.session.getLength());
-        };
-
-        window.getModified = function() {
-            if (!editor) return 'false';
-            return String(editor.session.getUndoManager().hasUndo());
-        };
-
-        window.showSearch = function(withReplace) {
-            showSearchPanel(withReplace === true || withReplace === 'true');
-        };
-
-        window.hideSearch = function() {
-            document.getElementById('search-panel').classList.remove('visible');
-        };
-
-        // ─── Resize handling ───
-        function handleResize() {
-            if (editor) {
-                editor.resize();
-            }
-        }
-
-        window.addEventListener('resize', handleResize);
-
-        // Also handle orientation change
-        window.addEventListener('orientationchange', function() {
-            setTimeout(handleResize, 100);
-        });
-
-        // ─── Prevent default touch behaviors for better mobile editing ───
-        document.addEventListener('gesturestart', function(e) {
-            e.preventDefault();
-        });
-
-        // ─── Override console.log to bridge ───
-        var originalLog = console.log;
-        console.log = function() {
-            var args = Array.prototype.slice.call(arguments);
-            var message = args.join(' ');
-            originalLog.apply(console, arguments);
-            if (message.length < 2000) {
-                notifyKotlin('onConsoleLog', message);
-            }
-        };
-
-        var originalError = console.error;
-        console.error = function() {
-            var args = Array.prototype.slice.call(arguments);
-            var message = args.join(' ');
-            originalError.apply(console, arguments);
-            notifyKotlin('onConsoleLog', 'ERROR: ' + message);
-        };
-
-        var originalWarn = console.warn;
-        console.warn = function() {
-            var args = Array.prototype.slice.call(arguments);
-            var message = args.join(' ');
-            originalWarn.apply(console, arguments);
-            notifyKotlin('onConsoleLog', 'WARN: ' + message);
-        };
-
-        // ─── Bootstrap ───
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initEditor);
-        } else {
-            initEditor();
-        }
-
-    })();
-    </script>
+  </div>
+  <div id="minimap"><canvas id="minimap-canvas"></canvas><div id="minimap-viewport"></div></div>
+</div>
+<div id="statusbar">
+  <span id="st-cursor">Ln 1, Col 1</span>
+  <span id="st-sel"></span>
+  <span id="st-indent">Spaces: 4</span>
+  <span id="st-encoding">UTF-8</span>
+  <div class="right">
+    <span id="st-lang">Plain Text</span>
+    <span id="st-words">0 words</span>
+  </div>
+</div>
+<div id="output-panel" class="panel"></div>
+<div id="problems-panel" class="panel"></div>
+<div id="terminal-panel" class="panel"></div>
+<div id="command-palette"><input type="text" id="cmd-input" placeholder="></div>
+<div id="context-menu"></div>
+
+<script>
+// ===================== EDITOR CORE =====================
+const Editor = {
+  content: '',
+  cursorLine: 1,
+  cursorCol: 1,
+  language: 'text',
+  fileName: 'untitled',
+  filePath: [],
+  modified: false,
+  undoStack: [],
+  redoStack: [],
+  tabSize: 4,
+  useSpaces: true,
+  wordWrap: false,
+  showMinimap: true,
+  autoCloseBrackets: true,
+  bracketPairs: { '(': ')', '[': ']', '{': '}', "'": "'", '"': '"', '`': '`' },
+  snippets: {},
+  history: { commands: [], index: -1 },
+  searchState: { query: '', matches: [], currentMatch: -1 },
+  
+  init() {
+    this.bindKeys();
+    this.bindInput();
+    this.updateGutter();
+    this.updateStatusBar();
+    this.renderMinimap();
+    if (typeof EditorBridge !== 'undefined') EditorBridge.onConsoleLog('Editor initialized');
+  },
+
+  // ---- Content Operations ----
+  setContent(text) {
+    this.content = text;
+    this.modified = false;
+    this.undoStack = [text];
+    this.redoStack = [];
+    this.render();
+    this.updateGutter();
+    this.updateStatusBar();
+    this.renderMinimap();
+  },
+
+  getContent() { return this.content; },
+
+  setLanguage(lang) {
+    this.language = lang;
+    document.getElementById('st-lang').textContent = this.getLanguageDisplay(lang);
+    if (typeof EditorBridge !== 'undefined') EditorBridge.onConsoleLog('Language: ' + lang);
+  },
+
+  setFileName(name) {
+    this.fileName = name;
+    const ext = name.split('.').pop().toLowerCase();
+    const langMap = {kt:'kotlin',kts:'kotlin',java:'java',xml:'xml',json:'json',js:'javascript',ts:'typescript',py:'python',c:'c_cpp',cpp:'c_cpp',h:'c_cpp',html:'html',css:'css',md:'markdown',sh:'bash',yml:'yaml',sql:'sql',rb:'ruby',go:'go',rs:'rust',php:'php',dart:'dart',swift:'swift',groovy:'groovy',txt:'text'};
+    this.setLanguage(langMap[ext] || 'text');
+    this.updateBreadcrumb(name);
+  },
+
+  setFilePath(parts) { this.filePath = parts; this.updateBreadcrumb(this.fileName); },
+
+  setTabSize(size) { this.tabSize = size; this.updateStatusBar(); this.render(); },
+  setWordWrap(enabled) { this.wordWrap = enabled; const d = document.getElementById('code-display'); d.style.whiteSpace = enabled ? 'pre-wrap' : 'pre'; d.style.overflowX = enabled ? 'hidden' : 'auto'; },
+  setFontSize(size) { document.getElementById('code-display').style.fontSize = size + 'px'; document.getElementById('gutter').style.fontSize = size + 'px'; },
+  setTheme(theme) { /* Themes managed by Kotlin side */ },
+
+  insertText(text) {
+    const pos = this.getCursorPosition();
+    const lines = this.content.split('\n');
+    const line = lines[pos.line - 1] || '';
+    lines[pos.line - 1] = line.substring(0, pos.col - 1) + text + line.substring(pos.col - 1);
+    this.content = lines.join('\n');
+    this.pushUndo();
+    this.render();
+  },
+
+  // ---- Rendering ----
+  render() {
+    const display = document.getElementById('code-display');
+    const html = this.highlightSyntax(this.content);
+    display.innerHTML = html + '<br>';
+    this.highlightActiveLine();
+    this.highlightTrailingWhitespace();
+    this.updateStatusBar();
+    this.renderMinimap();
+    if (typeof EditorBridge !== 'undefined') EditorBridge.onContentChanged(this.content);
+  },
+
+  highlightSyntax(code) {
+ const escaped = code.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    let result = escaped;
+    // Comments
+    result = result.replace(/(\/\/.*$)/gm, '<span style="color:#6c7086;font-style:italic">$1</span>');
+    result = result.replace(/(\/\*[\s\S]*?\*\/)/g, '<span style="color:#6c7086;font-style:italic">$1</span>');
+    result = result.replace(/(#.*$)/gm, '<span style="color:#6c7086;font-style:italic">$1</span>');
+    // Strings
+    result = result.replace(/("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)/g, '<span style="color:#a6e3a1">$1</span>');
+    // Numbers
+    result = result.replace(/\b(\d+\.?\d*)\b/g, '<span style="color:#fab387">$1</span>');
+    // Keywords (language-aware)
+    const kwMap = {
+      kotlin: /\b(fun|val|var|class|object|interface|enum|when|if|else|for|while|do|return|break|continue|try|catch|finally|throw|import|package|as|is|in|typealias|sealed|data|abstract|open|override|private|protected|internal|public|companion|init|suspend|inline|reified|lateinit|by|super|this|null|true|false)\b/g,
+      java: /\b(public|private|protected|class|interface|extends|implements|static|final|abstract|new|return|if|else|for|while|do|switch|case|break|continue|try|catch|finally|throw|throws|import|package|void|int|long|double|float|boolean|char|String|null|true|false|this|super)\b/g,
+      python: /\b(def|class|if|elif|else|for|while|break|continue|return|yield|import|from|as|try|except|finally|raise|with|lambda|pass|del|global|nonlocal|assert|and|or|not|in|is|None|True|False|self|async|await)\b/g,
+      javascript: /\b(const|let|var|function|class|extends|new|return|if|else|for|while|do|switch|case|break|continue|try|catch|finally|throw|import|export|from|default|async|await|yield|typeof|instanceof|in|of|null|undefined|true|false|this|super|void)\b/g,
+      typescript: /\b(const|let|var|function|class|extends|implements|new|return|if|else|for|while|do|switch|case|break|continue|try|catch|finally|throw|import|export|from|default|async|await|yield|typeof|instanceof|in|of|null|undefined|true|false|this|super|void|interface|type|enum|namespace|as|key|readonly)\b/g,
+      xml: /(&lt;\/?[a-zA-Z][a-zA-Z0-9-]*)/g,
+      html: /(&lt;\/?[a-zA-Z][a-zA-Z0-9-]*)/g,
+      css: /\b(display|position|width|height|margin|padding|border|background|color|font-size|font-weight|text-align|flex|grid|overflow|opacity|transition|transform|animation)\b/g,
+      json: /("[a-zA-Z_][a-zA-Z0-9]*"\s*:)/g,
+      c_cpp: /\b(int|long|short|float|double|char|void|bool|auto|struct|class|enum|union|typedef|const|static|extern|register|volatile|inline|return|if|else|for|while|do|switch|case|break|continue|default|goto|sizeof|typedef|NULL|true|false|include|define|ifdef|ifndef|endif|pragma)\b/g,
+      markdown: /(^(#{1,6}\s.*$))/gm,
+      sql: /\b(SELECT|FROM|WHERE|INSERT|INTO|VALUES|UPDATE|SET|DELETE|CREATE|TABLE|ALTER|DROP|INDEX|JOIN|INNER|LEFT|RIGHT|ON|AND|OR|NOT|NULL|AS|ORDER|BY|GROUP|HAVING|LIMIT|DISTINCT|COUNT|SUM|AVG|MIN|MAX|UNION|EXISTS|LIKE|BETWEEN|IN|IS|PRIMARY|KEY|FOREIGN|REFERENCES|CONSTRAINT|DEFAULT|AUTO_INCREMENT)\b/gi,
+      bash: /\b(if|then|else|elif|fi|for|while|do|done|case|esac|function|return|in|select|echo|exit|export|local|read|set|shift|source|unset|until|while|break|continue|declare|typeset|readonly)\b/g,
+      yaml: /^\s*([a-zA-Z_][a-zA-Z0-9_-]*):/gm,
+      ruby: /\b(def|end|class|module|if|elsif|else|unless|while|until|for|do|begin|rescue|ensure|raise|return|yield|require|include|extend|attr_accessor|attr_reader|attr_writer|self|super|nil|true|false|and|or|not|in|puts|print|lambda|proc)\b/g,
+      go: /\b(func|var|const|type|struct|interface|map|chan|go|select|case|default|if|else|for|range|switch|break|continue|return|defer|fallthrough|goto|package|import|nil|true|false|err|error|string|int|int64|float64|bool|byte|make|len|append|fmt|Println)\b/g,
+      rust: /\b(fn|let|mut|const|static|struct|enum|impl|trait|pub|use|mod|crate|self|super|where|if|else|for|while|loop|match|return|break|continue|as|in|ref|move|async|await|unsafe|extern|true|false|Some|None|Ok|Err|String|Vec|Box|Rc|Arc|i32|i64|u32|u64|f64|bool|str|usize)\b/g,
+      dart: /\b(var|final|const|class|extends|implements|with|mixin|abstract|interface|enum|typedef|extension|factory|constructor|static|get|set|if|else|for|while|do|switch|case|break|continue|return|try|catch|finally|throw|rethrow|import|export|library|part|of|show|hide|as|is|in|null|true|false|this|super|late|required|covariant)\b/g,
+      php: /\b(function|class|public|private|protected|static|abstract|interface|extends|implements|new|return|if|else|elseif|for|foreach|while|do|switch|case|break|continue|try|catch|finally|throw|use|namespace|require|include|echo|print|var|const|null|true|false|self|parent|array|string|int|float|bool|void)\b/g,
+      swift: /\b(func|var|let|class|struct|enum|protocol|extension|import|if|else|switch|case|for|while|repeat|return|break|continue|guard|throw|try|catch|do|catch|finally|typealias|associatedtype|where|init|deinit|self|super|nil|true|false|public|private|internal|open|override|mutating|lazy|weak|unowned|in|as|is|optional|some|any)\b/g,
+      groovy: /\b(def|class|interface|trait|extends|implements|new|return|if|else|for|while|do|switch|case|break|continue|try|catch|finally|throw|import|package|void|int|long|double|float|boolean|String|null|true|false|this|super|static|final|abstract|private|protected|public|in|as)\b/g
+    };
+    const keywords = kwMap[this.language] || kwMap.text;
+    if (this.language === 'xml' || this.language === 'html') {
+      result = result.replace(keywords, '<span style="color:#89b4fa">$1</span>');
+      result = result.replace(/([a-zA-Z-]+)(=)/g, '<span style="color:#f9e2af">$1</span>$2');
+    } else if (this.language === 'css') {
+      result = result.replace(keywords, '<span style="color:#89b4fa">$1</span>');
+    } else if (this.language === 'json') {
+      result = result.replace(keywords, '<span style="color:#89b4fa">$1</span>');
+    } else if (this.language === 'markdown') {
+      result = result.replace(keywords, '<span style="color:#89b4fa;font-weight:bold">$1</span>');
+      result = result.replace(/(\*\*.*?\*\*|__.*?__)/g, '<span style="color:#f9e2af;font-weight:bold">$1</span>');
+      result = result.replace(/(`[^`]+`)/g, '<span style="color:#a6e3a1">$1</span>');
+    } else if (this.language === 'yaml') {
+      result = result.replace(keywords, '<span style="color:#89b4fa">$1</span>');
+    } else {
+      result = result.replace(keywords, '<span style="color:#cba6f7">$1</span>');
+    }
+    return result;
+  },
+
+  highlightActiveLine() {
+    document.querySelectorAll('.line-highlight').forEach(e => e.remove());
+    const area = document.getElementById('code-area');
+    const div = document.createElement('div');
+    div.className = 'line-highlight';
+    div.style.top = ((this.cursorLine - 1) * 20.8 + 4) + 'px';
+    area.appendChild(div);
+  },
+
+  highlightTrailingWhitespace() { /* Applied during syntax highlight pass */ },
+
+  highlightMatchingBracket() {
+    document.querySelectorAll('.bracket-match').forEach(e => e.classList.remove('bracket-match'));
+    const pos = this.cursorCol - 1;
+    const line = this.content.split('\n')[this.cursorLine - 1] || '';
+    const ch = line[pos - 1];
+    const pair = this.bracketPairs[ch];
+    if (!pair) return;
+    let depth = 0;
+    if (ch === '(' || ch === '[' || ch === '{') {
+      for (let i = pos - 1; i < line.length; i++) {
+        if (line[i] === ch) depth++;
+        if (line[i] === pair) depth--;
+        if (depth === 0) { /* Highlight both */ return; }
+      }
+    }
+  },
+
+  // ---- Gutter ----
+  updateGutter() {
+    const lines = this.content.split('\n');
+    const gutter = document.getElementById('gutter');
+    let html = '';
+    for (let i = 1; i <= lines.length; i++) {
+      html += `<div class="${i === this.cursorLine ? 'active-line' : ''}">${i}</div>`;
+    }
+    gutter.innerHTML = html;
+  },
+
+  // ---- Breadcrumbs ----
+  updateBreadcrumb(fileName) {
+    const bc = document.getElementById('breadcrumb');
+    const parts = [...this.filePath, fileName];
+    bc.innerHTML = parts.map((p, i) =>
+      `<span class="crumb" onclick="EditorActions.navigateToBreadcrumb(${i})">${p}</span>${i < parts.length - 1 ? '<span class="sep">›</span>' : ''}`
+    ).join('');
+  },
+
+  // ---- Tabs ----
+  tabs: [],
+  activeTab: -1,
+
+  openTab(name, content, language) {
+    const existing = this.tabs.findIndex(t => t.name === name);
+    if (existing >= 0) { this.switchTab(existing); return; }
+    this.tabs.push({ name, content, language, modified: false });
+    this.activeTab = this.tabs.length - 1;
+    this.setFileName(name);
+    this.setContent(content);
+    if (language) this.setLanguage(language);
+    this.renderTabs();
+  },
+
+  closeTab(index) {
+    this.tabs.splice(index, 1);
+    if (this.activeTab >= this.tabs.length) this.activeTab = this.tabs.length - 1;
+    if (this.activeTab >= 0) {
+      const tab = this.tabs[this.activeTab];
+      this.setFileName(tab.name);
+      this.setContent(tab.content);
+      this.setLanguage(tab.language);
+    } else {
+      this.setContent(''); this.setFileName('untitled');
+    }
+    this.renderTabs();
+  },
+
+  switchTab(index) {
+    if (index < 0 || index >= this.tabs.length) return;
+    this.activeTab = index;
+    const tab = this.tabs[index];
+    this.setFileName(tab.name);
+    this.setContent(tab.content);
+    this.setLanguage(tab.language);
+    this.renderTabs();
+  },
+
+  renderTabs() {
+    const bar = document.getElementById('tabbar');
+    bar.innerHTML = this.tabs.map((t, i) => {
+      const ext = t.name.split('.').pop().toLowerCase();
+      const colors = {kt:'#A97BFF',java:'#f89820',xml:'#f16529',json:'#f9e2af',js:'#f9e2af',ts:'#3178c6',py:'#3572A5',html:'#e34c26',css:'#563d7c',md:'#083fa1',sh:'#89e051',yml:'#cb171e'};
+      const color = colors[ext] || '#585b70';
+      return `<div class="tab ${i === this.activeTab ? 'active' : ''} ${t.modified ? 'modified' : ''}" onclick="Editor.switchTab(${i})">`+
+        `<span class="dot" style="background:${color}"></span>${t.name}<span class="close" onclick="event.stopPropagation();Editor.closeTab(${i})">×</span></div>`;
+    }).join('');
+  },
+
+  // ---- Status Bar ----
+  updateStatusBar() {
+    document.getElementById('st-cursor').textContent = `Ln ${this.cursorLine}, Col ${this.cursorCol}`;
+    const lines = this.content.split('\n');
+    const words = this.content.trim().split(/\s+/).filter(w => w.length > 0).length;
+    document.getElementById('st-words').textContent = `${words} words`;
+    document.getElementById('st-indent').textContent = `${this.useSpaces ? 'Spaces' : 'Tabs'}: ${this.tabSize}`;
+  },
+
+  // ---- Minimap ----
+  renderMinimap() {
+    if (!this.showMinimap) return;
+    const canvas = document.getElementById('minimap-canvas');
+    const lines = this.content.split('\n');
+    const scale = 2;
+    canvas.width = 80;
+    canvas.height = Math.max(lines.length * scale, 200);
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#1e1e2e';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#585b70';
+    lines.forEach((line, i) => {
+      const len = Math.min(line.length * 0.8, 76);
+      if (len > 0) ctx.fillRect(2, i * scale, len, 1);
+    });
+    this.updateMinimapViewport();
+  },
+
+  updateMinimapViewport() {
+    const lines = this.content.split('\n').length;
+    const viewport = document.getElementById('minimap-viewport');
+    const canvas = document.getElementById('minimap-canvas');
+    const visibleLines = Math.floor(canvas.clientHeight / 2);
+    const totalHeight = lines * 2;
+    const scrollTop = (this.cursorLine - 1) * 2;
+    const vh = Math.min(visibleLines * 2, totalHeight);
+    viewport.style.height = vh + 'px';
+    viewport.style.top = Math.max(0, scrollTop) + 'px';
+  },
+
+  toggleMinimap() {
+    this.showMinimap = !this.showMinimap;
+    document.getElementById('minimap').classList.toggle('visible', this.showMinimap);
+  },
+
+  // ---- Undo/Redo ----
+  pushUndo() {
+    this.undoStack.push(this.content);
+    if (this.undoStack.length > 500) this.undoStack.shift();
+    this.redoStack = [];
+    this.modified = true;
+    if (this.tabs[this.activeTab]) this.tabs[this.activeTab].modified = true;
+    this.renderTabs();
+  },
+
+  undo() {
+    if (this.undoStack.length <= 1) return;
+    this.redoStack.push(this.undoStack.pop());
+    this.content = this.undoStack[this.undoStack.length - 1];
+    this.render(); this.updateGutter();
+  },
+
+  redo() {
+    if (this.redoStack.length === 0) return;
+    const text = this.redoStack.pop();
+    this.content = text;
+    this.undoStack.push(text);
+    this.render(); this.updateGutter();
+  },
+
+  // ---- Cursor ----
+  getCursorPosition() { return { line: this.cursorLine, col: this.cursorCol }; },
+
+  setCursor(line, col) {
+    const lines = this.content.split('\n');
+    this.cursorLine = Math.max(1, Math.min(line, lines.length));
+    this.cursorCol = Math.max(1, Math.min(col, (lines[this.cursorLine - 1] || '').length + 1));
+    this.highlightActiveLine();
+    this.highlightMatchingBracket();
+    this.updateGutter();
+    this.updateStatusBar();
+    if (typeof EditorBridge !== 'undefined') EditorBridge.onCursorChanged(this.cursorLine, this.cursorCol);
+  },
+
+  // ---- Input Handling ----
+  bindInput() {
+    const display = document.getElementById('code-display');
+    display.addEventListener('input', () => {
+      this.content = display.innerText.replace(/\n$/, '');
+      this.pushUndo();
+      this.render(); this.updateGutter();
+    });
+    display.addEventListener('click', () => {
+      const sel = window.getSelection();
+      if (sel.rangeCount === 0) return;
+      const range = sel.getRangeAt(0);
+      const preRange = range.cloneRange();
+      preRange.selectNodeContents(display);
+      preRange.setEnd(range.startContainer, range.startOffset);
+      const text = preRange.toString();
+      const lines = text.split('\n');
+      this.cursorLine = lines.length;
+      this.cursorCol = lines[lines.length - 1].length + 1;
+      this.highlightActiveLine();
+      this.highlightMatchingBracket();
+      this.updateGutter(); this.updateStatusBar();
+    });
+    display.addEventListener('keyup', (e) => {
+      if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Home','End','PageUp','PageDown'].includes(e.key)) {
+        this.syncCursorFromSelection();
+      }
+    });
+  },
+
+  syncCursorFromSelection() {
+    const sel = window.getSelection();
+    if (sel.rangeCount === 0) return;
+    const range = sel.getRangeAt(0);
+    const preRange = range.cloneRange();
+    const display = document.getElementById('code-display');
+    preRange.selectNodeContents(display);
+    preRange.setEnd(range.startContainer, range.startOffset);
+    const text = preRange.toString();
+    const lines = text.split('\n');
+    this.cursorLine = lines.length;
+    this.cursorCol = lines[lines.length - 1].length + 1;
+    this.highlightActiveLine();
+    this.highlightMatchingBracket();
+    this.updateGutter(); this.updateStatusBar();
+  },
+
+  // ---- Keyboard Shortcuts ----
+  bindKeys() {
+    document.addEventListener('keydown', (e) => {
+      const ctrl = e.ctrlKey || e.metaKey;
+      const shift = e.shiftKey;
+      const alt = e.altKey;
+      if (ctrl && shift && e.key === 'P') { e.preventDefault(); EditorActions.toggleCommandPalette(); }
+      else if (ctrl && e.key === 'p') { e.preventDefault(); EditorActions.toggleCommandPalette(); }
+      else if (ctrl && e.key === 's') { e.preventDefault(); EditorActions.save(); }
+      else if (ctrl && e.key === 'f') { e.preventDefault(); EditorActions.toggleSearch(); }
+      else if (ctrl && e.key === 'h') { e.preventDefault(); EditorActions.showReplace(); }
+      else if (ctrl && e.key === 'g') { e.preventDefault(); EditorActions.gotoLine(); }
+      else if (ctrl && e.key === 'z' && !shift) { e.preventDefault(); this.undo(); }
+      else if (ctrl && e.key === 'y') { e.preventDefault(); this.redo(); }
+      else if (ctrl && e.key === 'd') { e.preventDefault(); EditorActions.selectNextOccurrence(); }
+      else if (ctrl && shift && e.key === 'D') { e.preventDefault(); EditorActions.duplicateLine(); }
+      else if (ctrl && shift && e.key === 'K') { e.preventDefault(); EditorActions.deleteLine(); }
+      else if (ctrl && shift && e.key === 'L') { e.preventDefault(); EditorActions.selectAllOccurrences(); }
+      else if (ctrl && e.key === '/') { e.preventDefault(); EditorActions.toggleComment(); }
+      else if (alt && e.key === 'ArrowUp') { e.preventDefault(); EditorActions.moveLineUp(); }
+      else if (alt && e.key === 'ArrowDown') { e.preventDefault(); EditorActions.moveLineDown(); }
+      else if (e.key === 'Tab') { e.preventDefault(); EditorActions.indent(); }
+      else if (e.key === 'Escape') { EditorActions.closeAllPanels(); }
+    });
+  },
+
+  getLanguageDisplay(lang) {
+    const map = {kotlin:'Kotlin',java:'Java',javascript:'JavaScript',typescript:'TypeScript',python:'Python',xml:'XML',html:'HTML',css:'CSS',json:'JSON',c_cpp:'C/C++',markdown:'Markdown',sql:'SQL',bash:'Shell',yaml:'YAML',ruby:'Ruby',go:'Go',rust:'Rust',dart:'Dart',php:'PHP',swift:'Swift',groovy:'Groovy',text:'Plain Text'};
+    return map[lang] || lang;
+  }
+};
+
+// ===================== EDITOR ACTIONS =====================
+const EditorActions = {
+  save() { if (typeof EditorBridge !== 'undefined') EditorBridge.onSave(); },
+
+  toggleSearch() {
+    const panel = document.getElementById('search-panel');
+    const visible = panel.classList.toggle('visible');
+    if (visible) document.getElementById('search-input').focus();
+    else Editor.searchState = { query: '', matches: [], currentMatch: -1 };
+  },
+
+  showReplace() {
+    const panel = document.getElementById('search-panel');
+    panel.classList.add('visible');
+    document.getElementById('replace-input').parentElement.style.display = 'flex';
+    document.getElementById('search-input').focus();
+  },
+
+  findNext() {
+    const q = document.getElementById('search-input').value;
+    const caseSensitive = document.getElementById('case-toggle').checked;
+    if (!q) return;
+    Editor.searchState.query = q;
+    this._performSearch(q, caseSensitive, 1);
+  },
+
+  findPrev() {
+    const q = document.getElementById('search-input').value;
+    const caseSensitive = document.getElementById('case-toggle').checked;
+    if (!q) return;
+    this._performSearch(q, caseSensitive, -1);
+  },
+
+  _performSearch(query, caseSensitive, direction) {
+    const content = caseSensitive ? Editor.content : Editor.content.toLowerCase();
+    const q = caseSensitive ? query : query.toLowerCase();
+    const matches = [];
+    let idx = 0;
+    while ((idx = content.indexOf(q, idx)) !== -1) {
+      const line = content.substring(0, idx).split('\n').length;
+      matches.push({ index: idx, line });
+      idx += q.length;
+    }
+    Editor.searchState.matches = matches;
+    Editor.searchState.currentMatch = direction > 0 ? 0 : matches.length - 1;
+    if (matches.length > 0) {
+      const match = matches[Editor.searchState.currentMatch];
+      const lineNum = match.line;
+      const lineContent = Editor.content.split('\n')[lineNum - 1] || '';
+      const colInLine = match.index - Editor.content.split('\n').slice(0, lineNum - 1).join('\n').length;
+      Editor.setCursor(lineNum, colInLine + 1);
+    }
+    document.getElementById('match-count').textContent = matches.length > 0
+      ? `${Editor.searchState.currentMatch + 1}/${matches.length}` : 'No results';
+  },
+
+  replaceOne() {
+    const q = document.getElementById('search-input').value;
+    const r = document.getElementById('replace-input').value;
+    if (!q || Editor.searchState.matches.length === 0) return;
+    Editor.content = Editor.content.replace(q, r, 1);
+    Editor.pushUndo(); Editor.render(); Editor.updateGutter();
+    this.findNext();
+  },
+
+  replaceAll() {
+    const q = document.getElementById('search-input').value;
+    const r = document.getElementById('replace-input').value;
+    if (!q) return;
+    Editor.content = Editor.content.split(q).join(r);
+    Editor.pushUndo(); Editor.render(); Editor.updateGutter();
+    document.getElementById('match-count').textContent = 'Replaced all';
+  },
+
+  gotoLine() {
+    const line = parseInt(prompt('Go to line:', Editor.cursorLine));
+    if (!isNaN(line)) Editor.setCursor(line, 1);
+  },
+
+  toggleComment() {
+    const lineIdx = Editor.cursorLine - 1;
+    const lines = Editor.content.split('\n');
+    const line = lines[lineIdx];
+    const trimmed = line.trimStart();
+    const singleComment = {kotlin:'//',java:'//',javascript:'//',typescript:'//',c_cpp:'//',css:'/* */',python:'#',ruby:'#',bash:'#',yaml:'#',sql:'--',groovy:'//',swift:'//',dart:'//',php:'//',go:'//',rust:'//'};
+    const commentChar = singleComment[Editor.language] || '//';
+    if (commentChar === '#') {
+      lines[lineIdx] = trimmed.startsWith('#') ? line.replace('#','') : line.replace(trimmed[0],'#'+trimmed[0]);
+    } else if (commentChar === '--') {
+      lines[lineIdx] = trimmed.startsWith('--') ? line.replace('--','') : line.replace(trimmed.substring(0,2),'--'+trimmed.substring(0,2));
+    } else {
+      lines[lineIdx] = trimmed.startsWith('//') ? line.replace('//','') : line.replace(trimmed.substring(0,2),'//'+trimmed.substring(0,2));
+    }
+    Editor.content = lines.join('\n');
+    Editor.pushUndo(); Editor.render(); Editor.updateGutter();
+  },
+
+  selectNextOccurrence() {
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return;
+    const word = sel.toString().trim();
+    if (!word) return;
+    const caseSensitive = document.getElementById('case-toggle').checked;
+    const content = caseSensitive ? Editor.content : Editor.content.toLowerCase();
+    const q = caseSensitive ? word : word.toLowerCase();
+    const selRange = sel.getRangeAt(0);
+    const preRange = selRange.cloneRange();
+    preRange.selectNodeContents(document.getElementById('code-display'));
+    preRange.setEnd(selRange.startContainer, selRange.startOffset);
+    const offset = preRange.toString().length;
+    const nextIdx = content.indexOf(q, offset + word.length);
+    if (nextIdx >= 0) {
+      // Select next occurrence
+      const display = document.getElementById('code-display');
+      const range = document.createRange();
+      let charCount = 0;
+      const walker = document.createTreeWalker(display, NodeFilter.SHOW_TEXT);
+      let node = walker.nextNode();
+      while (node && charCount + node.textContent.length <= nextIdx) {
+        charCount += node.textContent.length;
+        node = walker.nextNode();
+      }
+      if (node) {
+        const start = nextIdx - charCount;
+        range.setStart(node, Math.min(start, node.textContent.length));
+        range.setEnd(node, Math.min(start + word.length, node.textContent.length));
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
+    }
+  },
+
+  duplicateLine() {
+    const lines = Editor.content.split('\n');
+    const idx = Editor.cursorLine - 1;
+    lines.splice(idx, 0, lines[idx]);
+    Editor.content = lines.join('\n');
+    Editor.pushUndo(); Editor.render(); Editor.updateGutter();
+    Editor.setCursor(Editor.cursorLine + 1, 1);
+  },
+
+  deleteLine() {
+    const lines = Editor.content.split('\n');
+    lines.splice(Editor.cursorLine - 1, 1);
+    Editor.content = lines.join('\n');
+    Editor.pushUndo(); Editor.render(); Editor.updateGutter();
+  },
+
+  selectAllOccurrences() {
+    const sel = window.getSelection();
+    const word = sel.toString().trim();
+    if (!word) return;
+    // Highlight all (visual feedback via search)
+    document.getElementById('search-input').value = word;
+    EditorActions.findNext();
+  },
+
+  moveLineUp() {
+    const lines = Editor.content.split('\n');
+    const idx = Editor.cursorLine - 1;
+    if (idx === 0) return;
+    [lines[idx - 1], lines[idx]] = [lines[idx], lines[idx - 1]];
+    Editor.content = lines.join('\n');
+    Editor.pushUndo(); Editor.render(); Editor.updateGutter();
+    Editor.setCursor(Editor.cursorLine - 1, Editor.cursorCol);
+  },
+
+  moveLineDown() {
+    const lines = Editor.content.split('\n');
+    const idx = Editor.cursorLine - 1;
+    if (idx >= lines.length - 1) return;
+    [lines[idx], lines[idx + 1]] = [lines[idx + 1], lines[idx]];
+    Editor.content = lines.join('\n');
+    Editor.pushUndo(); Editor.render(); Editor.updateGutter();
+    Editor.setCursor(Editor.cursorLine + 1, Editor.cursorCol);
+  },
+
+  indent() {
+    const indent = Editor.useSpaces ? ' '.repeat(Editor.tabSize) : '\t';
+    const lines = Editor.content.split('\n');
+    const idx = Editor.cursorLine - 1;
+    lines[idx] = indent + lines[idx];
+    Editor.content = lines.join('\n');
+    Editor.pushUndo(); Editor.render(); Editor.updateGutter();
+  },
+
+  toggleMinimap() { Editor.toggleMinimap(); },
+  toggleWordWrap() { Editor.setWordWrap(!Editor.wordWrap); },
+
+  formatDocument() {
+    // Basic auto-indent
+    const lines = Editor.content.split('\n');
+    let indentLevel = 0;
+    const indentStr = Editor.useSpaces ? ' '.repeat(Editor.tabSize) : '\t';
+    const openBraces = new Set(['{', '(', '[']);
+    const closeBraces = new Set(['}', ')', ']']);
+    const formatted = lines.map(line => {
+      const trimmed = line.trim();
+      if (trimmed.length === 0) return '';
+      for (const ch of trimmed) { if (closeBraces.has(ch)) indentLevel = Math.max(0, indentLevel - 1); break; }
+      const result = indentStr.repeat(indentLevel) + trimmed;
+      for (const ch of trimmed) { if (openBraces.has(ch)) indentLevel++; break; }
+      return result;
+    });
+    Editor.content = formatted.join('\n');
+    Editor.pushUndo(); Editor.render(); Editor.updateGutter();
+  },
+
+  toggleCommandPalette() {
+    const cp = document.getElementById('command-palette');
+    cp.classList.toggle('visible');
+    if (cp.classList.contains('visible')) {
+      document.getElementById('cmd-input').value = '';
+      document.getElementById('cmd-input').focus();
+      this._renderCommands('');
+    }
+  },
+
+  _commands: [
+    { label: 'Save File', shortcut: 'Ctrl+S', category: 'File', action: () => EditorActions.save() },
+    { label: 'Find', shortcut: 'Ctrl+F', category: 'Edit', action: () => EditorActions.toggleSearch() },
+    { label: 'Find and Replace', shortcut: 'Ctrl+H', category: 'Edit', action: () => EditorActions.showReplace() },
+    { label: 'Go to Line', shortcut: 'Ctrl+G', category: 'Navigation', action: () => EditorActions.gotoLine() },
+    { label: 'Toggle Comment', shortcut: 'Ctrl+/', category: 'Edit', action: () => EditorActions.toggleComment() },
+    { label: 'Format Document', shortcut: 'Shift+Alt+F', category: 'Edit', action: () => EditorActions.formatDocument() },
+    { label: 'Toggle Minimap', category: 'View', action: () => EditorActions.toggleMinimap() },
+    { label: 'Toggle Word Wrap', category: 'View', action: () => EditorActions.toggleWordWrap() },
+    { label: 'Duplicate Line', shortcut: 'Ctrl+Shift+D', category: 'Edit', action: () => EditorActions.duplicateLine() },
+    { label: 'Delete Line', shortcut: 'Ctrl+Shift+K', category: 'Edit', action: () => EditorActions.deleteLine() },
+    { label: 'Move Line Up', shortcut: 'Alt+Up', category: 'Edit', action: () => EditorActions.moveLineUp() },
+    { label: 'Move Line Down', shortcut: 'Alt+Down', category: 'Edit', action: () => EditorActions.moveLineDown() },
+    { label: 'Select All Occurrences', shortcut: 'Ctrl+Shift+L', category: 'Edit', action: () => EditorActions.selectAllOccurrences() },
+    { label: 'Undo', shortcut: 'Ctrl+Z', category: 'Edit', action: () => Editor.undo() },
+    { label: 'Redo', shortcut: 'Ctrl+Y', category: 'Edit', action: () => Editor.redo() },
+    { label: 'Toggle Terminal', category: 'View', action: () => document.getElementById('terminal-panel').classList.toggle('visible') },
+    { label: 'Toggle Output', category: 'View', action: () => document.getElementById('output-panel').classList.toggle('visible') },
+    { label: 'Toggle Problems', category: 'View', action: () => document.getElementById('problems-panel').classList.toggle('visible') },
+  ],
+
+  _renderCommands(filter) {
+    const items = document.querySelector('#command-palette .items');
+    const lf = filter.toLowerCase();
+    const filtered = lf ? this._commands.filter(c => c.label.toLowerCase().includes(lf) || c.category.toLowerCase().includes(lf)) : this._commands;
+    items.innerHTML = filtered.map((c, i) =>
+      `<div class="item ${i === 0 ? 'selected' : ''}" onclick="EditorActions._executeCommand(${this._commands.indexOf(c)})">${c.label}<span class="shortcut">${c.shortcut || ''}</span><span class="cat">${c.category}</span></div>`
+    ).join('');
+  },
+
+  _executeCommand(index) {
+    const cmd = this._commands[index];
+    if (cmd && cmd.action) cmd.action();
+    document.getElementById('command-palette').classList.remove('visible');
+  },
+
+  navigateToBreadcrumb(index) { /* Navigate to file path segment — callback to Kotlin */ },
+  closeAllPanels() {
+    document.getElementById('search-panel').classList.remove('visible');
+    document.getElementById('command-palette').classList.remove('visible');
+    document.getElementById('context-menu').classList.remove('visible');
+  },
+
+  // ---- Panels ----
+  appendOutput(text) {
+    const panel = document.getElementById('output-panel');
+    panel.classList.add('visible');
+    panel.innerHTML += `<div>${text.replace(/</g,'&lt;')}</div>`;
+    panel.scrollTop = panel.scrollHeight;
+  },
+
+  clearOutput() { document.getElementById('output-panel').innerHTML = ''; },
+
+  setProblems(problems) {
+    const panel = document.getElementById('problems-panel');
+    panel.classList.toggle('visible', problems.length > 0);
+    panel.innerHTML = problems.map(p =>
+      `<div class="problem ${p.severity}"><span>${p.severity === 'error' ? '✕' : '⚠'}</span><span>${p.message}</span><span class="loc">${p.file}:${p.line}</span></div>`
+    ).join('');
+  },
+
+  // ---- Snippets ----
+  insertSnippet(name) {
+    const snippets = Editor.snippets[Editor.language] || Editor.snippets['text'] || {};
+    const snippet = snippets[name];
+    if (!snippet) return;
+    const tabstops = snippet.match(/\$(\d+)|\$\{(\d+)(?::([^}]*))?}/g) || [];
+    let text = snippet;
+    tabstops.forEach(match => {
+      const num = match.replace(/[${}:]/g, '');
+      text = text.replace(match, num === '0' ? '$CURSOR' : `placeholder${num}`);
+    });
+    Editor.insertText(text);
+  },
+
+  loadSnippets(lang, snippets) { Editor.snippets[lang] = snippets; }
+};
+
+// Command palette input handler
+document.getElementById('cmd-input').addEventListener('input', (e) => {
+  EditorActions._renderCommands(e.target.value);
+  // Navigate with arrow keys
+});
+
+// Initialize
+Editor.init();
+</script>
 </body>
 </html>

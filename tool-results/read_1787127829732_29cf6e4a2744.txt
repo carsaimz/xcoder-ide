@@ -1,0 +1,601 @@
+     1→package com.xcoder.editor.web
+     2→
+     3→import androidx.compose.animation.*
+     4→import androidx.compose.foundation.background
+     5→import androidx.compose.foundation.clickable
+     6→import androidx.compose.foundation.focusable
+     7→import androidx.compose.foundation.input.key.onKeyEvent
+     8→import androidx.compose.foundation.layout.*
+     9→import androidx.compose.foundation.lazy.LazyColumn
+    10→import androidx.compose.foundation.lazy.itemsIndexed
+    11→import androidx.compose.foundation.shape.RoundedCornerShape
+    12→import androidx.compose.material.icons.Icons
+    13→import androidx.compose.material.icons.filled.*
+    14→import androidx.compose.material3.*
+    15→import androidx.compose.runtime.*
+    16→import androidx.compose.ui.Alignment
+    17→import androidx.compose.ui.Modifier
+    18→import androidx.compose.ui.draw.clip
+    19→import androidx.compose.ui.focus.FocusRequester
+    20→import androidx.compose.ui.focus.focusRequester
+    21→import androidx.compose.ui.graphics.Color
+    22→import androidx.compose.ui.graphics.vector.ImageVector
+    23→import androidx.compose.ui.input.key.*
+    24→import androidx.compose.ui.text.font.FontWeight
+    25→import androidx.compose.ui.text.style.TextOverflow
+    26→import androidx.compose.ui.unit.dp
+    27→import androidx.compose.ui.unit.sp
+    28→import kotlinx.coroutines.delay
+    29→import kotlinx.coroutines.launch
+    30→
+    31→/**
+    32→ * Category for grouping editor commands.
+    33→ */
+    34→enum class CommandCategory(val displayName: String, val icon: ImageVector) {
+    35→    FILE("File", Icons.Default.Description),
+    36→    EDIT("Edit", Icons.Default.Edit),
+    37→    VIEW("View", Icons.Default.Visibility),
+    38→    NAVIGATION("Navigation", Icons.Default.Navigation),
+    39→    EDITOR("Editor", Icons.Default.Code),
+    40→    GIT("Git", Icons.Default.AccountTree),
+    41→    RUN("Run", Icons.Default.PlayArrow);
+    42→
+    43→    companion object {
+    44→        fun fromString(name: String): CommandCategory =
+    45→            entries.firstOrNull { it.name.equals(name, ignoreCase = true) } ?: EDIT
+    46→    }
+    47→}
+    48→
+    49→/**
+    50→ * Represents a single command in the palette.
+    51→ *
+    52→ * @property id Unique identifier for the command.
+    53→ * @property label Human-readable label shown in the palette.
+    54→ * @property category The command category for grouping.
+    55→ * @property icon Optional icon to display alongside the label.
+    56→ * @property shortcut Optional keyboard shortcut display string.
+    57→ */
+    58→data class CommandItem(
+    59→    val id: String,
+    60→    val label: String,
+    61→    val category: CommandCategory = CommandCategory.EDIT,
+    62→    val icon: ImageVector = Icons.Default.ChevronRight,
+    63→    val shortcut: String? = null
+    64→)
+    65→
+    66→/**
+    67→ * Built-in commands for the XCoder editor command palette.
+    68→ */
+    69→object BuiltInCommands {
+    70→
+    71→    /** The complete list of default commands. */
+    72→    val all: List<CommandItem> = listOf(
+    73→        // File
+    74→        CommandItem("file.newFile", "New File", CommandCategory.FILE, Icons.Default.NoteAdd, "Ctrl+N"),
+    75→        CommandItem("file.openFile", "Open File...", CommandCategory.FILE, Icons.Default.FolderOpen, "Ctrl+O"),
+    76→        CommandItem("file.save", "Save File", CommandCategory.FILE, Icons.Default.Save, "Ctrl+S"),
+    77→        CommandItem("file.saveAs", "Save As...", CommandCategory.FILE, Icons.Default.SaveAlt),
+    78→        CommandItem("file.closeTab", "Close Tab", CommandCategory.FILE, Icons.Default.Close, "Ctrl+W"),
+    79→        CommandItem("file.closeAll", "Close All Tabs", CommandCategory.FILE, Icons.Default.CloseFullscreen),
+    80→        CommandItem("file.recentFiles", "Recent Files", CommandCategory.FILE, Icons.Default.History),
+    81→        CommandItem("file.exit", "Exit", CommandCategory.FILE, Icons.Default.ExitToApp),
+    82→
+    83→        // Edit
+    84→        CommandItem("edit.undo", "Undo", CommandCategory.EDIT, Icons.Default.Undo, "Ctrl+Z"),
+    85→        CommandItem("edit.redo", "Redo", CommandCategory.EDIT, Icons.Default.Redo, "Ctrl+Y"),
+    86→        CommandItem("edit.cut", "Cut", CommandCategory.EDIT, Icons.Default.ContentCut, "Ctrl+X"),
+    87→        CommandItem("edit.copy", "Copy", CommandCategory.EDIT, Icons.Default.ContentCopy, "Ctrl+C"),
+    88→        CommandItem("edit.paste", "Paste", CommandCategory.EDIT, Icons.Default.ContentPaste, "Ctrl+V"),
+    89→        CommandItem("edit.selectAll", "Select All", CommandCategory.EDIT, Icons.Default.SelectAll, "Ctrl+A"),
+    90→        CommandItem("edit.toggleComment", "Toggle Comment", CommandCategory.EDIT, Icons.Default.Comment, "Ctrl+/"),
+    91→        CommandItem("edit.duplicateLine", "Duplicate Line", CommandCategory.EDIT, Icons.Default.ContentCopy, "Ctrl+Shift+D"),
+    92→        CommandItem("edit.deleteLine", "Delete Line", CommandCategory.EDIT, Icons.Default.Delete, "Ctrl+Shift+K"),
+    93→        CommandItem("edit.moveLineUp", "Move Line Up", CommandCategory.EDIT, Icons.Default.ArrowUpward, "Alt+Up"),
+    94→        CommandItem("edit.moveLineDown", "Move Line Down", CommandCategory.EDIT, Icons.Default.ArrowDownward, "Alt+Down"),
+    95→        CommandItem("edit.selectNextOccurrence", "Select Next Occurrence", CommandCategory.EDIT, Icons.Default.AddCircleOutline, "Ctrl+D"),
+    96→        CommandItem("edit.selectAllOccurrences", "Select All Occurrences", CommandCategory.EDIT, Icons.Default.SelectAll, "Ctrl+Shift+L"),
+    97→        CommandItem("edit.formatDocument", "Format Document", CommandCategory.EDIT, Icons.Default.AutoFixHigh, "Shift+Alt+F"),
+    98→        CommandItem("edit.sortLines", "Sort Lines Ascending", CommandCategory.EDIT, Icons.Default.SortByAlpha),
+    99→        CommandItem("edit.transformUppercase", "Transform to Uppercase", CommandCategory.EDIT, Icons.Default.Title),
+   100→        CommandItem("edit.transformLowercase", "Transform to Lowercase", CommandCategory.EDIT, Icons.Default.Title),
+   101→
+   102→        // View
+   103→        CommandItem("view.commandPalette", "Command Palette", CommandCategory.VIEW, Icons.Default.Terminal, "Ctrl+Shift+P"),
+   104→        CommandItem("view.toggleSidebar", "Toggle Sidebar", CommandCategory.VIEW, Icons.Default.Menu, "Ctrl+B"),
+   105→        CommandItem("view.toggleMinimap", "Toggle Minimap", CommandCategory.VIEW, Icons.Default.ViewSidebar),
+   106→        CommandItem("view.toggleWordWrap", "Toggle Word Wrap", CommandCategory.VIEW, Icons.Default.WrapText, "Alt+Z"),
+   107→        CommandItem("view.toggleBottomPanel", "Toggle Bottom Panel", CommandCategory.VIEW, Icons.Default.Dashboard, "Ctrl+`"),
+   108→        CommandItem("view.toggleFullScreen", "Toggle Full Screen", CommandCategory.VIEW, Icons.Default.Fullscreen),
+   109→        CommandItem("view.zoomIn", "Zoom In", CommandCategory.VIEW, Icons.Default.ZoomIn, "Ctrl+= "),
+   110→        CommandItem("view.zoomOut", "Zoom Out", CommandCategory.VIEW, Icons.Default.ZoomOut, "Ctrl+-"),
+   111→        CommandItem("view.resetZoom", "Reset Zoom", CommandCategory.VIEW, Icons.Default.ZoomOutMap, "Ctrl+0"),
+   112→
+   113→        // Navigation
+   114→        CommandItem("nav.gotoLine", "Go to Line...", CommandCategory.NAVIGATION, Icons.Default.List, "Ctrl+G"),
+   115→        CommandItem("nav.gotoFile", "Go to File...", CommandCategory.NAVIGATION, Icons.Default.Search, "Ctrl+P"),
+   116→        CommandItem("nav.gotoSymbol", "Go to Symbol...", CommandCategory.NAVIGATION, Icons.Default.Tag),
+   117→        CommandItem("nav.find", "Find", CommandCategory.NAVIGATION, Icons.Default.Search, "Ctrl+F"),
+   118→        CommandItem("nav.replace", "Find and Replace", CommandCategory.NAVIGATION, Icons.Default.FindReplace, "Ctrl+H"),
+   119→        CommandItem("nav.goBack", "Go Back", CommandCategory.NAVIGATION, Icons.Default.ArrowBack, "Alt+Left"),
+   120→        CommandItem("nav.goForward", "Go Forward", CommandCategory.NAVIGATION, Icons.Default.ArrowForward, "Alt+Right"),
+   121→
+   122→        // Editor
+   123→        CommandItem("editor.indentUsingSpaces", "Indent Using Spaces", CommandCategory.EDITOR, Icons.Default.SpaceBar),
+   124→        CommandItem("editor.indentUsingTabs", "Indent Using Tabs", CommandCategory.EDITOR, Icons.Default.KeyboardTab),
+   125→        CommandItem("editor.setTabSize2", "Set Tab Size to 2", CommandCategory.EDITOR, Icons.Default.Exposure2),
+   126→        CommandItem("editor.setTabSize4", "Set Tab Size to 4", CommandCategory.EDITOR, Icons.Default.Exposure4),
+   127→        CommandItem("editor.setTabSize8", "Set Tab Size to 8", CommandCategory.EDITOR, Icons.Default.Exposure),
+   128→        CommandItem("editor.showTrailingWhitespace", "Show Trailing Whitespace", CommandCategory.EDITOR, Icons.Default.SpaceBar),
+   129→        CommandItem("editor.changeEncoding", "Change File Encoding", CommandCategory.EDITOR, Icons.Default.Translate),
+   130→        CommandItem("editor.changeEol", "Change End of Line Sequence", CommandCategory.EDITOR, Icons.Default.SwapHoriz),
+   131→
+   132→        // Git
+   133→        CommandItem("git.init", "Git: Initialize Repository", CommandCategory.GIT, Icons.Default.AddCircle),
+   134→        CommandItem("git.commit", "Git: Commit", CommandCategory.GIT, Icons.Default.Check),
+   135→        CommandItem("git.push", "Git: Push", CommandCategory.GIT, Icons.Default.Upload),
+   136→        CommandItem("git.pull", "Git: Pull", CommandCategory.GIT, Icons.Default.Download),
+   137→        CommandItem("git.branch", "Git: Create Branch...", CommandCategory.GIT, Icons.Default.CallSplit),
+   138→        CommandItem("git.checkout", "Git: Checkout Branch...", CommandCategory.GIT, Icons.Default.SwapHoriz),
+   139→        CommandItem("git.merge", "Git: Merge Branch...", CommandCategory.GIT, Icons.Default.CallMerge),
+   140→        CommandItem("git.log", "Git: View History", CommandCategory.GIT, Icons.Default.History),
+   141→        CommandItem("git.diff", "Git: View Diff", CommandCategory.GIT, Icons.Default.CompareArrows),
+   142→        CommandItem("git.stash", "Git: Stash Changes", CommandCategory.GIT, Icons.Default.Archive),
+   143→        CommandItem("git.status", "Git: Show Status", CommandCategory.GIT, Icons.Default.Info),
+   144→
+   145→        // Run
+   146→        CommandItem("run.runFile", "Run File", CommandCategory.RUN, Icons.Default.PlayArrow, "Ctrl+F5"),
+   147→        CommandItem("run.build", "Build Project", CommandCategory.RUN, Icons.Default.Build, "Ctrl+F9"),
+   148→        CommandItem("run.stop", "Stop", CommandCategory.RUN, Icons.Default.Stop, "Shift+F5"),
+   149→        CommandItem("run.runWithArgs", "Run with Arguments...", CommandCategory.RUN, Icons.Default.PlayCircle),
+   150→        CommandItem("run.toggleBreakpoint", "Toggle Breakpoint", CommandCategory.RUN, Icons.Default.FiberManualRecord),
+   151→        CommandItem("run.debug", "Debug", CommandCategory.RUN, Icons.Default.BugReport)
+   152→    )
+   153→}
+   154→
+   155→/**
+   156→ * A Compose command palette overlay for the XCoder editor.
+   157→ *
+   158→ * Features:
+   159→ * - Fuzzy search over all commands
+   160→ * - Category grouping with section headers
+   161→ * - Icon and shortcut display for each command
+   162→ * - Recent commands tracking
+   163→ * - Keyboard navigation (arrow keys + Enter)
+   164→ *
+   165→ * @param visible Whether the palette is currently shown.
+   166→ * @param onDismiss Callback when the palette is closed.
+   167→ * @param onCommand Callback when a command is executed, receiving the command ID.
+   168→ * @param extraCommands Additional commands to include beyond the built-in set.
+   169→ * @param modifier Modifier applied to the outer overlay.
+   170→ */
+   171→@OptIn(ExperimentalMaterial3Api::class)
+   172→@Composable
+   173→fun CommandPalette(
+   174→    visible: Boolean,
+   175→    onDismiss: () -> Unit,
+   176→    onCommand: (String) -> Unit,
+   177→    extraCommands: List<CommandItem> = emptyList(),
+   178→    modifier: Modifier = Modifier
+   179→) {
+   180→    var query by remember { mutableStateOf("") }
+   181→    var selectedIndex by remember { mutableIntStateOf(0) }
+   182→    var recentIds by remember { mutableStateOf(listOf<String>()) }
+   183→    val focusRequester = remember { FocusRequester() }
+   184→    val scope = rememberCoroutineScope()
+   185→
+   186→    // Combine built-in commands with any extra commands (extras take priority on duplicate IDs)
+   187→    val allCommands = remember(extraCommands) {
+   188→        val base = BuiltInCommands.all.toMutableList()
+   189→        for (extra in extraCommands) {
+   190→            val idx = base.indexOfFirst { it.id == extra.id }
+   191→            if (idx >= 0) base[idx] = extra else base.add(extra)
+   192→        }
+   193→        base
+   194→    }
+   195→
+   196→    // Filter commands by fuzzy query
+   197→    val filteredCommands = remember(query, allCommands) {
+   198→        if (query.isBlank()) {
+   199→            allCommands
+   200→        } else {
+   201→            allCommands.filter { cmd ->
+   202→                fuzzyMatch(query, cmd.label) ||
+   203→                    fuzzyMatch(query, cmd.id) ||
+   204→                    fuzzyMatch(query, cmd.category.displayName)
+   205→            }
+   206→        }
+   207→    }
+   208→
+   209→    // Group recent commands (those shown at the top when query is empty)
+   210→    val recentCommands = remember(recentIds, allCommands) {
+   211→        if (query.isNotBlank()) emptyList()
+   212→        else recentIds.mapNotNull { id -> allCommands.find { it.id == id } }
+   213→    }
+   214→
+   215→    // Show items: recent first (when no query), then filtered, grouped by category
+   216→    val displaySections = remember(filteredCommands, recentCommands, query) {
+   217→        val sections = mutableListOf<CommandPaletteSection>()
+   218→        if (recentCommands.isNotEmpty()) {
+   219→            sections.add(CommandPaletteSection("Recent", recentCommands))
+   220→        }
+   221→        if (query.isBlank() && recentCommands.isNotEmpty()) {
+   222→            val remaining = allCommands.filter { cmd ->
+   223→                recentIds.contains(cmd.id).not()
+   224→            }
+   225→            val grouped = remaining.groupBy { it.category }
+   226→            for (cat in CommandCategory.entries) {
+   227→                grouped[cat]?.let { cmds ->
+   228→                    if (cmds.isNotEmpty()) {
+   229→                        sections.add(CommandPaletteSection(cat.displayName, cmds))
+   230→                    }
+   231→                }
+   232→            }
+   233→        } else {
+   234→            val grouped = filteredCommands.groupBy { it.category }
+   235→            for (cat in CommandCategory.entries) {
+   236→                grouped[cat]?.let { cmds ->
+   237→                    if (cmds.isNotEmpty()) {
+   238→                        sections.add(CommandPaletteSection(cat.displayName, cmds))
+   239→                    }
+   240→                }
+   241→            }
+   242→        }
+   243→        sections
+   244→    }
+   245→
+   246→    // Flat list index helper for keyboard navigation
+   247→    val flatItemCount = remember(displaySections) {
+   248→        displaySections.sumOf { 1 + it.commands.size }
+   249→    }
+   250→
+   251→    // Ensure selected index is in bounds
+   252→    LaunchedEffect(flatItemCount) {
+   253→        if (selectedIndex >= flatItemCount) {
+   254→            selectedIndex = (flatItemCount - 1).coerceAtLeast(0)
+   255→        }
+   256→    }
+   257→
+   258→    // Auto-focus the search input when palette becomes visible
+   259→    LaunchedEffect(visible) {
+   260→        if (visible) {
+   261→            query = ""
+   262→            selectedIndex = 0
+   263→            delay(50)
+   264→            focusRequester.requestFocus()
+   265→        }
+   266→    }
+   267→
+   268→    AnimatedVisibility(
+   269→        visible = visible,
+   270→        enter = fadeIn(animationSpec = tween(100)) + slideInVertically(
+   271→            initialOffsetY = { -it / 4 },
+   272→            animationSpec = tween(150)
+   273→        ),
+   274→        exit = fadeOut(animationSpec = tween(80)) + slideOutVertically(
+   275→            targetOffsetY = { -it / 4 },
+   276→            animationSpec = tween(100)
+   277→        ),
+   278→        modifier = modifier
+   279→    ) {
+   280→        // Dimmed overlay backdrop
+   281→        Box(
+   282→            modifier = Modifier
+   283→                .fillMaxSize()
+   284→                .background(Color.Black.copy(alpha = 0.5f))
+   285→                .clickable(
+   286→                    indication = null,
+   287→                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+   288→                ) { onDismiss() },
+   289→            contentAlignment = Alignment.TopCenter
+   290→        ) {
+   291→            Card(
+   292→                modifier = Modifier
+   293→                    .padding(top = 80.dp)
+   294→                    .fillMaxWidth(0.92f)
+   295→                    .heightIn(max = 420.dp),
+   296→                shape = RoundedCornerShape(12.dp),
+   297→                colors = CardDefaults.cardColors(
+   298→                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+   299→                ),
+   300→                elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
+   301→            ) {
+   302→                Column {
+   303→                    // Search input
+   304→                    OutlinedTextField(
+   305→                        value = query,
+   306→                        onValueChange = {
+   307→                            query = it
+   308→                            selectedIndex = 0
+   309→                        },
+   310→                        modifier = Modifier
+   311→                            .fillMaxWidth()
+   312→                            .focusRequester(focusRequester)
+   313→                            .focusable()
+   314→                            .onKeyEvent { event ->
+   315→                                handlePaletteKeyEvent(
+   316→                                    event = event,
+   317→                                    flatItemCount = flatItemCount,
+   318→                                    selectedIndex = selectedIndex,
+   319→                                    displaySections = displaySections,
+   320→                                    onSelectIndex = { selectedIndex = it },
+   321→                                    onExecute = { cmdId ->
+   322→                                        recentIds = (listOf(cmdId) + recentIds)
+   323→                                            .distinct()
+   324→                                            .take(10)
+   325→                                        onCommand(cmdId)
+   326→                                        onDismiss()
+   327→                                    },
+   328→                                    onDismiss = onDismiss
+   329→                                )
+   330→                            },
+   331→                        placeholder = {
+   332→                            Text(
+   333→                                text = if (query.startsWith(">"))
+   334→                                    "Type a command..."
+   335→                                else
+   336→                                    "Search commands by name, category, or shortcut...",
+   337→                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+   338→                                fontSize = 14.sp
+   339→                            )
+   340→                        },
+   341→                        leadingIcon = {
+   342→                            Icon(
+   343→                                imageVector = Icons.Default.Search,
+   344→                                contentDescription = null,
+   345→                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+   346→                                modifier = Modifier.size(18.dp)
+   347→                            )
+   348→                        },
+   349→                        singleLine = true,
+   350→                        textStyle = MaterialTheme.typography.bodyLarge.copy(
+   351→                            color = MaterialTheme.colorScheme.onSurface
+   352→                        ),
+   353→                        colors = OutlinedTextFieldDefaults.colors(
+   354→                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+   355→                            unfocusedBorderColor = Color.Transparent,
+   356→                            cursorColor = MaterialTheme.colorScheme.primary
+   357→                        )
+   358→                    )
+   359→
+   360→                    HorizontalDivider(
+   361→                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+   362→                    )
+   363→
+   364→                    // Command list
+   365→                    LazyColumn(
+   366→                        modifier = Modifier
+   367→                            .fillMaxWidth()
+   368→                            .weight(1f, fill = false),
+   369→                        contentPadding = PaddingValues(vertical = 4.dp)
+   370→                    ) {
+   371→                        var flatIndex = 0
+   372→                        displaySections.forEach { section ->
+   373→                            // Section header
+   374→                            item(key = "header_${section.title}") {
+   375→                                Text(
+   376→                                    text = section.title,
+   377→                                    style = MaterialTheme.typography.labelSmall.copy(
+   378→                                        fontWeight = FontWeight.SemiBold,
+   379→                                        letterSpacing = 1.sp
+   380→                                    ),
+   381→                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+   382→                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+   383→                                )
+   384→                                flatIndex++ // header counts as an item for keyboard nav
+   385→                            }
+   386→
+   387→                            // Command items
+   388→                            itemsIndexed(section.commands) { index, cmd ->
+   389→                                val thisFlatIndex = flatIndex
+   390→                                flatIndex++
+   391→                                CommandItemRow(
+   392→                                    command = cmd,
+   393→                                    isSelected = thisFlatIndex == selectedIndex,
+   394→                                    onClick = {
+   395→                                        recentIds = (listOf(cmd.id) + recentIds)
+   396→                                            .distinct()
+   397→                                            .take(10)
+   398→                                        onCommand(cmd.id)
+   399→                                        onDismiss()
+   400→                                    },
+   401→                                    modifier = Modifier.clickable {
+   402→                                        recentIds = (listOf(cmd.id) + recentIds)
+   403→                                            .distinct()
+   404→                                            .take(10)
+   405→                                        onCommand(cmd.id)
+   406→                                        onDismiss()
+   407→                                    }
+   408→                                )
+   409→                            }
+   410→                        }
+   411→                    }
+   412→
+   413→                    // Footer hint
+   414→                    Surface(
+   415→                        modifier = Modifier.fillMaxWidth(),
+   416→                        color = MaterialTheme.colorScheme.surfaceVariant
+   417→                    ) {
+   418→                        Row(
+   419→                            modifier = Modifier
+   420→                                .padding(horizontal = 16.dp, vertical = 6.dp),
+   421→                            verticalAlignment = Alignment.CenterVertically
+   422→                        ) {
+   423→                            Text(
+   424→                                text = "\u2191\u2193 Navigate",
+   425→                                style = MaterialTheme.typography.labelSmall,
+   426→                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+   427→                            )
+   428→                            Spacer(Modifier.width(16.dp))
+   429→                            Text(
+   430→                                text = "Enter Execute",
+   431→                                style = MaterialTheme.typography.labelSmall,
+   432→                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+   433→                            )
+   434→                            Spacer(Modifier.width(16.dp))
+   435→                            Text(
+   436→                                text = "Esc Close",
+   437→                                style = MaterialTheme.typography.labelSmall,
+   438→                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+   439→                            )
+   440→                        }
+   441→                    }
+   442→                }
+   443→            }
+   444→        }
+   445→    }
+   446→}
+   447→
+   448→/**
+   449→ * A section of commands grouped under a title.
+   450→ */
+   451→private data class CommandPaletteSection(
+   452→    val title: String,
+   453→    val commands: List<CommandItem>
+   454→)
+   455→
+   456→/**
+   457→ * A single row in the command palette list.
+   458→ */
+   459→@Composable
+   460→private fun CommandItemRow(
+   461→    command: CommandItem,
+   462→    isSelected: Boolean,
+   463→    onClick: () -> Unit,
+   464→    modifier: Modifier = Modifier
+   465→) {
+   466→    val backgroundColor = if (isSelected) {
+   467→        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
+   468→    } else {
+   469→        Color.Transparent
+   470→    }
+   471→
+   472→    Row(
+   473→        modifier = modifier
+   474→            .fillMaxWidth()
+   475→            .background(backgroundColor)
+   476→            .padding(horizontal = 16.dp, vertical = 8.dp),
+   477→        verticalAlignment = Alignment.CenterVertically
+   478→    ) {
+   479→        Icon(
+   480→            imageVector = command.icon,
+   481→            contentDescription = null,
+   482→            modifier = Modifier.size(18.dp),
+   483→            tint = if (isSelected)
+   484→                MaterialTheme.colorScheme.primary
+   485→            else
+   486→                MaterialTheme.colorScheme.onSurfaceVariant
+   487→        )
+   488→        Spacer(Modifier.width(12.dp))
+   489→        Text(
+   490→            text = command.label,
+   491→            style = MaterialTheme.typography.bodyMedium,
+   492→            color = if (isSelected)
+   493→                MaterialTheme.colorScheme.onPrimaryContainer
+   494→            else
+   495→                MaterialTheme.colorScheme.onSurface,
+   496→            maxLines = 1,
+   497→            overflow = TextOverflow.Ellipsis,
+   498→            modifier = Modifier.weight(1f)
+   499→        )
+   500→        // Category badge
+   501→        Surface(
+   502→            shape = RoundedCornerShape(4.dp),
+   503→            color = MaterialTheme.colorScheme.surfaceVariant
+   504→        ) {
+   505→            Text(
+   506→                text = command.category.displayName.uppercase(),
+   507→                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+   508→                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+   509→                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+   510→            )
+   511→        }
+   512→        if (command.shortcut != null) {
+   513→            Spacer(Modifier.width(8.dp))
+   514→            Text(
+   515→                text = command.shortcut,
+   516→                style = MaterialTheme.typography.labelSmall,
+   517→                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+   518→            )
+   519→        }
+   520→    }
+   521→}
+   522→
+   523→/**
+   524→ * Fuzzy matching: returns true if all characters of [query] appear in [text]
+   525→ * in order (case-insensitive).
+   526→ */
+   527→internal fun fuzzyMatch(query: String, text: String): Boolean {
+   528→    val q = query.lowercase()
+   529→    val t = text.lowercase()
+   530→    var qi = 0
+   531→    for (ti in t.indices) {
+   532→        if (qi < q.length && t[ti] == q[qi]) {
+   533→            qi++
+   534→        }
+   535→    }
+   536→    return qi == q.length
+   537→}
+   538→
+   539→/**
+   540→ * Handles keyboard events for the command palette.
+   541→ * Returns true if the event was consumed.
+   542→ */
+   543→private fun handlePaletteKeyEvent(
+   544→    event: KeyEvent,
+   545→    flatItemCount: Int,
+   546→    selectedIndex: Int,
+   547→    displaySections: List<CommandPaletteSection>,
+   548→    onSelectIndex: (Int) -> Unit,
+   549→    onExecute: (String) -> Unit,
+   550→    onDismiss: () -> Unit
+   551→): Boolean {
+   552→    when (event.type) {
+   553→        KeyEventType.KeyDown -> {
+   554→            when (event.key) {
+   555→                Key.DirectionDown -> {
+   556→                    val next = (selectedIndex + 1).coerceAtMost(flatItemCount - 1)
+   557→                    onSelectIndex(next)
+   558→                    return true
+   559→                }
+   560→                Key.DirectionUp -> {
+   561→                    val prev = (selectedIndex - 1).coerceAtLeast(0)
+   562→                    onSelectIndex(prev)
+   563→                    return true
+   564→                }
+   565→                Key.Enter -> {
+   566→                    val cmd = getCommandAtFlatIndex(displaySections, selectedIndex)
+   567→                    if (cmd != null) {
+   568→                        onExecute(cmd.id)
+   569→                    }
+   570→                    return true
+   571→                }
+   572→                Key.Escape -> {
+   573→                    onDismiss()
+   574→                    return true
+   575→                }
+   576→                else -> return false
+   577→            }
+   578→        }
+   579→        else -> return false
+   580→    }
+   581→}
+   582→
+   583→/**
+   584→ * Retrieves the [CommandItem] at a given flat index across sections.
+   585→ * Section headers count as indices too.
+   586→ */
+   587→private fun getCommandAtFlatIndex(
+   588→    sections: List<CommandPaletteSection>,
+   589→    flatIndex: Int
+   590→): CommandItem? {
+   591→    var current = 0
+   592→    for (section in sections) {
+   593→        current++ // header
+   594→        if (flatIndex < current + section.commands.size) {
+   595→            return section.commands[flatIndex - current]
+   596→        }
+   597→        current += section.commands.size
+   598→    }
+   599→    return null
+   600→}
+   601→
