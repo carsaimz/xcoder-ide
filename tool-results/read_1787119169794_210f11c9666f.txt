@@ -1,0 +1,726 @@
+   445→            } catch (e: Exception) {
+   446→                _snackbarEvents.emit("XML generation failed: ${e.message}")
+   447→            } finally {
+   448→                _isGenerating.value = false
+   449→            }
+   450→        }
+   451→    }
+   452→
+   453→    fun generateKotlin() {
+   454→        viewModelScope.launch {
+   455→            _isGenerating.value = true
+   456→            try {
+   457→                val kotlin = KotlinGenerator().generate(_canvasState.value)
+   458→                _generatedKotlin.value = kotlin
+   459→                _snackbarEvents.emit("Kotlin code generated successfully")
+   460→            } catch (e: Exception) {
+   461→                _snackbarEvents.emit("Kotlin generation failed: ${e.message}")
+   462→            } finally {
+   463→                _isGenerating.value = false
+   464→            }
+   465→        }
+   466→    }
+   467→}
+   468→
+   469→
+   470→// ===================== Serialization =====================
+   471→
+   472→@kotlinx.serialization.Serializable
+   473→private data class PlacedBlockDto(
+   474→    val instanceId: String,
+   475→    val definitionId: String,
+   476→    val x: Float,
+   477→    val y: Float,
+   478→    val inputValues: Map<String, String>,
+   479→)
+   480→
+   481→@kotlinx.serialization.Serializable
+   482→private data class BlockConnectionDto(
+   483→    val id: String,
+   484→    val sourceBlockId: String,
+   485→    val sourcePortName: String,
+   486→    val targetBlockId: String,
+   487→    val targetPortName: String,
+   488→)
+   489→
+   490→@kotlinx.serialization.Serializable
+   491→private data class BlockCanvasDto(
+   492→    val blocks: List<PlacedBlockDto>,
+   493→    val connections: List<BlockConnectionDto>,
+   494→    val projectName: String,
+   495→    val lastSaved: Long?,
+   496→)
+   497→
+   498→class BlockCanvasSerializer : kotlinx.serialization.KSerializer<BlockCanvas> {
+   499→    private val dtoSerializer = BlockCanvasDto.serializer()
+   500→    override val descriptor = dtoSerializer.descriptor
+   501→
+   502→    override fun serialize(encoder: kotlinx.serialization.encoding.Encoder, value: BlockCanvas) {
+   503→        val dto = BlockCanvasDto(
+   504→            blocks = value.blocks.map { PlacedBlockDto(it.instanceId, it.definition.id, it.x, it.y, it.inputValues) },
+   505→            connections = value.connections.map { BlockConnectionDto(it.id, it.sourceBlockId, it.sourcePortName, it.targetBlockId, it.targetPortName) },
+   506→            projectName = value.projectName,
+   507→            lastSaved = value.lastSaved,
+   508→        )
+   509→        encoder.encodeSerializableValue(dtoSerializer, dto)
+   510→    }
+   511→
+   512→    override fun deserialize(decoder: kotlinx.serialization.encoding.Decoder): BlockCanvas {
+   513→        val dto = decoder.decodeSerializableValue(dtoSerializer)
+   514→        val allDefinitions = BlockPalette.allBlocks.associateBy { it.id }
+   515→        return BlockCanvas(
+   516→            blocks = dto.blocks.mapNotNull { bDto ->
+   517→                val def = allDefinitions[bDto.definitionId] ?: return@mapNotNull null
+   518→                PlacedBlock(bDto.instanceId, def, bDto.x, bDto.y, bDto.inputValues.toMutableMap())
+   519→            },
+   520→            connections = dto.connections.map { BlockConnection(it.id, it.sourceBlockId, it.sourcePortName, it.targetBlockId, it.targetPortName) },
+   521→            projectName = dto.projectName,
+   522→            lastSaved = dto.lastSaved,
+   523→        )
+   524→    }
+   525→}
+   526→
+   527→
+   528→// ===================== UI Components =====================
+   529→
+   530→@OptIn(ExperimentalMaterial3Api::class)
+   531→@Composable
+   532→fun BlockEditorScreen(
+   533→    viewModel: BlockEditorViewModel = hiltViewModel(),
+   534→) {
+   535→    val snackbarHostState = remember { SnackbarHostState() }
+   536→    val canvasState by viewModel.canvasState.collectAsState()
+   537→    val selectedId by viewModel.selectedBlockId.collectAsState()
+   538→    val activeTool by viewModel.activeTool.collectAsState()
+   539→    val isGenerating by viewModel.isGenerating.collectAsState()
+   540→    val scope = rememberCoroutineScope()
+   541→    var showPalette by remember { mutableStateOf(true) }
+   542→    var showProperties by remember { mutableStateOf(true) }
+   543→    var showCodeDialog by remember { mutableStateOf(false) }
+   544→    var codeTab by remember { mutableStateOf(0) }
+   545→
+   546→    LaunchedEffect(Unit) {
+   547→        viewModel.snackbarEvents.collect { message ->
+   548→            snackbarHostState.showSnackbar(message)
+   549→        }
+   550→    }
+   551→
+   552→    Scaffold(
+   553→        topBar = {
+   554→            TopAppBar(
+   555→                title = { Text(canvasState.projectName, fontWeight = FontWeight.Bold) },
+   556→                colors = TopAppBarDefaults.topAppBarColors(
+   557→                    containerColor = MaterialTheme.colorScheme.surface,
+   558→                ),
+   559→                actions = {
+   560→                    IconButton(onClick = { viewModel.undo() }, enabled = viewModel.canUndo) {
+   561→                        Icon(Icons.Default.Undo, contentDescription = "Undo")
+   562→                    }
+   563→                    IconButton(onClick = { viewModel.redo() }, enabled = viewModel.canRedo) {
+   564→                        Icon(Icons.Default.Redo, contentDescription = "Redo")
+   565→                    }
+   566→                    IconButton(onClick = { showPalette = !showPalette }) {
+   567→                        Icon(Icons.Default.Palette, contentDescription = "Toggle Palette")
+   568→                    }
+   569→                    IconButton(onClick = { showProperties = !showProperties }) {
+   570→                        Icon(Icons.Default.Settings, contentDescription = "Toggle Properties")
+   571→                    }
+   572→                    Spacer(Modifier.width(8.dp))
+   573→                    IconButton(onClick = { viewModel.generateXml() }, enabled = !isGenerating) {
+   574→                        Icon(Icons.Default.Download, contentDescription = "Generate XML")
+   575→                    }
+   576→                    IconButton(onClick = { viewModel.generateKotlin() }, enabled = !isGenerating) {
+   577→                        Icon(Icons.Default.Upload, contentDescription = "Generate Kotlin")
+   578→                    }
+   579→                    IconButton(onClick = { showCodeDialog = true }) {
+   580→                        Icon(Icons.Default.Search, contentDescription = "View Code")
+   581→                    }
+   582→                },
+   583→            )
+   584→        },
+   585→        snackbarHost = { SnackbarHost(snackbarHostState) },
+   586→        floatingActionButton = {
+   587→            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+   588→                FloatingActionButton(
+   589→                    onClick = { viewModel.setZoom(viewModel.zoomLevel + 0.25f) },
+   590→                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+   591→                ) {
+   592→                    Icon(Icons.Default.ZoomIn, "Zoom In")
+   593→                }
+   594→                FloatingActionButton(
+   595→                    onClick = { viewModel.setZoom(viewModel.zoomLevel - 0.25f) },
+   596→                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+   597→                ) {
+   598→                    Icon(Icons.Default.ZoomOut, "Zoom Out")
+   599→                }
+   600→            }
+   601→        },
+   602→    ) { padding ->
+   603→        Row(
+   604→            modifier = Modifier
+   605→                .fillMaxSize()
+   606→                .padding(padding),
+   607→        ) {
+   608→            AnimatedVisibility(visible = showPalette, enter = fadeIn(), exit = fadeOut()) {
+   609→                BlockPalettePanel(
+   610→                    onBlockSelected = { viewModel.placeBlock(it) },
+   611→                    modifier = Modifier
+   612→                        .width(240.dp)
+   613→                        .fillMaxHeight()
+   614→                        .background(MaterialTheme.colorScheme.surfaceVariant)
+   615→                )
+   616→            }
+   617→
+   618→            Box(
+   619→                modifier = Modifier
+   620→                    .weight(1f)
+   621→                    .fillMaxHeight()
+   622→            ) {
+   623→                BlockCanvasView(
+   624→                    canvas = canvasState,
+   625→                    selectedBlockId = selectedId,
+   626→                    activeTool = activeTool,
+   627→                    zoomLevel = viewModel.zoomLevel,
+   628→                    panOffset = viewModel.panOffset,
+   629→                    onBlockMoved = { id, x, y -> viewModel.moveBlock(id, x, y) },
+   630→                    onMoveCommit = { viewModel.commitMove() },
+   631→                    onBlockSelected = { viewModel.selectBlock(it) },
+   632→                    onBlockDoubleTapped = { viewModel.selectBlock(it) },
+   633→                    onConnectionStart = { blockId, port -> viewModel.startConnection(blockId, port) },
+   634→                    onConnectionEnd = { blockId, port -> viewModel.completeConnection(blockId, port) },
+   635→                    onConnectionRemoved = { viewModel.removeConnection(it) },
+   636→                    onPanChanged = { viewModel.setPan(it) },
+   637→                )
+   638→
+   639→                ToolBar(
+   640→                    activeTool = activeTool,
+   641→                    onToolSelected = { viewModel.setActiveTool(it) },
+   642→                    onClear = { viewModel.clearCanvas() },
+   643→                    modifier = Modifier
+   644→                        .align(Alignment.BottomStart)
+   645→                        .padding(16.dp),
+   646→                )
+   647→            }
+   648→
+   649→            AnimatedVisibility(visible = showProperties, enter = fadeIn(), exit = fadeOut()) {
+   650→                PropertyPanel(
+   651→                    canvas = canvasState,
+   652→                    selectedBlockId = selectedId,
+   653→                    onPropertyChanged = { blockId, port, value ->
+   654→                        viewModel.updatePropertyValue(blockId, port, value)
+   655→                    },
+   656→                    onDeleteBlock = { viewModel.deleteBlock(it) },
+   657→                    onDuplicateBlock = { viewModel.duplicateBlock(it) },
+   658→                    modifier = Modifier
+   659→                        .width(280.dp)
+   660→                        .fillMaxHeight()
+   661→                        .background(MaterialTheme.colorScheme.surfaceVariant)
+   662→                )
+   663→            }
+   664→        }
+   665→    }
+   666→
+   667→    if (showCodeDialog) {
+   668→        AlertDialog(
+   669→            onDismissRequest = { showCodeDialog = false },
+   670→            title = { Text("Generated Code") },
+   671→            text = {
+   672→                Column {
+   673→                    Row {
+   674→                        listOf("XML", "Kotlin").forEachIndexed { index, label ->
+   675→                            TextButton(
+   676→                                onClick = { codeTab = index },
+   677→                            ) {
+   678→                                Text(
+   679→                                    label,
+   680→                                    color = if (codeTab == index) MaterialTheme.colorScheme.primary
+   681→                                    else MaterialTheme.colorScheme.onSurface,
+   682→                                    fontWeight = if (codeTab == index) FontWeight.Bold else FontWeight.Normal,
+   683→                                )
+   684→                            }
+   685→                        }
+   686→                    }
+   687→                    Spacer(Modifier.height(8.dp))
+   688→                    val code = if (codeTab == 0) viewModel.generatedXml.collectAsState().value
+   689→                    else viewModel.generatedKotlin.collectAsState().value
+   690→                    Text(
+   691→                        text = code.ifEmpty { "Click generate to produce code" },
+   692→                        style = TextStyle(
+   693→                            fontFamily = FontFamily.Monospace,
+   694→                            fontSize = 11.sp,
+   695→                        ),
+   696→                        modifier = Modifier
+   697→                            .fillMaxWidth()
+   698→                            .height(400.dp)
+   699→                            .background(Color(0xFF1E1E1E))
+   700→                            .padding(12.dp),
+   701→                        color = Color(0xFFD4D4D4),
+   702→                        maxLines = 50,
+   703→                        overflow = TextOverflow.Ellipsis,
+   704→                    )
+   705→                }
+   706→            },
+   707→            confirmButton = {
+   708→                TextButton(onClick = { showCodeDialog = false }) { Text("Close") }
+   709→            },
+   710→        )
+   711→    }
+   712→}
+   713→
+   714→
+   715→// ===================== Canvas View =====================
+   716→
+   717→@Composable
+   718→private fun BlockCanvasView(
+   719→    canvas: BlockCanvas,
+   720→    selectedBlockId: String?,
+   721→    activeTool: EditorTool,
+   722→    zoomLevel: Float,
+   723→    panOffset: Offset,
+   724→    onBlockMoved: (String, Float, Float) -> Unit,
+   725→    onMoveCommit: () -> Unit,
+   726→    onBlockSelected: (String?) -> Unit,
+   727→    onBlockDoubleTapped: (String) -> Unit,
+   728→    onConnectionStart: (String, String) -> Unit,
+   729→    onConnectionEnd: (String, String) -> Unit,
+   730→    onConnectionRemoved: (String) -> Unit,
+   731→    onPanChanged: (Offset) -> Unit,
+   732→) {
+   733→    var draggingBlockId by remember { mutableStateOf<String?>(null) }
+   734→    var dragOffset by remember { mutableStateOf(Offset.Zero) }
+   735→    var isPanning by remember { mutableStateOf(false) }
+   736→    var panStart by remember { mutableStateOf(Offset.Zero) }
+   737→    var panStartOffset by remember { mutableStateOf(Offset.Zero) }
+   738→    val connectionLines = remember(canvas.connections, canvas.blocks) {
+   739→        canvas.connections.mapNotNull { conn ->
+   740→            val source = canvas.blocks.find { it.instanceId == conn.sourceBlockId } ?: return@mapNotNull null
+   741→                       val target = canvas.blocks.find { it.instanceId == conn.targetBlockId } ?: return@mapNotNull null
+   742→            val sourcePort = source.definition.outputs.find { it.name == conn.sourcePortName } ?: return@mapNotNull null
+   743→            val targetPort = target.definition.inputs.find { it.name == conn.targetPortName } ?: return@mapNotNull null
+   744→            val sourceIndex = source.definition.outputs.indexOf(sourcePort)
+   745→            val targetIndex = target.definition.inputs.indexOf(targetPort)
+   746→            val blockWidth = 200f
+   747→            val blockHeight = 60f + (source.definition.inputs.size + source.definition.outputs.size) * 20f
+   748→            val sx = source.x + blockWidth
+   749→            val sy = source.y + 30f + sourceIndex * 20f
+   750→            val tx = target.x
+   751→            val ty = target.y + 30f + targetIndex * 20f
+   752→            Triple(conn.id, Offset(sx, sy), Offset(tx, ty))
+   753→        }
+   754→    }
+   755→
+   756→    Box(
+   757→        modifier = Modifier
+   758→            .fillMaxSize()
+   759→            .background(Color(0xFF252526))
+   760→            .pointerInput(activeTool) {
+   761→                detectTapGestures(
+   762→                    onTap = { onBlockSelected(null) },
+   763→                    onDoubleTap = { onBlockSelected(null) },
+   764→                )
+   765→            }
+   766→            .pointerInput(activeTool) {
+   767→                if (activeTool == EditorTool.Pan) {
+   768→                    detectDragGestures(
+   769→                        onDragStart = {
+   770→                            isPanning = true
+   771→                            panStart = it
+   772→                            panStartOffset = panOffset
+   773→                        },
+   774→                        onDrag = { change, dragAmount ->
+   775→                            if (isPanning) {
+   776→                                val newOffset = Offset(
+   777→                                    panStartOffset.x + (change.position.x - panStart.x),
+   778→                                    panStartOffset.y + (change.position.y - panStart.y),
+   779→                                )
+   780→                                onPanChanged(newOffset)
+   781→                            }
+   782→                        },
+   783→                        onDragEnd = { isPanning = false },
+   784→                    )
+   785→                }
+   786→            },
+   787→    ) {
+   788→        Canvas(
+   789→            modifier = Modifier.fillMaxSize(),
+   790→        ) {
+   791→            val scale = zoomLevel
+   792→            val translateX = panOffset.x * scale
+   793→            val translateY = panOffset.y * scale
+   794→
+   795→            connectionLines.forEach { (connId, start, end) ->
+   796→                val scaledStart = Offset(start.x * scale + translateX, start.y * scale + translateY)
+   797→                val scaledEnd = Offset(end.x * scale + translateX, end.y * scale + translateY)
+   798→                val cp1 = Offset(scaledStart.x + 80f, scaledStart.y)
+   799→                val cp2 = Offset(scaledEnd.x - 80f, scaledEnd.y)
+   800→                drawPath(
+   801→                    path = androidx.compose.ui.graphics.Path().apply {
+   802→                        moveTo(scaledStart.x, scaledStart.y)
+   803→                        cubicTo(cp1.x, cp1.y, cp2.x, cp2.y, scaledEnd.x, scaledEnd.y)
+   804→                    },
+   805→                    color = Color(0xFF60A5FA),
+   806→                    style = Stroke(width = 2f),
+   807→                )
+   808→            }
+   809→        }
+   810→
+   811→        canvas.blocks.forEach { block ->
+   812→            val isSelected = block.instanceId == selectedBlockId
+   813→            val blockWidth = 200.dp
+   814→            val blockHeight = (60 + (block.definition.inputs.size + block.definition.outputs.size) * 20).dp
+   815→
+   816→            Box(
+   817→                modifier = Modifier
+   818→                    .offset(
+   819→                        x = (block.x * zoomLevel + panOffset.x * zoomLevel).dp,
+   820→                        y = (block.y * zoomLevel + panOffset.y * zoomLevel).dp,
+   821→                    )
+   822→                    .width(blockWidth * zoomLevel)
+   823→                    .height(blockHeight * zoomLevel)
+   824→                    .clip(RoundedCornerShape(8.dp * zoomLevel))
+   825→                    .background(
+   826→                        if (isSelected) Color(0xFF3A3A3C)
+   827→                        else Color(0xFF2D2D30)
+   828→                    )
+   829→                    .then(
+   830→                        if (isSelected) Modifier.border(
+   831→                            2.dp * zoomLevel,
+   832→                            Color(0xFF60A5FA),
+   833→                            RoundedCornerShape(8.dp * zoomLevel),
+   834→                        ) else Modifier
+   835→                    )
+   836→                    .pointerInput(activeTool, block.instanceId) {
+   837→                        detectDragGestures(
+   838→                            onDragStart = {
+   839→                                if (activeTool == EditorTool.Select) {
+   840→                                    draggingBlockId = block.instanceId
+   841→                                    onBlockSelected(block.instanceId)
+   842→                                }
+   843→                            },
+   844→                            onDrag = { change, dragAmount ->
+   845→                                if (draggingBlockId == block.instanceId && activeTool == EditorTool.Select) {
+   846→                                    change.consume()
+   847→                                    val newX = block.x + dragAmount.x / zoomLevel
+   848→n                                    val newY = block.y + dragAmount.y / zoomLevel
+   849→                                    onBlockMoved(block.instanceId, newX, newY)
+   850→                                }
+   851→                            },
+   852→                            onDragEnd = {
+   853→                                if (draggingBlockId == block.instanceId) {
+   854→                                    draggingBlockId = null
+   855→                                    onMoveCommit()
+   856→                                }
+   857→                            },
+   858→                        )
+   859→                    }
+   860→                    .pointerInput(block.instanceId) {
+   861→                        detectTapGestures(
+   862→                            onDoubleTap = { onBlockDoubleTapped(block.instanceId) },
+   863→                            onTap = { onBlockSelected(block.instanceId) },
+   864→                        )
+   865→                    },
+   866→                contentAlignment = Alignment.Center,
+   867→            ) {
+   868→                Column(
+   869→                    modifier = Modifier.padding(4.dp * zoomLevel),
+   870→                    horizontalAlignment = Alignment.Start,
+   871→                ) {
+   872→                    Text(
+   873→                        text = block.definition.name,
+   874→                        color = block.definition.color,
+   875→                        fontSize = (12.sp * zoomLevel),
+   876→                        fontWeight = FontWeight.Bold,
+   877→                        maxLines = 1,
+   878→                        overflow = TextOverflow.Ellipsis,
+   879→                    )
+   880→                    Spacer(Modifier.height(2.dp * zoomLevel))
+   881→                    block.definition.inputs.forEach { port ->
+   882→                        PortIndicator(
+   883→                            port = port,
+   884→                            zoomLevel = zoomLevel,
+   885→                            onClick = {
+   886→                                if (activeTool == EditorTool.Connect) {
+   887→                                    onConnectionStart(block.instanceId, port.name)
+   888→                                }
+   889→                            },
+   890→                        )
+   891→                    }
+   892→                    block.definition.outputs.forEach { port ->
+   893→                        PortIndicator(
+   894→                            port = port,
+   895→                            zoomLevel = zoomLevel,
+   896→                            onClick = {
+   897→                                if (activeTool == EditorTool.Connect) {
+   898→                                    onConnectionEnd(block.instanceId, port.name)
+   899→                                }
+   900→                            },
+   901→                        )
+   902→                    }
+   903→                }
+   904→            }
+   905→        }
+   906→    }
+   907→}
+   908→
+   909→@Composable
+   910→private fun PortIndicator(port: BlockPort, zoomLevel: Float, onClick: () -> Unit) {
+   911→    Row(
+   912→        verticalAlignment = Alignment.CenterVertically,
+   913→        modifier = Modifier.padding(vertical = 1.dp * zoomLevel),
+   914→    ) {
+   915→        val portColor = when (port.type) {
+   916→            PortType.String -> Color(0xFFCE9178)
+   917→            PortType.Number -> Color(0xFFB5CEA8)
+   918→            PortType.Boolean -> Color(0xFF569CD6)
+   919→            PortType.Any -> Color(0xFFD4D4D4)
+   920→            PortType.Flow -> Color(0xFFC586C0)
+   921→            PortType.Object -> Color(0xFF4EC9B0)
+   922→        }
+   923→        Canvas(
+   924→            modifier = Modifier
+   925→                .size(8.dp * zoomLevel)
+   926→                .pointerInput(port.name) {
+   927→                    detectTapGestures(onTap = { onClick() })
+   928→                },
+   929→        ) {
+   930→            drawCircle(
+   931→                color = portColor,
+   932→                radius = 4.dp.toPx() * zoomLevel,
+   933→            )
+   934→            if (port.direction == PortDirection.Input) {
+   935→                drawCircle(
+   936→                    color = Color(0xFF1E1E1E),
+   937→                    radius = 2.dp.toPx() * zoomLevel,
+   938→                )
+   939→            }
+   940→        }
+   941→        Spacer(Modifier.width(4.dp * zoomLevel))
+   942→        Text(
+   943→            text = port.name,
+   944→            color = Color(0xFFCCCCCC),
+   945→            fontSize = (9.sp * zoomLevel),
+   946→            maxLines = 1,
+   947→        )
+   948→    }
+   949→}
+   950→
+   951→
+   952→// ===================== Tool Bar =====================
+   953→
+   954→@Composable
+   955→private fun ToolBar(
+   956→    activeTool: EditorTool,
+   957→    onToolSelected: (EditorTool) -> Unit,
+   958→    onClear: () -> Unit,
+   959→    modifier: Modifier = Modifier,
+   960→) {
+   961→    Row(
+   962→        modifier = modifier
+   963→            .clip(RoundedCornerShape(12.dp))
+   964→            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.95f))
+   965→            .padding(4.dp),
+   966→        horizontalArrangement = Arrangement.spacedBy(4.dp),
+   967→    ) {
+   968→        ToolButton(
+   969→            label = "Select",
+   970→            isActive = activeTool == EditorTool.Select,
+   971→            onClick = { onToolSelected(EditorTool.Select) },
+   972→        )
+   973→        ToolButton(
+   974→            label = "Connect",
+   975→            isActive = activeTool == EditorTool.Connect,
+   976→            onClick = { onToolSelected(EditorTool.Connect) },
+   977→        )
+   978→        ToolButton(
+   979→            label = "Pan",
+   980→            isActive = activeTool == EditorTool.Pan,
+   981→            onClick = { onToolSelected(EditorTool.Pan) },
+   982→        )
+   983→        Divider(
+   984→            modifier = Modifier
+   985→                .width(1.dp)
+   986→                .height(32.dp)
+   987→                .padding(horizontal = 4.dp),
+   988→        )
+   989→        ToolButton(
+   990→            label = "Clear",
+   991→            isActive = false,
+   992→            onClick = onClear,
+   993→        )
+   994→    }
+   995→}
+   996→
+   997→@Composable
+   998→private fun ToolButton(label: String, isActive: Boolean, onClick: () -> Unit) {
+   999→    Box(
+  1000→        modifier = Modifier
+  1001→            .clip(RoundedCornerShape(8.dp))
+  1002→            .background(if (isActive) MaterialTheme.colorScheme.primary else Color.Transparent)
+  1003→            .padding(horizontal = 12.dp, vertical = 8.dp)
+  1004→            .pointerInput(label) {
+  1005→                detectTapGestures(onTap = { onClick() })
+  1006→            },
+  1007→        contentAlignment = Alignment.Center,
+  1008→    ) {
+  1009→        Text(
+  1010→            text = label,
+  1011→            color = if (isActive) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+  1012→            fontSize = 12.sp,
+  1013→            fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
+  1014→        )
+  1015→    }
+  1016→}
+  1017→
+  1018→
+  1019→// ===================== Palette Panel =====================
+  1020→
+  1021→@Composable
+  1022→private fun BlockPalettePanel(
+  1023→    onBlockSelected: (BlockDefinition) -> Unit,
+  1024→    modifier: Modifier = Modifier,
+  1025→) {
+  1026→    var selectedCategory by remember { mutableStateOf(BlockCategory.Events) }
+  1027→    var searchQuery by remember { mutableStateOf("") }
+  1028→    val filteredBlocks = remember(selectedCategory, searchQuery) {
+  1029→        val categoryBlocks = BlockPalette.allBlocks.filter { it.category == selectedCategory }
+  1030→        if (searchQuery.isBlank()) categoryBlocks
+  1031→        else categoryBlocks.filter { it.name.contains(searchQuery, ignoreCase = true) }
+  1032→    }
+  1033→
+  1034→    Column(modifier = modifier) {
+  1035→        Text(
+  1036→            text = "Blocks",
+  1037→            style = MaterialTheme.typography.titleMedium,
+  1038→            modifier = Modifier.padding(12.dp),
+  1039→            fontWeight = FontWeight.Bold,
+  1040→        )
+  1041→        OutlinedTextField(
+  1042→            value = searchQuery,
+  1043→            onValueChange = { searchQuery = it },
+  1044→            placeholder = { Text("Search blocks...", fontSize = 12.sp) },
+  1045→            modifier = Modifier
+  1046→                .fillMaxWidth()
+  1047→                .padding(horizontal = 8.dp),
+  1048→            textStyle = TextStyle(fontSize = 12.sp),
+  1049→            singleLine = true,
+  1050→        )
+  1051→        Spacer(Modifier.height(8.dp))
+  1052→        LazyRow(
+  1053→            modifier = Modifier.fillMaxWidth(),
+  1054→            horizontalArrangement = Arrangement.spacedBy(4.dp),
+  1055→            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp),
+  1056→        ) {
+  1057→            items(BlockCategory.values()) { category ->
+  1058→                FilterChip(
+  1059→                    label = category.displayName,
+  1060→                    isSelected = selectedCategory == category,
+  1061→                    onClick = { selectedCategory = category },
+  1062→                    color = when (category) {
+  1063→                        BlockCategory.Events -> Color(0xFFFFD700)
+  1064→                        BlockCategory.Variables -> Color(0xFFFF6B6B)
+  1065→                        BlockCategory.Control -> Color(0xFFFF9500)
+  1066→                        BlockCategory.Logic -> Color(0xFF5856D6)
+  1067→                        BlockCategory.Loops -> Color(0xFF34C759)
+  1068→                        BlockCategory.Math -> Color(0xFF007AFF)
+  1069→                        BlockCategory.Text -> Color(0xFFAF52DE)
+  1070→                        BlockCategory.Lists -> Color(0xFF5AC8FA)
+  1071→                        BlockCategory.UI -> Color(0xFF30B0C7)
+  1072→                        BlockCategory.Intent -> Color(0xFFFF3B30)
+  1073→                        BlockCategory.Sensor -> Color(0xFF8E8E93)
+  1074→                    }
+  1075→                )
+  1076→            }
+  1077→        }
+  1078→        Spacer(Modifier.height(4.dp))
+  1079→        LazyColumn(
+  1080→            modifier = Modifier.fillMaxSize(),
+  1081→            contentPadding = androidx.compose.foundation.layout.PaddingValues(8.dp),
+  1082→            verticalArrangement = Arrangement.spacedBy(6.dp),
+  1083→        ) {
+  1084→            items(filteredBlocks) { definition ->
+  1085→                PaletteBlockItem(
+  1086→                    definition = definition,
+  1087→                    onClick = { onBlockSelected(definition) },
+  1088→                )
+  1089→            }
+  1090→        }
+  1091→    }
+  1092→}
+  1093→
+  1094→@Composable
+  1095→private fun FilterChip(
+  1096→    label: String,
+  1097→    isSelected: Boolean,
+  1098→    onClick: () -> Unit,
+  1099→    color: Color,
+  1100→) {
+  1101→    Box(
+  1102→        modifier = Modifier
+  1103→            .clip(RoundedCornerShape(16.dp))
+  1104→            .background(if (isSelected) color.copy(alpha = 0.3f) else Color(0xFF3A3A3C))
+  1105→            .border(
+  1106→                width = 1.dp,
+  1107→                color = if (isSelected) color else Color(0xFF555555),
+  1108→                shape = RoundedCornerShape(16.dp),
+  1109→            )
+  1110→            .padding(horizontal = 10.dp, vertical = 6.dp)
+  1111→            .pointerInput(label) {
+  1112→                detectTapGestures(onTap = { onClick() })
+  1113→            },
+  1114→        contentAlignment = Alignment.Center,
+  1115→    ) {
+  1116→        Text(
+  1117→            text = label,
+  1118→            color = if (isSelected) color else Color(0xFFAAAAAA),
+  1119→            fontSize = 10.sp,
+  1120→            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+  1121→        )
+  1122→    }
+  1123→}
+  1124→
+  1125→@Composable
+  1126→private fun PaletteBlockItem(definition: BlockDefinition, onClick: () -> Unit) {
+  1127→    Row(
+  1128→        modifier = Modifier
+  1129→            .fillMaxWidth()
+  1130→            .clip(RoundedCornerShape(8.dp))
+  1131→            .background(Color(0xFF3A3A3C))
+  1132→            .padding(10.dp)
+  1133→            .pointerInput(definition.id) {
+  1134→                detectTapGestures(onTap = { onClick() })
+  1135→            },
+  1136→        verticalAlignment = Alignment.CenterVertically,
+  1137→    ) {
+  1138→        Box(
+  1139→            modifier = Modifier
+  1140→                .size(6.dp, 32.dp)
+  1141→                .clip(RoundedCornerShape(3.dp))
+  1142→                .background(definition.color),
+  1143→        )
+  1144→        Spacer(Modifier.width(10.dp))
+  1145→        Column {
+  1146→            Text(
+  1147→                text = definition.name,
+  1148→                color = Color.White,
+  1149→                fontSize = 12.sp,
+  1150→                fontWeight = FontWeight.Medium,
+  1151→            )
+  1152→            if (definition.inputs.isNotEmpty() || definition.outputs.isNotEmpty()) {
+  1153→                Text(
+  1154→                    text = "${definition.inputs.size} in, ${definition.outputs.size} out",
+  1155→                    color = Color(0xFF888888),
+  1156→                    fontSize = 9.sp,
+  1157→                )
+  1158→            }
+  1159→        }
+  1160→    }
+  1161→}
+  1162→
+  1163→
+  1164→// ===================== Modifiers =====================
+  1165→
+  1166→private fun Modifier.offset(x: androidx.compose.ui.unit.Dp, y: androidx.compose.ui.unit.Dp): Modifier =
+  1167→    this.then(
+  1168→        androidx.compose.ui.layout.offset(x, y)
+  1169→    )
+  1170→

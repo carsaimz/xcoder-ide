@@ -1,0 +1,87 @@
+name: Tag & Changelog
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (e.g., 1.0.1 or 1.1.0-beta.1)'
+        required: true
+      release:
+        description: 'Create release tag'
+        type: boolean
+        default: true
+      prerelease:
+        description: 'Mark as pre-release'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+ prepare:
+    name: Prepare Release
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.info.outputs.tag }}
+      clean_version: ${{ steps.info.outputs.clean_version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate version format
+        id: info
+        run: |
+          VERSION="${{ inputs.version }}"
+          # Strip leading 'v' if present
+          CLEAN_VERSION=${VERSION#v}
+          
+          if [[ ! "$CLEAN_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            echo "Error: Version must match semver (x.y.z or x.y.z-prerelease)"
+            exit 1
+          fi
+          
+          TAG="v${CLEAN_VERSION}"
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "clean_version=${CLEAN_VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Check for existing tag
+        run: |
+          if git tag -l "${{ steps.info.outputs.tag }}" | grep -q .; then
+            echo "Error: Tag ${{ steps.info.outputs.tag }} already exists!"
+            exit 1
+          fi
+
+      - name: Update version in build.gradle.kts
+        run: |
+          sed -i "s/versionName = \".*\"/versionName = \"${{ steps.info.outputs.clean_version }}\"/" app/build.gradle.kts
+          sed -i "s/versionCode = .*/versionCode = ${{ github.run_number }}/" app/build.gradle.kts
+          cat app/build.gradle.kts | grep -E 'version(Code|Name)'
+
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add app/build.gradle.kts
+          git diff --staged --quiet || git commit -m "chore: bump version to ${{ steps.info.outputs.clean_version }}"
+          git push
+
+      - name: Create tag
+        if: ${{ inputs.release }}
+        run: |
+          if [[ "${{ inputs.prerelease }}" == "true" ]]; then
+            git tag -a "${{ steps.info.outputs.tag }}" -m "Pre-release ${{ steps.info.outputs.tag }}"
+          else
+            git tag -a "${{ steps.info.outputs.tag }}" -m "Release ${{ steps.info.outputs.tag }}"
+          fi
+          git push origin "${{ steps.info.outputs.tag }}"
+
+      - name: Summary
+        run: |
+          echo "## Tag Created" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tag:** \`${{ steps.info.outputs.tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version:** ${{ steps.info.outputs.clean_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Pre-release:** ${{ inputs.prerelease }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Release workflow:** Will be triggered automatically" >> $GITHUB_STEP_SUMMARY

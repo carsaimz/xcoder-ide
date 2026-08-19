@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>XCoder Editor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #282c34;
+            font-family: 'Fira Code', 'JetBrains Mono', 'Consolas', 'Monaco', monospace;
+        }
+        #editor-container {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+        }
+        #editor {
+            width: 100%;
+            height: 100%;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        /* Search panel styling */
+        #search-panel {
+            display: none;
+            position: fixed;
+            top: 0;
+            right: 0;
+            z-index: 1000;
+            background: #21252b;
+            border: 1px solid #3e4451;
+            border-top: none;
+            border-radius: 0 0 6px 6px;
+            padding: 10px 14px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            min-width: 340px;
+        }
+        #search-panel.visible {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px;
+        }
+        #search-panel input {
+            background: #282c34;
+            border: 1px solid #3e4451;
+            color: #abb2bf;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-family: inherit;
+            outline: none;
+            flex: 1;
+            min-width: 120px;
+        }
+        #search-panel input:focus {
+            border-color: #61afef;
+        }
+        #search-panel button {
+            background: #3e4451;
+            border: 1px solid #4b5263;
+            color: #abb2bf;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-family: inherit;
+        }
+        #search-panel button:active {
+            background: #4b5263;
+        }
+        #search-panel button.close-btn {
+            background: none;
+            border: none;
+            color: #e06c75;
+            font-size: 16px;
+            padding: 4px 8px;
+            cursor: pointer;
+        }
+        #search-count {
+            color: #5c6370;
+            font-size: 11px;
+            min-width: 50px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="editor-container">
+        <div id="editor">// Welcome to XCoder IDE\n// Start coding...</div>
+    </div>
+
+    <div id="search-panel">
+        <input type="text" id="search-input" placeholder="Search..." />
+        <input type="text" id="replace-input" placeholder="Replace..." style="display:none" />
+        <span id="search-count"></span>
+        <button id="btn-prev">▲</button>
+        <button id="btn-next">▼</button>
+        <button id="btn-replace" style="display:none">Replace</button>
+        <button id="btn-replace-all" style="display:none">All</button>
+        <button id="btn-toggle-replace" title="Toggle Replace">≡</button>
+        <button class="close-btn" id="btn-close-search">✕</button>
+    </div>
+
+    <script>
+    (function() {
+        'use strict';
+
+        // ─── State ───
+        var editor = null;
+        var searchEditor = null;
+        var currentLanguage = 'kotlin';
+        var isReadOnly = false;
+        var changeTimeout = null;
+        var cursorChangeTimeout = null;
+        var lastSaveTime = 0;
+
+        // ─── Supported language modes ───
+        var languageModes = {
+            'java':         'ace/mode/java',
+            'kt':           'ace/mode/kotlin',
+            'kotlin':       'ace/mode/kotlin',
+            'xml':          'ace/mode/xml',
+            'json':         'ace/mode/json',
+            'js':           'ace/mode/javascript',
+            'javascript':   'ace/mode/javascript',
+            'ts':           'ace/mode/typescript',
+            'typescript':   'ace/mode/typescript',
+            'css':          'ace/mode/css',
+            'html':         'ace/mode/html',
+            'py':           'ace/mode/python',
+            'python':       'ace/mode/python',
+            'c':            'ace/mode/c_cpp',
+            'cpp':          'ace/mode/c_cpp',
+            'h':            'ace/mode/c_cpp',
+            'hpp':          'ace/mode/c_cpp',
+            'md':           'ace/mode/markdown',
+            'markdown':     'ace/mode/markdown',
+            'sql':          'ace/mode/sql',
+            'sh':           'ace/mode/sh',
+            'bash':         'ace/mode/sh',
+            'yml':          'ace/mode/yaml',
+            'yaml':         'ace/mode/yaml',
+            'properties':   'ace/mode/properties',
+            'groovy':       'ace/mode/groovy',
+            'gradle':       'ace/mode/groovy',
+            'dart':         'ace/mode/dart',
+            'txt':          'ace/mode/text',
+            'text':         'ace/mode/text',
+            'gradle.kts':   'ace/mode/kotlin'
+        };
+
+        var extensionToMode = {
+            'java': 'java',
+            'kt': 'kotlin',
+            'xml': 'xml',
+            'json': 'json',
+            'js': 'javascript',
+            'jsx': 'javascript',
+            'ts': 'typescript',
+            'tsx': 'typescript',
+            'css': 'css',
+            'scss': 'css',
+            'less': 'css',
+            'html': 'html',
+            'htm': 'html',
+            'py': 'python',
+            'c': 'c_cpp',
+            'cpp': 'c_cpp',
+            'cc': 'c_cpp',
+            'cxx': 'c_cpp',
+            'h': 'c_cpp',
+            'hpp': 'c_cpp',
+            'md': 'markdown',
+            'sql': 'sql',
+            'sh': 'bash',
+            'bash': 'bash',
+            'zsh': 'bash',
+            'yml': 'yaml',
+            'yaml': 'yaml',
+            'properties': 'properties',
+            'groovy': 'groovy',
+            'gradle': 'groovy',
+            'dart': 'dart',
+            'txt': 'text',
+            'log': 'text',
+            'ini': 'properties',
+            'cfg': 'properties',
+            'toml': 'yaml',
+            'proto': 'java',
+            'smali': 'java'
+        };
+
+        // ─── Utility: detect mode from filename ───
+        function detectLanguage(filename) {
+            if (!filename) return 'text';
+            var lower = filename.toLowerCase();
+
+            // Check for compound extensions like .gradle.kts
+            if (lower.endsWith('.gradle.kts')) return 'kotlin';
+            if (lower.endsWith('.build.gradle.kts')) return 'kotlin';
+
+            // Check direct language name
+            if (languageModes[lower]) return lower;
+
+            // Extract extension
+            var parts = lower.split('.');
+            if (parts.length > 1) {
+                var ext = parts[parts.length - 1];
+                if (extensionToMode[ext]) return extensionToMode[ext];
+            }
+
+            return 'text';
+        }
+
+        function modePath(language) {
+            if (languageModes[language]) return languageModes[language];
+            return 'ace/mode/text';
+        }
+
+        // ─── Initialize Ace Editor ───
+        function initEditor() {
+            try {
+                editor = ace.edit('editor');
+            } catch (e) {
+                console.log('Ace editor not found locally, attempting CDN fallback');
+                loadAceFromCDN();
+                return;
+            }
+
+            configureEditor();
+        }
+
+        function loadAceFromCDN() {
+            var script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.6/ace.js';
+            script.onload = function() {
+                editor = ace.edit('editor');
+                configureEditor();
+            };
+            script.onerror = function() {
+                document.getElementById('editor').innerText = 
+                    'Failed to load Ace Editor. Please check your network connection.';
+                notifyKotlin('onConsoleLog', 'ERROR: Failed to load Ace Editor from CDN');
+            };
+            document.head.appendChild(script);
+        }
+
+        function configureEditor() {
+            if (!editor) return;
+
+            // Set default theme
+            editor.setTheme('ace/theme/monokai');
+
+            // Set default mode
+            editor.session.setMode(modePath(currentLanguage));
+
+            // Editor settings
+            editor.setOptions({
+                fontSize: '14px',
+                fontFamily: '"Fira Code", "JetBrains Mono", "Consolas", "Monaco", "Courier New", monospace',
+                showPrintMargin: false,
+                enableBasicAutocompletion: true,
+                enableLiveAutocompletion: true,
+                enableSnippets: true,
+                enableEmmet: false,
+                scrollPastEnd: 0.5,
+                wrap: false,
+                tabSize: 4,
+                useSoftTabs: true,
+                showGutter: true,
+                displayIndentGuides: true,
+                highlightActiveLine: true,
+                highlightSelectedWord: true,
+                highlightGutterLine: true,
+                animatedScroll: true,
+                showFoldWidgets: true,
+                fadeFoldWidgets: true,
+                foldStyle: 'markbegin',
+                showLineNumbers: true,
+                relativeLineNumbers: false,
+                cursorStyle: 'smooth',
+                behavioursEnabled: true,
+                wrapBehavioursEnabled: true,
+                autoScrollEditorIntoView: true,
+                copyWithEmptySelection: false,
+                useTextareaForIME: true,
+                tooltipFollowsMouse: true,
+                firstLineNumber: 1,
+                overwrite: false,
+                scrollSpeed: 2,
+                dragDelay: 0,
+                dragEnabled: true,
+                focusTimeout: 0,
+                mouseDelay: 0,
+                selectionStyle: 'line',
+                highlightActiveLine: true,
+                hScrollBarAlwaysVisible: false,
+                vScrollBarAlwaysVisible: false,
+                fixedWidthGutter: true,
+                customScrollbar: false,
+                keyboardHandler: null
+            });
+
+            // Set default content
+            editor.setValue('// Welcome to XCoder IDE\n// Start coding...', -1);
+
+            // ─── Event listeners ───
+            editor.session.on('change', function(delta) {
+                clearTimeout(changeTimeout);
+                changeTimeout = setTimeout(function() {
+                    notifyKotlin('onContentChanged', editor.getValue());
+                }, 150);
+            });
+
+            editor.session.selection.on('changeCursor', function() {
+                clearTimeout(cursorChangeTimeout);
+                cursorChangeTimeout = setTimeout(function() {
+                    var pos = editor.getCursorPosition();
+                    notifyKotlin('onCursorChanged', JSON.stringify({
+                        row: pos.row,
+                        column: pos.column,
+                        line: editor.session.getLine(pos.row)
+                    }));
+                }, 100);
+            });
+
+            // ─── Keyboard shortcuts ───
+            editor.commands.addCommand({
+                name: 'save',
+                bindKey: { win: 'Ctrl-S', mac: 'Cmd-S' },
+                exec: function() {
+                    var now = Date.now();
+                    if (now - lastSaveTime < 500) return;
+                    lastSaveTime = now;
+                    notifyKotlin('onSave', editor.getValue());
+                }
+            });
+
+            editor.commands.addCommand({
+                name: 'closeSearch',
+                bindKey: { win: 'Escape', mac: 'Escape' },
+                exec: function() {
+                    var panel = document.getElementById('search-panel');
+                    if (panel.classList.contains('visible')) {
+                        panel.classList.remove('visible');
+                        editor.focus();
+                    }
+                }
+            });
+
+            editor.commands.addCommand({
+                name: 'find',
+                bindKey: { win: 'Ctrl-F', mac: 'Cmd-F' },
+                exec: function() {
+                    showSearchPanel(false);
+                }
+            });
+
+            editor.commands.addCommand({
+                name: 'findAndReplace',
+                bindKey: { win: 'Ctrl-H', mac: 'Cmd-Option-F' },
+                exec: function() {
+                    showSearchPanel(true);
+                }
+            });
+
+            // Go to line
+            editor.commands.addCommand({
+                name: 'gotoLine',
+                bindKey: { win: 'Ctrl-G', mac: 'Cmd-G' },
+                exec: function() {
+                    var row = editor.getCursorPosition().row + 1;
+                    var gotoInput = prompt('Go to line:', row);
+                    if (gotoInput !== null) {
+                        var lineNum = parseInt(gotoInput, 10);
+                        if (!isNaN(lineNum) && lineNum > 0) {
+                            editor.gotoLine(lineNum);
+                            editor.focus();
+                        }
+                    }
+                }
+            });
+
+            // Toggle comment
+            editor.commands.addCommand({
+                name: 'toggleComment',
+                bindKey: { win: 'Ctrl-/', mac: 'Cmd-/' },
+                exec: function() {
+                    editor.toggleCommentLines();
+                }
+            });
+
+            // Duplicate line
+            editor.commands.addCommand({
+                name: 'duplicateLine',
+                bindKey: { win: 'Ctrl-Shift-D', mac: 'Cmd-Shift-D' },
+                exec: function() {
+                    editor.duplicateLines();
+                }
+            });
+
+            // Move lines
+            editor.commands.addCommand({
+                name: 'moveLinesUp',
+                bindKey: { win: 'Alt-Up', mac: 'Option-Up' },
+                exec: function() {
+                    editor.moveLinesUp();
+                }
+            });
+
+            editor.commands.addCommand({
+                name: 'moveLinesDown',
+                bindKey: { win: 'Alt-Down', mac: 'Option-Down' },
+                exec: function() {
+                    editor.moveLinesDown();
+                }
+            });
+
+            // Indent/outdent
+            editor.commands.addCommand({
+                name: 'indent',
+                bindKey: { win: 'Tab', mac: 'Tab' },
+                exec: function() {
+                    editor.indent();
+                }
+            });
+
+            // Remove line
+            editor.commands.addCommand({
+                name: 'removeLine',
+                bindKey: { win: 'Ctrl-Shift-K', mac: 'Cmd-Shift-K' },
+                exec: function() {
+                    editor.removeLines();
+                }
+            });
+
+            // Select all
+            editor.commands.addCommand({
+                name: 'selectall',
+                bindKey: { win: 'Ctrl-A', mac: 'Cmd-A' },
+                exec: function() {
+                    editor.selectAll();
+                }
+            });
+
+            // ─── Search panel setup ───
+            setupSearchPanel();
+
+            // Focus editor
+            editor.focus();
+
+            notifyKotlin('onConsoleLog', 'Ace Editor initialized successfully');
+        }
+
+        // ─── Search panel ───
+        function setupSearchPanel() {
+            var searchInput = document.getElementById('search-input');
+            var replaceInput = document.getElementById('replace-input');
+            var searchCount = document.getElementById('search-count');
+            var btnPrev = document.getElementById('btn-prev');
+            var btnNext = document.getElementById('btn-next');
+            var btnReplace = document.getElementById('btn-replace');
+            var btnReplaceAll = document.getElementById('btn-replace-all');
+            var btnToggleReplace = document.getElementById('btn-toggle-replace');
+            var btnCloseSearch = document.getElementById('btn-close-search');
+            var panel = document.getElementById('search-panel');
+            var replaceVisible = false;
+
+            function updateSearchCount() {
+                var query = searchInput.value;
+                if (!query) {
+                    searchCount.textContent = '';
+                    return;
+                }
+                var count = 0;
+                var content = editor.getValue();
+                var pos = content.indexOf(query);
+                while (pos !== -1) {
+                    count++;
+                    pos = content.indexOf(query, pos + 1);
+                }
+                if (count === 0) {
+                    searchCount.textContent = 'No results';
+                } else {
+                    searchCount.textContent = count + ' found';
+                }
+            }
+
+            searchInput.addEventListener('input', function() {
+                var query = searchInput.value;
+                editor.find(query, {
+                    backwards: false,
+                    wrap: true,
+                    caseSensitive: false,
+                    wholeWord: false,
+                    regExp: false,
+                    showCursor: true
+                });
+                updateSearchCount();
+            });
+
+            searchInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    if (e.shiftKey) {
+                        editor.findPrevious();
+                    } else {
+                        editor.findNext();
+                    }
+                } else if (e.key === 'Escape') {
+                    panel.classList.remove('visible');
+                    editor.focus();
+                }
+            });
+
+            btnPrev.addEventListener('click', function() {
+                editor.findPrevious();
+            });
+
+            btnNext.addEventListener('click', function() {
+                editor.findNext();
+            });
+
+            btnToggleReplace.addEventListener('click', function() {
+                replaceVisible = !replaceVisible;
+                replaceInput.style.display = replaceVisible ? 'inline-block' : 'none';
+                btnReplace.style.display = replaceVisible ? 'inline-block' : 'none';
+                btnReplaceAll.style.display = replaceVisible ? 'inline-block' : 'none';
+                if (replaceVisible) {
+                    replaceInput.focus();
+                }
+            });
+
+            btnReplace.addEventListener('click', function() {
+                var replacement = replaceInput.value;
+                editor.replace(replacement);
+                updateSearchCount();
+            });
+
+            btnReplaceAll.addEventListener('click', function() {
+                var query = searchInput.value;
+                var replacement = replaceInput.value;
+                if (query) {
+                    editor.findAll(query, {
+                        wrap: true,
+                        caseSensitive: false,
+                        wholeWord: false,
+                        regExp: false
+                    });
+                    editor.replace(replacement);
+                    updateSearchCount();
+                }
+            });
+
+            btnCloseSearch.addEventListener('click', function() {
+                panel.classList.remove('visible');
+                editor.focus();
+            });
+        }
+
+        function showSearchPanel(withReplace) {
+            var panel = document.getElementById('search-panel');
+            panel.classList.add('visible');
+
+            if (withReplace) {
+                var btnToggle = document.getElementById('btn-toggle-replace');
+                if (!document.getElementById('replace-input').style.display ||
+                    document.getElementById('replace-input').style.display === 'none') {
+                    btnToggle.click();
+                }
+            }
+
+            var selectedText = editor.getSelectedText();
+            if (selectedText && selectedText.length < 100) {
+                var searchInput = document.getElementById('search-input');
+                searchInput.value = selectedText;
+                // Trigger search
+                editor.find(selectedText, {
+                    backwards: false,
+                    wrap: true,
+                    caseSensitive: false,
+                    wholeWord: false,
+                    regExp: false,
+                    showCursor: true
+                });
+            }
+
+            document.getElementById('search-input').focus();
+            document.getElementById('search-input').select();
+        }
+
+        // ─── Notify Kotlin side ───
+        function notifyKotlin(event, data) {
+            if (window.EditorBridge && typeof window.EditorBridge[event] === 'function') {
+                try {
+                    window.EditorBridge[event](data || '');
+                } catch (e) {
+                    console.log('Bridge error for ' + event + ': ' + e.message);
+                }
+            }
+        }
+
+        // ─── Expose EditorBridge API ───
+        window.EditorBridge = {
+            onContentChanged: function(data) { console.log('onContentChanged: ' + data.substring(0, 50)); },
+            onCursorChanged: function(data) { console.log('onCursorChanged: ' + data); },
+            onSave: function(data) { console.log('onSave triggered'); },
+            onConsoleLog: function(data) { console.log('Bridge: ' + data); }
+        };
+
+        // ─── Bridge functions called from Kotlin ───
+        window.loadFile = function(content, language, readonly) {
+            if (!editor) return;
+            currentLanguage = language || 'text';
+            isReadOnly = readonly === true || readonly === 'true';
+
+            editor.setReadOnly(isReadOnly);
+            editor.setValue(content || '', -1);
+            editor.clearSelection();
+            editor.session.setMode(modePath(currentLanguage));
+            editor.gotoLine(1);
+            editor.focus();
+
+            notifyKotlin('onConsoleLog', 'File loaded: language=' + currentLanguage + ', readonly=' + isReadOnly);
+        };
+
+        window.getCursorPosition = function() {
+            if (!editor) return JSON.stringify({ row: 0, column: 0 });
+            var pos = editor.getCursorPosition();
+            return JSON.stringify({
+                row: pos.row,
+                column: pos.column
+            });
+        };
+
+        window.setTheme = function(theme) {
+            if (!editor) return;
+            var themeMap = {
+                'monokai': 'ace/theme/monokai',
+                'dracula': 'ace/theme/dracula',
+                'github_dark': 'ace/theme/github_dark',
+                'one_dark': 'ace/theme/one_dark',
+                'tomorrow_night': 'ace/theme/tomorrow_night_eighties',
+                'twilight': 'ace/theme/twilight',
+                'terminal': 'ace/theme/terminal',
+                'solarized_dark': 'ace/theme/solarized_dark',
+                'cobalt': 'ace/theme/cobalt',
+                'nord_dark': 'ace/theme/nord_dark',
+                'chrome': 'ace/theme/chrome',
+                'github': 'ace/theme/github',
+                'solarized_light': 'ace/theme/solarized_light',
+                'tomorrow': 'ace/theme/tomorrow',
+                'xcode': 'ace/theme/xcode'
+            };
+            var themePath = themeMap[theme] || ('ace/theme/' + theme);
+            editor.setTheme(themePath);
+            notifyKotlin('onConsoleLog', 'Theme set to: ' + theme);
+        };
+
+        window.setFontSize = function(size) {
+            if (!editor) return;
+            var pxSize = parseInt(size, 10);
+            if (pxSize >= 8 && pxSize <= 72) {
+                editor.setFontSize(pxSize + 'px');
+            }
+        };
+
+        window.setTabSize = function(size) {
+            if (!editor) return;
+            var tabSize = parseInt(size, 10);
+            if (tabSize >= 1 && tabSize <= 16) {
+                editor.getSession().setTabSize(tabSize);
+            }
+        };
+
+        window.setWordWrap = function(enabled) {
+            if (!editor) return;
+            var wrap = enabled === true || enabled === 'true';
+            editor.getSession().setUseWrapMode(wrap);
+        };
+
+        window.insertText = function(text) {
+            if (!editor) return;
+            editor.insert(text);
+            editor.focus();
+        };
+
+        window.replaceSelection = function(text) {
+            if (!editor) return;
+            var selection = editor.getSelectedText();
+            if (selection) {
+                editor.insert(text);
+            } else {
+                editor.insert(text);
+            }
+            editor.focus();
+        };
+
+        window.getContent = function() {
+            if (!editor) return '';
+            return editor.getValue();
+        };
+
+        window.setLanguage = function(mode) {
+            if (!editor) return;
+            currentLanguage = mode || 'text';
+            editor.session.setMode(modePath(currentLanguage));
+            notifyKotlin('onConsoleLog', 'Language set to: ' + currentLanguage);
+        };
+
+        window.search = function(query, optionsJson) {
+            if (!editor || !query) return '0';
+            var options = {};
+            if (optionsJson) {
+                try {
+                    options = JSON.parse(optionsJson);
+                } catch (e) {
+                    options = {};
+                }
+            }
+            editor.search(query, {
+                backwards: options.backwards || false,
+                wrap: options.wrap !== false,
+                caseSensitive: options.caseSensitive || false,
+                wholeWord: options.wholeWord || false,
+                regExp: options.regExp || false,
+                showCursor: true
+            });
+
+            // Count results
+            var count = 0;
+            var content = editor.getValue();
+            var caseSensitive = options.caseSensitive || false;
+            var searchContent = caseSensitive ? content : content.toLowerCase();
+            var searchQuery = caseSensitive ? query : query.toLowerCase();
+            var pos = searchContent.indexOf(searchQuery);
+            while (pos !== -1) {
+                count++;
+                pos = searchContent.indexOf(searchQuery, pos + 1);
+            }
+            return String(count);
+        };
+
+        window.replaceAll = function(query, replacement) {
+            if (!editor || !query) return '0';
+            var content = editor.getValue();
+            var count = 0;
+            var pos = content.indexOf(query);
+            while (pos !== -1) {
+                count++;
+                pos = content.indexOf(query, pos + 1);
+            }
+            var newValue = content.split(query).join(replacement);
+            editor.setValue(newValue, -1);
+            editor.clearSelection();
+            notifyKotlin('onContentChanged', newValue);
+            return String(count);
+        };
+
+        window.undo = function() {
+            if (!editor) return;
+            editor.undo();
+        };
+
+        window.redo = function() {
+            if (!editor) return;
+            editor.redo();
+        };
+
+        window.format = function() {
+            if (!editor) return;
+            // Basic formatting: trim trailing whitespace and ensure final newline
+            var content = editor.getValue();
+            var lines = content.split('\n');
+            var formatted = [];
+            for (var i = 0; i < lines.length; i++) {
+                formatted.push(lines[i].replace(/\s+$/, ''));
+            }
+            var result = formatted.join('\n');
+            if (result.length > 0 && !result.endsWith('\n')) {
+                result += '\n';
+            }
+            editor.setValue(result, -1);
+            editor.clearSelection();
+            editor.gotoLine(1);
+            notifyKotlin('onContentChanged', result);
+            notifyKotlin('onConsoleLog', 'Document formatted (trailing whitespace removed)');
+        };
+
+        window.setReadOnly = function(readonly) {
+            if (!editor) return;
+            isReadOnly = readonly === true || readonly === 'true';
+            editor.setReadOnly(isReadOnly);
+        };
+
+        window.focus = function() {
+            if (editor) editor.focus();
+        };
+
+        window.clearSelection = function() {
+            if (editor) editor.clearSelection();
+        };
+
+        window.selectAll = function() {
+            if (editor) editor.selectAll();
+        };
+
+        window.gotoLine = function(line) {
+            if (editor) {
+                var lineNum = parseInt(line, 10);
+                if (!isNaN(lineNum) && lineNum > 0) {
+                    editor.gotoLine(lineNum);
+                }
+            }
+        };
+
+        window.getLineNumber = function() {
+            if (!editor) return '0';
+            return String(editor.getCursorPosition().row + 1);
+        };
+
+        window.getColumnNumber = function() {
+            if (!editor) return '0';
+            return String(editor.getCursorPosition().column + 1);
+        };
+
+        window.getSelectedText = function() {
+            if (!editor) return '';
+            return editor.getSelectedText();
+        };
+
+        window.getLineCount = function() {
+            if (!editor) return '0';
+            return String(editor.session.getLength());
+        };
+
+        window.getModified = function() {
+            if (!editor) return 'false';
+            return String(editor.session.getUndoManager().hasUndo());
+        };
+
+        window.showSearch = function(withReplace) {
+            showSearchPanel(withReplace === true || withReplace === 'true');
+        };
+
+        window.hideSearch = function() {
+            document.getElementById('search-panel').classList.remove('visible');
+        };
+
+        // ─── Resize handling ───
+        function handleResize() {
+            if (editor) {
+                editor.resize();
+            }
+        }
+
+        window.addEventListener('resize', handleResize);
+
+        // Also handle orientation change
+        window.addEventListener('orientationchange', function() {
+            setTimeout(handleResize, 100);
+        });
+
+        // ─── Prevent default touch behaviors for better mobile editing ───
+        document.addEventListener('gesturestart', function(e) {
+            e.preventDefault();
+        });
+
+        // ─── Override console.log to bridge ───
+        var originalLog = console.log;
+        console.log = function() {
+            var args = Array.prototype.slice.call(arguments);
+            var message = args.join(' ');
+            originalLog.apply(console, arguments);
+            if (message.length < 2000) {
+                notifyKotlin('onConsoleLog', message);
+            }
+        };
+
+        var originalError = console.error;
+        console.error = function() {
+            var args = Array.prototype.slice.call(arguments);
+            var message = args.join(' ');
+            originalError.apply(console, arguments);
+            notifyKotlin('onConsoleLog', 'ERROR: ' + message);
+        };
+
+        var originalWarn = console.warn;
+        console.warn = function() {
+            var args = Array.prototype.slice.call(arguments);
+            var message = args.join(' ');
+            originalWarn.apply(console, arguments);
+            notifyKotlin('onConsoleLog', 'WARN: ' + message);
+        };
+
+        // ─── Bootstrap ───
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initEditor);
+        } else {
+            initEditor();
+        }
+
+    })();
+    </script>
+</body>
+</html>

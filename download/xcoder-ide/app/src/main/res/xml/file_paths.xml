@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  FileProvider paths for XCoder IDE.
+  Allows sharing project files, build outputs, and logs via content URIs.
+-->
+<paths>
+    <!-- Internal app files (projects, builds) -->
+    <files-path name="projects" path="projects/" />
+    <files-path name="build_output" path="build_output/" />
+    <files-path name="plugins" path="plugins/" />
+
+    <!-- Cache (temp files, editor previews) -->
+    <cache-path name="cache" path="xcoder_cache/" />
+    <cache-path name="temp" path="xcoder_temp/" />
+
+    <!-- External storage (user-chosen project directories) -->
+    <external-path name="external" path="." />
+    <external-files-path name="external_files" path="." />
+    <external-cache-path name="external_cache" path="." />
+</paths>
