@@ -144,5 +144,4 @@
     <string name="permission_storage_rationale">XCoder needs storage access to open and save project files.</string>
     <string name="permission_notification_rationale">Enable notifications for build and git status updates.</string>
     <string name="permission_grant">Grant Permission</string>
-    <string name="permission_denied_forever">Permission permanently denied. Please enable it in Settings.</string>
-</resources>
+    <string name=
