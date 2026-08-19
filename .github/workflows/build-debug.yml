@@ -59,7 +59,7 @@ jobs:
 
       - name: Create pre-release on develop push
         if: github.ref == 'refs/heads/develop'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: v${{ steps.version.outputs.version_name }}-debug.${{ steps.version.outputs.build_number }}
           name: "XCoder IDE ${{ steps.version.outputs.version_name }} Debug #${{ steps.version.outputs.build_number }}"
