@@ -101,7 +101,7 @@ jobs:
 
       - name: Create PR for changelog
         if: steps.check.outputs.has_changes == 'true' && github.event_name == 'workflow_dispatch'
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v8
         with:
           title: "docs: update CHANGELOG.md"
           body: |
