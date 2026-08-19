@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Color resources referenced by XML theme (themes.xml).
+  Compose theming lives in theme/Color.kt.
+-->
+<resources>
+    <!-- Primary -->
+    <color name="purple_primary">#6C5CE7</color>
+    <color name="purple_primary_light">#A29BFE</color>
+    <color name="purple_primary_dark">#4834D4</color>
+
+    <!-- Secondary / Accent -->
+    <color name="teal_accent">#00CEC9</color>
+    <color name="teal_accent_light">#81ECEC</color>
+    <color name="teal_accent_dark">#00B894</color>
+
+    <!-- Backgrounds -->
+    <color name="background_dark">#1A1A2E</color>
+    <color name="surface_dark">#16213E</color>
+
+    <!-- Text -->
+    <color name="text_primary_dark">#EAEAEA</color>
+    <color name="text_secondary_dark">#A0A0B8</color>
+
+    <!-- Semantic -->
+    <color name="green_success">#00B894</color>
+    <color name="orange_warning">#FDCB6E</color>
+    <color name="red_error">#E17055</color>
+    <color name="blue_info">#74B9FF</color>
+</resources>

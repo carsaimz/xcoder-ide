@@ -1,0 +1,19 @@
+name: Dependabot
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'  # Every Monday at 06:00 UTC
+
+jobs:
+  update:
+    name: Check Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - uses: gradle/actions/setup-gradle@v4
+      - run: ./gradlew dependencyCheck --info || true
+      - run: ./gradlew dependencies --configuration releaseRuntimeClasspath 2>&1 | head -100

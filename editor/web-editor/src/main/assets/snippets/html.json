@@ -1,0 +1,242 @@
+{
+  "html5 boilerplate": {
+    "prefix": "html5",
+    "body": ["<!DOCTYPE html>", "<html lang=\"en\">", "<head>", "	<meta charset=\"UTF-8\">", "	<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">", "	<meta name=\"description\" content=\"${1:Description}\">", "	<title>${2:Title}</title>", "	<link rel=\"stylesheet\" href=\"${3:styles.css}\">", "</head>", "<body>", "	$0", "	<script src=\"${4:script.js}\"></script>", "</body>", "</html>"],
+    "description": "HTML5 boilerplate"
+  },
+  "html basic": {
+    "prefix": "html",
+    "body": ["<!DOCTYPE html>", "<html>", "<head>", "	<title>${1:Page Title}</title>", "</head>", "<body>", "	$0", "</body>", "</html>"],
+    "description": "Basic HTML template"
+  },
+  "div with class": {
+    "prefix": "div",
+    "body": ["<div class=\"${1:class}\">", "	$0", "</div>"],
+    "description": "Div element with class"
+  },
+  "div with id": {
+    "prefix": "divid",
+    "body": ["<div id=\"${1:id}\">", "	$0", "</div>"],
+    "description": "Div element with id"
+  },
+  "span": {
+    "prefix": "span",
+    "body": ["<span>${1:text}</span>", "$0"],
+    "description": "Span element"
+  },
+  "section": {
+    "prefix": "sec",
+    "body": ["<section class=\"${1:class}\">", "	$0", "</section>"],
+    "description": "Section element"
+  },
+  "nav": {
+    "prefix": "nav",
+    "body": ["<nav class=\"${1:class}\">", "	<ul>", "		<li><a href=\"${2:#}\">${3:Link}</a></li>", "	</ul>", "</nav>"],
+    "description": "Navigation element"
+  },
+  "header": {
+    "prefix": "header",
+    "body": ["<header class=\"${1:class}\">", "	$0", "</header>"],
+    "description": "Header element"
+  },
+  "footer": {
+    "prefix": "footer",
+    "body": ["<footer class=\"${1:class}\">", "	$0", "</footer>"],
+    "description": "Footer element"
+  },
+  "main": {
+    "prefix": "main",
+    "body": ["<main class=\"${1:class}\">", "	$0", "</main>"],
+    "description": "Main element"
+  },
+  "article": {
+    "prefix": "art",
+    "body": ["<article class=\"${1:class}\">", "	<h2>${2:Title}</h2>", "	<p>${3:Content}</p>", "	$0", "</article>"],
+    "description": "Article element"
+  },
+  "aside": {
+    "prefix": "aside",
+    "body": ["<aside class=\"${1:class}\">", "	$0", "</aside>"],
+    "description": "Aside element"
+  },
+  "form": {
+    "prefix": "form",
+    "body": ["<form action=\"${1:/submit}\" method=\"${2:POST}\">", "	$0", "	<button type=\"submit\">${3:Submit}</button>", "</form>"],
+    "description": "Form element"
+  },
+  "input text": {
+    "prefix": "input",
+    "body": ["<input type=\"text\" name=\"${1:name}\" id=\"${2:id}\" placeholder=\"${3:Placeholder}\" required>"],
+    "description": "Text input"
+  },
+  "input number": {
+    "prefix": "inputn",
+    "body": ["<input type=\"number\" name=\"${1:name}\" id=\"${2:id}\" min=\"${3:0}\" max=\"${4:100}\" step=\"${5:1}\">"],
+    "description": "Number input"
+  },
+  "input email": {
+    "prefix": "inpute",
+    "body": ["<input type=\"email\" name=\"${1:email}\" id=\"${2:email}\" placeholder=\"${3:Enter email}\" required>"],
+    "description": "Email input"
+  },
+  "input password": {
+    "prefix": "inputp",
+    "body": ["<input type=\"password\" name=\"${1:password}\" id=\"${2:password}\" placeholder=\"${3:Password}\" required>"],
+    "description": "Password input"
+  },
+  "input checkbox": {
+    "prefix": "inputc",
+    "body": ["<input type=\"checkbox\" name=\"${1:name}\" id=\"${2:id}\">", "<label for=\"${2:id}\">${3:Label}</label>"],
+    "description": "Checkbox input"
+  },
+  "textarea": {
+    "prefix": "ta",
+    "body": ["<textarea name=\"${1:name}\" id=\"${2:id}\" rows=\"${3:4}\" cols=\"${4:50}\" placeholder=\"${5:Enter text}\"></textarea>"],
+    "description": "Textarea element"
+  },
+  "select": {
+    "prefix": "sel",
+    "body": ["<select name=\"${1:name}\" id=\"${2:id}\">", "	<option value=\"\">${3:Select...}</option>", "	<option value=\"${4:value1}\">${5:Option 1}</option>", "	<option value=\"${6:value2}\">${7:Option 2}</option>", "</select>"],
+    "description": "Select dropdown"
+  },
+  "button": {
+    "prefix": "btn",
+    "body": ["<button type=\"${1:button}\" class=\"${2:class}\" onclick=\"${3:}\">${4:Button Text}</button>"],
+    "description": "Button element"
+  },
+  "link css": {
+    "prefix": "link",
+    "body": ["<link rel=\"stylesheet\" href=\"${1:styles.css}\">"],
+    "description": "Link to stylesheet"
+  },
+  "link favicon": {
+    "prefix": "favicon",
+    "body": ["<link rel=\"icon\" type=\"image/png\" href=\"${1:favicon.png}\">"],
+    "description": "Favicon link"
+  },
+  "script js": {
+    "prefix": "script",
+    "body": ["<script src=\"${1:script.js}\"></script>"],
+    "description": "Script tag"
+  },
+  "script inline": {
+    "prefix": "scripti",
+    "body": ["<script>", "	$0", "</script>"],
+    "description": "Inline script tag"
+  },
+  "script module": {
+    "prefix": "scriptm",
+    "body": ["<script type=\"module\">", "	$0", "</script>"],
+    "description": "Module script tag"
+  },
+  "style block": {
+    "prefix": "style",
+    "body": ["<style>", "	$0", "</style>"],
+    "description": "Inline style tag"
+  },
+  "head": {
+    "prefix": "head",
+    "body": ["<head>", "	<meta charset=\"UTF-8\">", "	<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">", "	<title>${1:Title}</title>", "	<link rel=\"stylesheet\" href=\"${2:styles.css}\">", "</head>"],
+    "description": "Head element with common tags"
+  },
+  "meta viewport": {
+    "prefix": "viewport",
+    "body": ["<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"],
+    "description": "Meta viewport tag"
+  },
+  "meta charset": {
+    "prefix": "charset",
+    "body": ["<meta charset=\"UTF-8\">"],
+    "description": "Meta charset tag"
+  },
+  "meta description": {
+    "prefix": "metad",
+    "body": ["<meta name=\"description\" content=\"${1:Description}\">"],
+    "description": "Meta description tag"
+  },
+  "meta og": {
+    "prefix": "og",
+    "body": ["<meta property=\"og:title\" content=\"${1:Title}\">", "<meta property=\"og:description\" content=\"${2:Description}\">", "<meta property=\"og:image\" content=\"${3:image_url}\">", "<meta property=\"og:url\" content=\"${4:page_url}\">"],
+    "description": "Open Graph meta tags"
+  },
+  "image": {
+    "prefix": "img",
+    "body": ["<img src=\"${1:source}\" alt=\"${2:Description}\" loading=\"lazy\">"],
+    "description": "Image element"
+  },
+  "video": {
+    "prefix": "video",
+    "body": ["<video controls width=\"${1:640}\">", "	<source src=\"${2:video.mp4}\" type=\"video/mp4\">", "	Your browser does not support the video tag.", "</video>"],
+    "description": "Video element"
+  },
+  "audio": {
+    "prefix": "audio",
+    "body": ["<audio controls>", "	<source src=\"${1:audio.mp3}\" type=\"audio/mpeg\">", "	Your browser does not support the audio tag.", "</audio>"],
+    "description": "Audio element"
+  },
+  "anchor link": {
+    "prefix": "a",
+    "body": ["<a href=\"${1:url}\">${2:Link text}</a>"],
+    "description": "Anchor element"
+  },
+  "heading 1": {
+    "prefix": "h1",
+    "body": ["<h1>${1:Heading}</h1>", "$0"],
+    "description": "H1 heading"
+  },
+  "heading 2": {
+    "prefix": "h2",
+    "body": ["<h2>${1:Heading}</h2>", "$0"],
+    "description": "H2 heading"
+  },
+  "heading 3": {
+    "prefix": "h3",
+    "body": ["<h3>${1:Heading}</h3>", "$0"],
+    "description": "H3 heading"
+  },
+  "paragraph": {
+    "prefix": "p",
+    "body": ["<p>${1:Text}</p>", "$0"],
+    "description": "Paragraph element"
+  },
+  "unordered list": {
+    "prefix": "ul",
+    "body": ["<ul>", "	<li>${1:Item 1}</li>", "	<li>${2:Item 2}</li>", "	<li>${3:Item 3}</li>", "</ul>"],
+    "description": "Unordered list"
+  },
+  "ordered list": {
+    "prefix": "ol",
+    "body": ["<ol>", "	<li>${1:Item 1}</li>", "	<li>${2:Item 2}</li>", "	<li>${3:Item 3}</li>", "</ol>"],
+    "description": "Ordered list"
+  },
+  "table": {
+    "prefix": "table",
+    "body": ["<table>", "	<thead>", "		<tr>", "			<th>${1:Header 1}</th>", "			<th>${2:Header 2}</th>", "		</tr>", "	</thead>", "	<tbody>", "		<tr>", "			<td>${3:Data 1}</td>", "			<td>${4:Data 2}</td>", "		</tr>", "	</tbody>", "</table>"],
+    "description": "Table element"
+  },
+  "comment": {
+    "prefix": "!--",
+    "body": ["<!-- ${1:Comment} -->"],
+    "description": "HTML comment"
+  },
+  "CDN link": {
+    "prefix": "cdn",
+    "body": ["<link rel=\"stylesheet\" href=\"${1:https://cdn.example.com/library.css}\" integrity=\"${2:sha384-...}\" crossorigin=\"anonymous\">"],
+    "description": "CDN stylesheet link with integrity"
+  },
+  "CDN script": {
+    "prefix": "cdns",
+    "body": ["<script src=\"${1:https://cdn.example.com/library.js}\" integrity=\"${2:sha384-...}\" crossorigin=\"anonymous\"></script>"],
+    "description": "CDN script tag with integrity"
+  },
+  "picture element": {
+    "prefix": "picture",
+    "body": ["<picture>", "	<source media=\"(max-width: ${1:799px})\" srcset=\"${2:small.jpg}\">", "	<source media=\"(min-width: ${3:800px})\" srcset=\"${4:large.jpg}\">", "	<img src=\"${5:default.jpg}\" alt=\"${6:Description}\">", "</picture>"],
+    "description": "Responsive picture element"
+  },
+  "details summary": {
+    "prefix": "details",
+    "body": ["<details>", "	<summary>${1:Click to expand}</summary>", "	$0", "</details>"],
+    "description": "Details/summary disclosure element"
+  }
+}
