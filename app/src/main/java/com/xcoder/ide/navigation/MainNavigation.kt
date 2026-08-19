@@ -16,22 +16,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
-import com.xcoder.ide.ui.native.NativeEditorScreen
+import com.xcoder.editor.sora.EditorScreen
+import com.xcoder.core.terminal.TermuxTerminalScreen
 import com.xcoder.ide.ui.visual.VisualEditorScreen
-import com.xcoder.ide.ui.web.WebEditorScreen
-import kotlin.reflect.KClass
 
 /**
  * Main navigation graph that wires every [Screen] to its composable.
  *
  * The UI is split into:
- *  - A **bottom bar** with the 3 primary editor modes (Web, Native, Visual).
+ *  - A **bottom bar** with the 2 primary modes (Editor, Visual).
  *  - A **side drawer** with secondary tools (Terminal, Git, AI, Plugins, Settings).
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -46,18 +43,6 @@ fun MainNavigation(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    // Remember whether the initial file has been dispatched so we only do it once.
-    var fileDispatched by remember { mutableStateOf(false) }
-    LaunchedEffect(initialFileUri) {
-        if (initialFileUri != null && !fileDispatched) {
-            fileDispatched = true
-            // Default: open in web editor. The screen composable picks up the URI.
-            navController.navigate(Screen.WebEditor.route) {
-                popUpTo(Screen.WebEditor.route) { inclusive = true }
-            }
-        }
-    }
-
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
@@ -71,9 +56,7 @@ fun MainNavigation(
                         restoreState = true
                     }
                 },
-                onCloseDrawer = {
-                    scope.launch { drawerState.close() }
-                }
+                onCloseDrawer = { scope.launch { drawerState.close() } }
             )
         }
     ) {
@@ -88,51 +71,62 @@ fun MainNavigation(
                             restoreState = true
                         }
                     },
-                    onOpenDrawer = {
-                        scope.launch { drawerState.open() }
-                    }
+                    onOpenDrawer = { scope.launch { drawerState.open() } }
                 )
             }
         ) { innerPadding ->
             NavHost(
                 navController = navController,
-                startDestination = Screen.WebEditor.route,
+                startDestination = Screen.CodeEditor.route,
                 modifier = Modifier.padding(innerPadding),
                 enterTransition = { slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left) },
                 exitTransition = { slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Left) },
                 popEnterTransition = { slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right) },
                 popExitTransition = { slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right) }
             ) {
-                composable(Screen.WebEditor.route) {
-                    WebEditorScreen(fileUri = initialFileUri?.takeIf { !fileDispatched })
+                // ── Editor (Rosemoe sora-editor) ──────────────────────
+                composable(Screen.CodeEditor.route) {
+                    EditorScreen(
+                        filePath = "",
+                        initialContent = "// Welcome to XCoder IDE\n// Powered by Rosemoe sora-editor\n\nfun main() {\n    println(\"Hello, XCoder!\")\n}\n",
+                        onBack = { navController.popBackStack() }
+                    )
                 }
-                composable(Screen.NativeEditor.route) {
-                    NativeEditorScreen(fileUri = initialFileUri?.takeIf { !fileDispatched })
-                }
+
+                // ── Visual Editor ────────────────────────────────────
                 composable(Screen.VisualEditor.route) {
                     VisualEditorScreen()
                 }
+
+                // ── Terminal (Termux terminal-emulator) ──────────────
                 composable(Screen.Terminal.route) {
-                    PlaceholderScreen(
-                        icon = Icons.Default.Terminal,
-                        title = "Terminal",
-                        description = "Integrated terminal emulator for running commands."
+                    TermuxTerminalScreen(
+                        fontSize = 14f,
+                        onSessionExit = { exitCode ->
+                            // Handle session exit
+                        }
                     )
                 }
+
+                // ── Git Manager ──────────────────────────────────────
                 composable(Screen.GitManager.route) {
                     PlaceholderScreen(
                         icon = Icons.Default.AccountTree,
                         title = "Git Manager",
-                        description = "Branch, commit, push, pull, and view history."
+                        description = "Branch, commit, push, pull, and view history.\nPowered by JGit."
                     )
                 }
+
+                // ── AI Assistant ──────────────────────────────────────
                 composable(Screen.AiChat.route) {
                     PlaceholderScreen(
                         icon = Icons.Default.SmartToy,
                         title = "AI Assistant",
-                        description = "Ask questions, generate code, and get suggestions."
+                        description = "Ask questions, generate code, and get suggestions.\nSupports OpenAI, Gemini, Claude."
                     )
                 }
+
+                // ── Plugins ──────────────────────────────────────────
                 composable(Screen.PluginManager.route) {
                     PlaceholderScreen(
                         icon = Icons.Default.Extension,
@@ -140,6 +134,8 @@ fun MainNavigation(
                         description = "Browse, install, and manage IDE plugins."
                     )
                 }
+
+                // ── Settings ─────────────────────────────────────────
                 composable(Screen.Settings.route) {
                     PlaceholderScreen(
                         icon = Icons.Default.Settings,
@@ -147,11 +143,13 @@ fun MainNavigation(
                         description = "Customize your IDE experience."
                     )
                 }
+
+                // ── Projects ─────────────────────────────────────────
                 composable(Screen.ProjectList.route) {
                     PlaceholderScreen(
                         icon = Icons.Default.FolderOpen,
                         title = "Projects",
-                        description = "Open recent projects or create a new one."
+                        description = "Open recent projects or create a new one.\nFile tree powered by AndroidTreeView."
                     )
                 }
             }
@@ -170,8 +168,7 @@ private fun BottomNavigationBar(
     onOpenDrawer: () -> Unit
 ) {
     val primaryScreens = listOf(
-        Triple(Screen.WebEditor, Icons.Default.Language, "Web"),
-        Triple(Screen.NativeEditor, Icons.Default.PhoneAndroid, "Native"),
+        Triple(Screen.CodeEditor, Icons.Default.Edit, "Editor"),
         Triple(Screen.VisualEditor, Icons.Default.Dashboard, "Visual"),
     )
 
@@ -227,7 +224,6 @@ private fun DrawerContent(
     ModalDrawerSheet(
         modifier = Modifier.width(280.dp)
     ) {
-        // Header
         Spacer(Modifier.height(16.dp))
         Text(
             text = "XCoder IDE",
@@ -235,8 +231,8 @@ private fun DrawerContent(
             modifier = Modifier.padding(horizontal = 24.dp)
         )
         Text(
-            text = "Tools & Settings",
-            style = MaterialTheme.typography.bodyMedium,
+            text = "Powered by sora-editor, Termux, AndroidTreeView",
+            style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp)
         )
@@ -259,11 +255,45 @@ private fun DrawerContent(
                 )
             }
         }
+
+        // ── Credits ────────────────────────────────────────────────
+        Spacer(Modifier.weight(1f))
+        HorizontalDivider()
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                "Thanks to",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                "Rosemoe for the awesome CodeEditor",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+            )
+            Text(
+                "Termux for Terminal Emulator",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+            )
+            Text(
+                "Bogdan Melnychuk for AndroidTreeView",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+            )
+            Text(
+                "George Fraser for the Java Language Server",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+            )
+        }
     }
 }
 
 // ---------------------------------------------------------------------------
-// Placeholder Screen (for module screens not yet wired)
+// Placeholder Screen
 // ---------------------------------------------------------------------------
 
 @Composable

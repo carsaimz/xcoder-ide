@@ -15,5 +15,7 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
       - uses: gradle/actions/setup-gradle@v4
-      - run: ./gradlew dependencyCheck --info || true
-      - run: ./gradlew dependencies --configuration releaseRuntimeClasspath 2>&1 | head -100
+        with:
+          gradle-version: '8.5'
+      - run: gradle dependencyCheck --no-daemon --info || true
+      - run: gradle dependencies --no-daemon --configuration releaseRuntimeClasspath 2>&1 | head -100

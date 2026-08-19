@@ -45,7 +45,7 @@ jobs:
           echo "version_code=${VERSION_NAME%%-*}-debug.${BUILD_NUMBER}" >> $GITHUB_OUTPUT
 
       - name: Build debug APK
-        run: ./gradlew assembleDebug --stacktrace
+        run: gradle assembleDebug --no-daemon --stacktrace
 
       - name: Rename APK
         run: |

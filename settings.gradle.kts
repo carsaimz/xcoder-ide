@@ -28,6 +28,8 @@ dependencyResolutionManagement {
             }
         }
         mavenCentral()
+        // JitPack — required for Termux terminal-emulator, AndroidTreeView
+        maven { url = uri("https://jitpack.io") }
     }
 }
 
@@ -42,9 +44,8 @@ include(":core:terminal")
 include(":core:git")
 include(":core:settings")
 
-// ── Editor Modules ────────────────────────────────────────────────────────
-include(":editor:web-editor")
-include(":editor:native-editor")
+// ── Editor Module (Rosemoe sora-editor) ──────────────────────────────────
+include(":editor:sora-editor")
 
 // ── Feature Modules ───────────────────────────────────────────────────────
 include(":visual-editor")
@@ -55,6 +56,7 @@ include(":code-formatter")
 include(":bookmarks")
 include(":apk-editor")
 include(":remote-filesystem")
+include(":lsp-java")
 
 // ── Plugin System Modules ─────────────────────────────────────────────────
 include(":plugin-system:api")
