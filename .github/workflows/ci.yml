@@ -23,8 +23,10 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Gradle
+      - name: Setup Gradle (auto-generates wrapper)
         uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.5'
 
       - name: Run lint
         run: ./gradlew lintDebug --stacktrace
@@ -50,8 +52,10 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Gradle
+      - name: Setup Gradle (auto-generates wrapper)
         uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.5'
 
       - name: Run unit tests
         run: ./gradlew testDebugUnitTest --stacktrace
@@ -77,8 +81,10 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Gradle
+      - name: Setup Gradle (auto-generates wrapper)
         uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.5'
 
       - name: Build debug APK
         run: ./gradlew assembleDebug --stacktrace
