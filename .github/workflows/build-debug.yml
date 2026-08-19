@@ -53,7 +53,7 @@ jobs:
           cp app/build/outputs/apk/debug/*.apk output/XCoder-IDE-${{ steps.version.outputs.version_name }}-debug.${{ steps.version.outputs.build_number }}.apk
 
       - name: Upload debug artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: xcoder-debug-${{ steps.version.outputs.build_number }}
           path: output/*.apk
