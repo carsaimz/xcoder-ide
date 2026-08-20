@@ -3,7 +3,6 @@
  * Applies common Android and Kotlin configuration to all subprojects.
  */
 
-// Top-level build file — no actual dependencies declared here.
 plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.android.library) apply false
@@ -28,7 +27,7 @@ subprojects {
     afterEvaluate {
         if (plugins.hasPlugin("com.android.application") || plugins.hasPlugin("com.android.library")) {
             extensions.configure<com.android.build.gradle.BaseExtension> {
-                compileSdk = 34
+                compileSdkVersion(34)
 
                 defaultConfig {
                     minSdk = 21
@@ -59,7 +58,7 @@ subprojects {
                     }
                 }
 
-                packaging {
+                packagingOptions {
                     resources {
                         excludes += "/META-INF/{AL2.0,LGPL2.1}"
                         excludes += "/META-INF/LICENSE*"
