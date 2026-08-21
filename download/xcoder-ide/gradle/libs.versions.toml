@@ -33,7 +33,7 @@ bouncycastle = "1.77"
 sora-editor = "0.23.5"
 
 # --- Termux terminal-emulator ---
-termux-terminal = "v0.118.0"
+termux-terminal = "0.118.0"
 
 # --- AndroidTreeView (Bogdan Melnychuk) ---
 android-tree-view = "v1.0.0"
@@ -112,7 +112,8 @@ sora-editor-language-java = { group = "io.github.Rosemoe.sora-editor", name = "l
 sora-editor-language-textmate = { group = "io.github.Rosemoe.sora-editor", name = "language-textmate", version.ref = "sora-editor" }
 
 # ── Termux terminal-emulator ──────────────────────────────────────────────
-termux-terminal-emulator = { group = "com.github.termux.termux", name = "terminal-emulator", version.ref = "termux-terminal" }
+termux-terminal-emulator = { group = "com.termux", name = "terminal-emulator", version.ref = "termux-terminal" }
+guava-empty = { group = "com.google.guava", name = "listenablefuture", version = "9999.0-empty-to-avoid-conflict-with-guava" }
 
 # ── AndroidTreeView (Bogdan Melnychuk) ────────────────────────────────────
 android-tree-view = { group = "com.github.bmelnychuk", name = "AndroidTreeView", version.ref = "android-tree-view" }
