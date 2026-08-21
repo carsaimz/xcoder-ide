@@ -43,14 +43,17 @@ subprojects {
                     targetCompatibility = JavaVersion.VERSION_17
                 }
 
+                val isApp = plugins.hasPlugin("com.android.application")
                 buildTypes {
                     named("release") {
-                        isMinifyEnabled = true
-                        isShrinkResources = true
-                        proguardFiles(
-                            getDefaultProguardFile("proguard-android-optimize.txt"),
-                            file("proguard-rules.pro")
-                        )
+                        isMinifyEnabled = isApp
+                        if (isApp) {
+                            isShrinkResources = true
+                            proguardFiles(
+                                getDefaultProguardFile("proguard-android-optimize.txt"),
+                                file("proguard-rules.pro")
+                            )
+                        }
                     }
                     named("debug") {
                         isMinifyEnabled = false
