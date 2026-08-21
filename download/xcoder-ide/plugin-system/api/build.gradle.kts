@@ -5,8 +5,8 @@ plugins {
 
 android {
     namespace = "com.xcoder.plugin.api"
-    compileSdk = libs.versions.compileSdk.get().toInt()
-    defaultConfig { minSdk = libs.versions.minSdk.get().toInt() }
+    compileSdk = 34
+    defaultConfig { minSdk = 21 }
     kotlinOptions { jvmTarget = "17" }
 }
 

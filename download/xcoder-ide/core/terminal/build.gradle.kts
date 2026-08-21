@@ -1,7 +1,7 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.kapt)
+    alias(libs.plugins.kapt)
     alias(libs.plugins.hilt)
 }
 
@@ -44,10 +44,10 @@ dependencies {
     implementation(libs.androidx.core.ktx)
 
     // ── Compose ────────────────────────────────────────────────────────
-    api(platform(libs.androidx.compose.bom))
-    api(libs.androidx.compose.ui)
-    api(libs.androidx.compose.foundation)
-    api(libs.androidx.compose.material3)
+    api(platform(libs.compose.bom))
+    api(libs.compose.ui)
+    api(libs.compose.foundation)
+    api(libs.compose.material3)
 
     // ── Hilt ───────────────────────────────────────────────────────────
     implementation(libs.hilt.android)

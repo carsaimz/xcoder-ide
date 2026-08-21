@@ -41,6 +41,12 @@ android-tree-view = "v1.0.0"
 # --- LSP (Language Server Protocol) ---
 lsp4j = "0.21.1"
 
+# --- Extra ---
+appcompat = "1.6.1"
+sshj = "0.38.0"
+commons-net = "3.10.0"
+documentfile = "1.0.0"
+
 [libraries]
 # AndroidX Core
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "core-ktx" }
@@ -130,6 +136,21 @@ jsoup = { group = "org.jsoup", name = "jsoup", version.ref = "jsoup" }
 
 # BouncyCastle (Crypto)
 bouncycastle = { group = "org.bouncycastle", name = "bcprov-jdk18on", version.ref = "bouncycastle" }
+
+# OkHttp SSE
+okhttp-sse = { group = "com.squareup.okhttp3", name = "okhttp-sse", version.ref = "okhttp" }
+
+# AppCompat
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+
+# DocumentFile
+androidx-documentfile = { group = "androidx.documentfile", name = "documentfile", version.ref = "documentfile" }
+
+# SSHJ
+sshj = { group = "com.hierynomus", name = "sshj", version.ref = "sshj" }
+
+# Apache Commons Net (FTP)
+commons-net = { group = "commons-net", name = "commons-net", version.ref = "commons-net" }
 
 # Testing
 junit = { group = "junit", name = "junit", version.ref = "junit" }
