@@ -30,7 +30,7 @@ apache-commons-io = "2.15.1"
 bouncycastle = "1.77"
 
 # --- Rosemoe sora-editor ---
-sora-editor = "0.23.5"
+sora-editor = "0.23.6"
 
 # --- Termux terminal-emulator ---
 termux-terminal = "v0.118.0"
