@@ -24,6 +24,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.xcoder.ide.theme.*
+import com.xcoder.ide.theme.LocalIdeColors
 import kotlin.math.roundToInt
 
 // ---------------------------------------------------------------------------
@@ -55,7 +56,7 @@ data class CanvasBlock(
     val y: Float,
     val width: Float = 120f,
     val height: Float = 56f,
-    val color: Color = PurplePrimary
+    val color: Color = PurplePrimary // brand purple
 )
 
 /** A property row for the selected block. */
@@ -109,10 +110,10 @@ fun VisualEditorScreen(
     var canvasBlocks by remember {
         mutableStateOf(
             listOf(
-                CanvasBlock("1", "column", "Column", 60f, 40f, color = TealAccentDark),
+                CanvasBlock("1", "column", "Column", 60f, 40f, color = Color(0xFF00B894)),
                 CanvasBlock("2", "button", "Button", 220f, 120f, color = PurplePrimary),
-                CanvasBlock("3", "text", "Text", 400f, 40f, color = BlueInfo),
-                CanvasBlock("4", "image", "Image", 400f, 180f, color = OrangeWarning),
+                CanvasBlock("3", "text", "Text", 400f, 40f, color = LocalIdeColors.current.info),
+                CanvasBlock("4", "image", "Image", 400f, 180f, color = LocalIdeColors.current.warning),
             )
         )
     }
@@ -190,7 +191,7 @@ fun VisualEditorScreen(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxHeight()
-                .background(SurfaceDark)
+                .background(LocalIdeColors.current.studioSurfaceDim)
         ) {
             // Grid dots
             Canvas(
@@ -462,7 +463,7 @@ private fun CanvasBlockView(
             .clickable(onClick = onSelect)
             .drawBehind {
                 val strokeWidth = if (isSelected) 2.dp.toPx() else 1.dp.toPx()
-                val strokeColor = if (isSelected) TealAccent else block.color.copy(alpha = 0.5f)
+                val strokeColor = if (isSelected) LocalIdeColors.current.primary else block.color.copy(alpha = 0.5f)
                 drawRoundRect(
                     color = block.color.copy(alpha = 0.15f),
                     cornerRadius = androidx.compose.ui.geometry.CornerRadius(8.dp.toPx())
@@ -499,7 +500,7 @@ private fun CanvasBlockView(
             modifier = Modifier
                 .offset { IntOffset((offset.x + block.width - 8).roundToInt(), (offset.y - 12).roundToInt()) }
                 .size(20.dp)
-                .background(RedError, CircleShape)
+                .background(LocalIdeColors.current.error, CircleShape)
         ) {
             Icon(Icons.Default.Close, null, Modifier.size(12.dp), tint = Color.White)
         }

@@ -20,8 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.*
 import com.xcoder.ide.theme.CodeTypography
-import com.xcoder.ide.theme.TealAccent
-import com.xcoder.ide.theme.TextSecondaryDark
+import com.xcoder.ide.theme.LocalIdeColors
 
 /**
  * Data model representing a single open editor tab.
@@ -126,7 +125,7 @@ fun EditorTabs(
                     if (tab.isModified) {
                         Text(
                             text = "●",
-                            color = TealAccent,
+                            color = LocalIdeColors.current.tabModifiedIndicator,
                             style = MaterialTheme.typography.labelSmall,
                             modifier = Modifier.padding(start = 4.dp)
                         )

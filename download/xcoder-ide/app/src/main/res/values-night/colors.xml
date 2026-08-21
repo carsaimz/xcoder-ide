@@ -1,0 +1,276 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  XCoder IDE Color Resources — Dark Theme
+
+  Only colors that DIFFER from the light values-night/colors.xml need to be listed here.
+  Android's resource system falls back to values/colors.xml for anything omitted.
+
+  The dark palette draws from:
+    - VS Code Dark+ for editor surfaces
+    - Catppuccin Mocha for terminal ANSI colors
+    - Sketchware-IA's Kelivo purple accent system
+-->
+<resources>
+
+    <!-- ================================================================== -->
+    <!--  Brand – XCoder Purple (Kelivo) — Dark Variants                     -->
+    <!-- ================================================================== -->
+    <color name="xcoder_primary_light">#A9A0FF</color>
+    <color name="xcoder_primary_dark">#8B84FF</color>
+    <color name="xcoder_on_primary">#1B1B2F</color>
+    <color name="xcoder_primary_container">#5249B8</color>
+    <color name="xcoder_on_primary_container">#E0DEFF</color>
+    <color name="xcoder_primary_hover">#8B84FF</color>
+    <color name="xcoder_primary_pressed">#A9A0FF</color>
+
+    <color name="xcoder_secondary">#9B97E0</color>
+    <color name="xcoder_secondary_light">#C5C1F0</color>
+    <color name="xcoder_on_secondary">#1B1B2F</color>
+    <color name="xcoder_secondary_container">#38336B</color>
+
+    <color name="xcoder_tertiary">#6BC4B0</color>
+    <color name="xcoder_tertiary_light">#8FE8D0</color>
+    <color name="xcoder_on_tertiary">#003730</color>
+    <color name="xcoder_tertiary_container">#005044</color>
+
+    <!-- ================================================================== -->
+    <!--  Backgrounds & Surfaces — Dark                                     -->
+    <!-- ================================================================== -->
+    <color name="xcoder_background">#0E0E1A</color>
+    <color name="xcoder_on_background">#E4E4F0</color>
+    <color name="xcoder_surface">#161625</color>
+    <color name="xcoder_on_surface">#E4E4F0</color>
+    <color name="xcoder_surface_variant">#242438</color>
+    <color name="xcoder_on_surface_variant">#A0A0B8</color>
+    <color name="xcoder_surface_elevated">#1C1C30</color>
+    <color name="xcoder_surface_container">#1A1A2E</color>
+    <color name="xcoder_surface_container_high">#262640</color>
+    <color name="xcoder_surface_container_highest">#303044</color>
+
+    <color name="xcoder_outline">#484860</color>
+    <color name="xcoder_outline_variant">#363650</color>
+
+    <color name="xcoder_inverse_surface">#E4E4F0</color>
+    <color name="xcoder_inverse_on_surface">#303044</color>
+    <color name="xcoder_inverse_primary">#6B5CE7</color>
+
+    <color name="xcoder_scrollbar_thumb">#484860</color>
+    <color name="xcoder_scrollbar_track">#242438</color>
+
+    <!-- ================================================================== -->
+    <!--  Text — Dark                                                       -->
+    <!-- ================================================================== -->
+    <color name="xcoder_text_primary">#E4E4F0</color>
+    <color name="xcoder_text_secondary">#A0A0B8</color>
+    <color name="xcoder_text_tertiary">#6E6E86</color>
+    <color name="xcoder_text_disabled">#484860</color>
+    <color name="xcoder_text_placeholder">#6E6E86</color>
+    <color name="xcoder_text_link">#A9A0FF</color>
+
+    <!-- ================================================================== -->
+    <!--  Studio — IDE Panel Surfaces (Dark)                                 -->
+    <!-- ================================================================== -->
+    <color name="studio_background">#0E0E1A</color>
+    <color name="studio_surface">#161625</color>
+    <color name="studio_surface_elevated">#1C1C30</color>
+    <color name="studio_surface_dim">#1A1A2E</color>
+
+    <!-- Toolbar -->
+    <color name="studio_toolbar_background">#161625</color>
+    <color name="studio_toolbar_divider">#303044</color>
+    <color name="studio_toolbar_title">#E4E4F0</color>
+
+    <!-- Tab bar -->
+    <color name="studio_tab_bar_background">#12121F</color>
+    <color name="studio_tab_active_background">#161625</color>
+    <color name="studio_tab_inactive_background">#12121F</color>
+    <color name="studio_tab_active_indicator">#8B84FF</color>
+    <color name="studio_tab_active_text">#E4E4F0</color>
+    <color name="studio_tab_inactive_text">#6E6E86</color>
+    <color name="studio_tab_close_icon">#6E6E86</color>
+    <color name="studio_tab_modified_indicator">#8B84FF</color>
+
+    <!-- Sidebar -->
+    <color name="studio_sidebar_background">#12121F</color>
+    <color name="studio_sidebar_header_background">#1A1A2E</color>
+    <color name="studio_sidebar_item_hover">#1C1C30</color>
+    <color name="studio_sidebar_item_selected">#2A2845</color>
+    <color name="studio_sidebar_item_selected_text">#A9A0FF</color>
+    <color name="studio_sidebar_icon">#6E6E86</color>
+    <color name="studio_sidebar_icon_active">#8B84FF</color>
+    <color name="studio_sidebar_divider">#303044</color>
+    <color name="studio_sidebar_section_header">#A0A0B8</color>
+
+    <!-- Status bar -->
+    <color name="studio_status_bar_background">#0E0E1A</color>
+    <color name="studio_status_bar_text">#A0A0B8</color>
+    <color name="studio_status_bar_icon">#6E6E86</color>
+
+    <!-- Breadcrumb -->
+    <color name="studio_breadcrumb_background">#161625</color>
+    <color name="studio_breadcrumb_text">#A0A0B8</color>
+    <color name="studio_breadcrumb_separator">#484860</color>
+    <color name="studio_breadcrumb_active">#A9A0FF</color>
+
+    <!-- Minimap -->
+    <color name="studio_minimap_background">#161625</color>
+    <color name="studio_minimap_slider">rgba(139,132,255,0.25)</color>
+    <color name="studio_minimap_viewport">rgba(139,132,255,0.10)</color>
+
+    <!-- ================================================================== -->
+    <!--  Editor — Code Surface (Dark)                                       -->
+    <!-- ================================================================== -->
+    <color name="editor_background">#1E1E2E</color>
+    <color name="editor_gutter_background">#191928</color>
+    <color name="editor_line_number">#484860</color>
+    <color name="editor_line_number_active">#A9A0FF</color>
+    <color name="editor_current_line_highlight">#262640</color>
+    <color name="editor_selection_background">#4A4580</color>
+    <color name="editor_selection_foreground">#E4E4F0</color>
+    <color name="editor_caret">#8B84FF</color>
+    <color name="editor_find_match_background">#42370E</color>
+    <color name="editor_find_match_border">#E5C84F</color>
+    <color name="editor_find_match_current_background">#6B5B1A</color>
+    <color name="editor_find_range_background">#2A2510</color>
+    <color name="editor_word_highlight_background">#3A3560</color>
+    <color name="editor_indent_guide">#303044</color>
+    <color name="editor_indent_guide_active">#484860</color>
+    <color name="editor_bracket_matching">#4A4580</color>
+    <color name="editor_folding_icon">#484860</color>
+    <color name="editor_folding_hover">#6E6E86</color>
+    <color name="editor_whitespace">#363650</color>
+    <color name="editor_link">#A9A0FF</color>
+
+    <!-- ================================================================== -->
+    <!--  Editor — Syntax Highlighting (Dark)                                -->
+    <!-- ================================================================== -->
+    <color name="editor_syntax_keyword">#C792EA</color>
+    <color name="editor_syntax_string">#C3E88D</color>
+    <color name="editor_syntax_number">#F78C6C</color>
+    <color name="editor_syntax_comment">#546E7A</color>
+    <color name="editor_syntax_comment_doc">#6D8F3E</color>
+    <color name="editor_syntax_function">#82AAFF</color>
+    <color name="editor_syntax_variable">#EEFFFF</color>
+    <color name="editor_syntax_type">#FFCB6B</color>
+    <color name="editor_syntax_operator">#89DDFF</color>
+    <color name="editor_syntax_annotation">#C792EA</color>
+    <color name="editor_syntax_constant">#F78C6C</color>
+    <color name="editor_syntax_tag">#F07178</color>
+    <color name="editor_syntax_attribute_name">#FFCB6B</color>
+    <color name="editor_syntax_attribute_value">#C3E88D</color>
+    <color name="editor_syntax_delimiter">#89DDFF</color>
+    <color name="editor_syntax_identifier">#EEFFFF</color>
+
+    <!-- ================================================================== -->
+    <!--  Search Panel (Dark)                                                -->
+    <!-- ================================================================== -->
+    <color name="search_panel_background">#1C1C30</color>
+    <color name="search_panel_border">#303044</color>
+    <color name="search_input_background">#242438</color>
+    <color name="search_input_focused_border">#8B84FF</color>
+    <color name="search_result_highlight">#42370E</color>
+    <color name="search_result_selected">#2A2845</color>
+    <color name="search_result_text_match">#F78C6C</color>
+    <color name="search_result_file_header">#1A1A2E</color>
+    <color name="search_result_line_number">#484860</color>
+
+    <!-- ================================================================== -->
+    <!--  Diff Viewer (Dark)                                                 -->
+    <!-- ================================================================== -->
+    <color name="diff_added_background">#1A3328</color>
+    <color name="diff_added_text">#A6E3A1</color>
+    <color name="diff_added_border">#2D5A3D</color>
+    <color name="diff_added_gutter">#1E3A2E</color>
+    <color name="diff_removed_background">#3A1A1A</color>
+    <color name="diff_removed_text">#F38BA8</color>
+    <color name="diff_removed_border">#5A2D2D</color>
+    <color name="diff_removed_gutter">#3A2020</color>
+    <color name="diff_modified_background">#332E1A</color>
+    <color name="diff_modified_text">#F9E2AF</color>
+    <color name="diff_modified_border">#5A4D2D</color>
+    <color name="diff_header_background">#1A1A33</color>
+    <color name="diff_header_text">#89B4FA</color>
+    <color name="diff_word_added">#2D5A3D</color>
+    <color name="diff_word_removed">#5A2D2D</color>
+
+    <!-- ================================================================== -->
+    <!--  Git Semantic Colors (Dark)                                         -->
+    <!-- ================================================================== -->
+    <color name="git_added">#A6E3A1</color>
+    <color name="git_modified">#89B4FA</color>
+    <color name="git_deleted">#F38BA8</color>
+    <color name="git_renamed">#C792EA</color>
+    <color name="git_untracked">#6E6E86</color>
+    <color name="git_conflict">#F9E2AF</color>
+    <color name="git_ignored">#484860</color>
+    <color name="git_branch">#C792EA</color>
+    <color name="git_tag">#A6E3A1</color>
+    <color name="git_remote">#89B4FA</color>
+
+    <!-- ================================================================== -->
+    <!--  Semantic (Dark)                                                    -->
+    <!-- ================================================================== -->
+    <color name="semantic_success_background">#1A3328</color>
+    <color name="semantic_success_border">#2D5A3D</color>
+    <color name="semantic_warning_background">#332E1A</color>
+    <color name="semantic_warning_border">#5A4D2D</color>
+    <color name="semantic_error_background">#3A1A1A</color>
+    <color name="semantic_error_border">#5A2D2D</color>
+    <color name="semantic_info_background">#1A2640</color>
+    <color name="semantic_info_border">#2D4A6B</color>
+
+    <!-- ================================================================== -->
+    <!--  Notification / Toast (Dark)                                        -->
+    <!-- ================================================================== -->
+    <color name="notification_background">#303044</color>
+    <color name="notification_text">#E4E4F0</color>
+    <color name="notification_icon">#A9A0FF</color>
+
+    <!-- ================================================================== -->
+    <!--  Dialog / Bottom Sheet (Dark)                                       -->
+    <!-- ================================================================== -->
+    <color name="dialog_background">#1C1C30</color>
+    <color name="dialog_surface">#1C1C30</color>
+    <color name="dialog_scrim">#000000</color>
+    <color name="bottom_sheet_background">#1C1C30</color>
+    <color name="bottom_sheet_handle">#484860</color>
+    <color name="bottom_sheet_drag_area">#1A1A2E</color>
+
+    <!-- ================================================================== -->
+    <!--  Progress (Dark)                                                    -->
+    <!-- ================================================================== -->
+    <color name="progress_linear_track">#303044</color>
+    <color name="progress_linear_indeterminate">#8B84FF</color>
+    <color name="progress_circular_track">#303044</color>
+    <color name="progress_circular_indeterminate">#8B84FF</color>
+
+    <!-- ================================================================== -->
+    <!--  Chat / AI Panel (Dark)                                             -->
+    <!-- ================================================================== -->
+    <color name="chat_user_bubble">#5249B8</color>
+    <color name="chat_user_text">#E4E4F0</color>
+    <color name="chat_ai_bubble">#1C1C30</color>
+    <color name="chat_ai_text">#E4E4F0</color>
+    <color name="chat_input_background">#242438</color>
+    <color name="chat_input_border">#303044</color>
+    <color name="chat_input_focused_border">#8B84FF</color>
+    <color name="chat_code_block_background">#12121F</color>
+    <color name="chat_code_block_border">#303044</color>
+    <color name="chat_timestamp">#6E6E86</color>
+    <color name="chat_divider">#242438</color>
+
+    <!-- ================================================================== -->
+    <!--  File Type Colors (Dark — slightly more vibrant for visibility)     -->
+    <!-- ================================================================== -->
+    <color name="file_folder">#8B84FF</color>
+    <color name="file_folder_closed">#6B5CE7</color>
+    <color name="file_javascript">#FFF176</color>
+
+    <!-- ================================================================== -->
+    <!--  Splash (Dark)                                                      -->
+    <!-- ================================================================== -->
+    <color name="splash_background">#0E0E1A</color>
+    <color name="splash_text">#E4E4F0</color>
+    <color name="icon_tint">#8B84FF</color>
+
+</resources>

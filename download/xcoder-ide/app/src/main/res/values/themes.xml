@@ -1,49 +1,191 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Minimal XML theme definition.
-  Most theming is handled by Compose Material 3 (see theme/Theme.kt).
-  This file exists for:
-    1. Splash screen / cold-start appearance.
-    2. Any legacy views (e.g. WebView, dialogs) that don't use Compose.
-    3. FileProvider and system UI attributes.
+  XCoder IDE Material 3 Theme Definitions.
+
+  Architecture (inspired by AndroidIDE's approach):
+    - All color references use the xcoder_*/studio_* palette from colors.xml
+    - values-night/ automatically overrides for dark mode via resource qualifiers
+    - No hardcoded hex colors in this file — everything references named resources
+    - Compose handles the majority of UI; this theme covers:
+        1. Splash screen / cold-start window
+        2. System bars (status bar, navigation bar, edge-to-edge)
+        3. Legacy views (WebView, dialogs, FileProvider)
+        4. TabLayout, BottomSheetDialog, SearchView styling
 -->
 <resources>
 
-    <!-- Base application theme (dark) -->
-    <style name="Theme.XCoderIDE" parent="Theme.Material3.Dark.NoActionBar">
-        <!-- Primary brand colour -->
-        <item name="colorPrimary">@color/purple_primary</item>
-        <item name="colorOnPrimary">@android:color/white</item>
-        <item name="colorPrimaryContainer">@color/purple_primary_dark</item>
-        <item name="colorOnPrimaryContainer">@color/purple_primary_light</item>
+    <!-- ================================================================ -->
+    <!--  Base Light Theme                                                  -->
+    <!-- ================================================================ -->
+    <style name="Theme.XCoderIDE" parent="Theme.Material3.Light.NoActionBar">
 
-        <!-- Secondary / accent -->
-        <item name="colorSecondary">@color/teal_accent</item>
-        <item name="colorOnSecondary">@android:color/black</item>
-        <item name="colorSecondaryContainer">@color/teal_accent_dark</item>
-        <item name="colorOnSecondaryContainer">@color/teal_accent_light</item>
+        <!-- ---- Brand / Primary ---- -->
+        <item name="colorPrimary">@color/xcoder_primary</item>
+        <item name="colorOnPrimary">@color/xcoder_on_primary</item>
+        <item name="colorPrimaryContainer">@color/xcoder_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/xcoder_on_primary_container</item>
 
-        <!-- Background / surface -->
-        <item name="android:colorBackground">@color/background_dark</item>
-        <item name="colorOnBackground">@color/text_primary_dark</item>
-        <item name="colorSurface">@color/surface_dark</item>
-        <item name="colorOnSurface">@color/text_primary_dark</item>
+        <!-- ---- Secondary ---- -->
+        <item name="colorSecondary">@color/xcoder_secondary</item>
+        <item name="colorOnSecondary">@color/xcoder_on_secondary</item>
+        <item name="colorSecondaryContainer">@color/xcoder_secondary_container</item>
 
-        <!-- Status bar -->
-        <item name="android:statusBarColor">@color/purple_primary</item>
-        <item name="android:navigationBarColor">@color/surface_dark</item>
+        <!-- ---- Tertiary ---- -->
+        <item name="colorTertiary">@color/xcoder_tertiary</item>
+        <item name="colorOnTertiary">@color/xcoder_on_tertiary</item>
+        <item name="colorTertiaryContainer">@color/xcoder_tertiary_container</item>
 
-        <!-- Window -->
-        <item name="android:windowBackground">@color/background_dark</item>
+        <!-- ---- Background & Surface ---- -->
+        <item name="android:colorBackground">@color/xcoder_background</item>
+        <item name="colorOnBackground">@color/xcoder_on_background</item>
+        <item name="colorSurface">@color/xcoder_surface</item>
+        <item name="colorOnSurface">@color/xcoder_on_surface</item>
+        <item name="colorSurfaceVariant">@color/xcoder_surface_variant</item>
+        <item name="colorOnSurfaceVariant">@color/xcoder_on_surface_variant</item>
+        <item name="colorSurfaceContainer">@color/xcoder_surface_container</item>
+        <item name="colorSurfaceContainerHigh">@color/xcoder_surface_container_high</item>
+        <item name="colorSurfaceContainerHighest">@color/xcoder_surface_container_highest</item>
+        <item name="colorSurfaceElevated">@color/xcoder_surface_elevated</item>
+
+        <!-- ---- Outline ---- -->
+        <item name="colorOutline">@color/xcoder_outline</item>
+        <item name="colorOutlineVariant">@color/xcoder_outline_variant</item>
+
+        <!-- ---- Error / Status ---- -->
+        <item name="colorError">@color/semantic_error</item>
+        <item name="colorOnError">@color/xcoder_surface</item>
+        <item name="colorErrorContainer">@color/semantic_error_background</item>
+
+        <!-- ---- System Bars ---- -->
+        <item name="android:statusBarColor">@color/studio_toolbar_background</item>
+        <item name="android:navigationBarColor">@color/studio_status_bar_background</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+
+        <!-- ---- Window ---- -->
+        <item name="android:windowBackground">@color/xcoder_background</item>
         <item name="android:windowIsTranslucent">false</item>
         <item name="android:windowAnimationStyle">@android:style/Animation.Activity</item>
+
+        <!-- ---- Text Input ---- -->
+        <item name="textInputStyle">@style/Widget.Material3.TextInputLayout.OutlinedBox</item>
+        <item name="editTextColor">@color/xcoder_text_primary</item>
+        <item name="android:textColorHint">@color/xcoder_text_placeholder</item>
+
+        <!-- ---- Scrollbar ---- -->
+        <item name="android:scrollbarThumbVertical">@color/xcoder_scrollbar_thumb</item>
+        <item name="android:scrollbarTrackVertical">@color/xcoder_scrollbar_track</item>
+        <item name="android:scrollbarSize">6dp</item>
+        <item name="android:scrollbarFadeDuration">500</item>
+
+        <!-- ---- TabLayout ---- -->
+        <item name="tabStyle">@style/Widget.XCoder.TabLayout</item>
+        <item name="tabTextColor">@color/studio_tab_inactive_text</item>
+        <item name="tabSelectedTextColor">@color/studio_tab_active_text</item>
+
+        <!-- ---- Bottom Sheet ---- -->
+        <item name="bottomSheetStyle">@style/Widget.XCoder.BottomSheet</item>
+
+        <!-- ---- Popup / Menu ---- -->
+        <item name="popupMenuBackground">@color/xcoder_surface_elevated</item>
+        <item name="android:popupMenuStyle">@style/Widget.XCoder.PopupMenu</item>
+
     </style>
 
-    <!-- Splash variant – used as the launch theme before Compose takes over -->
+    <!-- ================================================================ -->
+    <!--  Splash Theme                                                      -->
+    <!-- ================================================================ -->
     <style name="Theme.XCoderIDE.Splash" parent="Theme.XCoderIDE">
-        <item name="android:windowBackground">@color/background_dark</item>
-        <item name="android:windowSplashScreenBackground">@color/background_dark</item>
+        <item name="android:windowBackground">@color/splash_background</item>
+        <item name="android:statusBarColor">@color/splash_background</item>
+        <item name="android:navigationBarColor">@color/splash_background</item>
+        <item name="android:windowSplashScreenBackground">@color/splash_background</item>
         <item name="android:windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+    </style>
+
+    <!-- ================================================================ -->
+    <!--  TabLayout Widget Override                                         -->
+    <!-- ================================================================ -->
+    <style name="Widget.XCoder.TabLayout" parent="Widget.Material3.TabLayout">
+        <item name="android:background">@color/studio_tab_bar_background</item>
+        <item name="tabIndicatorColor">@color/studio_tab_active_indicator</item>
+        <item name="tabIndicatorHeight">2dp</item>
+        <item name="tabBackground">@color/studio_tab_inactive_background</item>
+        <item name="tabMinWidth">100dp</item>
+        <item name="tabMode">scrollable</item>
+        <item name="tabRippleColor">@color/xcoder_primary</item>
+        <item name="tabTextAppearance">@style/TextAppearance.XCoder.Tab</item>
+    </style>
+
+    <!-- ================================================================ -->
+    <!--  BottomSheet Widget Override                                       -->
+    <!-- ================================================================ -->
+    <style name="Widget.XCoder.BottomSheet" parent="Widget.Material3.BottomSheet">
+        <item name="android:background">@color/bottom_sheet_background</item>
+        <item name="backgroundTint">@color/bottom_sheet_background</item>
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.XCoder.BottomSheet</item>
+    </style>
+
+    <style name="ShapeAppearance.XCoder.BottomSheet" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSizeTopLeft">16dp</item>
+        <item name="cornerSizeTopRight">16dp</item>
+        <item name="cornerSizeBottomLeft">0dp</item>
+        <item name="cornerSizeBottomRight">0dp</item>
+    </style>
+
+    <!-- ================================================================ -->
+    <!--  PopupMenu Widget Override                                         -->
+    <!-- ================================================================ -->
+    <style name="Widget.XCoder.PopupMenu" parent="Widget.Material3.PopupMenu">
+        <item name="android:popupBackground">@color/xcoder_surface_elevated</item>
+        <item name="android:dropDownVerticalOffset">4dp</item>
+        <item name="android:dropDownHorizontalOffset">0dp</item>
+    </style>
+
+    <!-- ================================================================ -->
+    <!--  Text Appearances                                                  -->
+    <!-- ================================================================ -->
+    <style name="TextAppearance.XCoder.Tab" parent="TextAppearance.Material3.TitleSmall">
+        <item name="android:textSize">13sp</item>
+        <item name="android:textColor">@color/studio_tab_inactive_text</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:letterSpacing">0.02</item>
+    </style>
+
+    <style name="TextAppearance.XCoder.StatusBar" parent="TextAppearance.Material3.LabelSmall">
+        <item name="android:textSize">11sp</item>
+        <item name="android:textColor">@color/studio_status_bar_text</item>
+        <item name="android:letterSpacing">0.03</item>
+    </style>
+
+    <style name="TextAppearance.XCoder.Breadcrumb" parent="TextAppearance.Material3.LabelSmall">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textColor">@color/studio_breadcrumb_text</item>
+    </style>
+
+    <style name="TextAppearance.XCoder.FileTree" parent="TextAppearance.Material3.BodySmall">
+        <item name="android:textSize">13sp</item>
+        <item name="android:textColor">@color/xcoder_text_secondary</item>
+    </style>
+
+    <style name="TextAppearance.XCoder.FileTree.SectionHeader" parent="TextAppearance.Material3.LabelSmall">
+        <item name="android:textSize">11sp</item>
+        <item name="android:textColor">@color/studio_sidebar_section_header</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:letterSpacing">0.05</item>
+    </style>
+
+    <style name="TextAppearance.XCoder.LineNumber" parent="">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textColor">@color/editor_line_number</item>
+        <item name="android:fontFamily">monospace</item>
+    </style>
+
+    <style name="TextAppearance.XCoder.Terminal" parent="">
+        <item name="android:textSize">13sp</item>
+        <item name="android:textColor">@color/terminal_foreground</item>
+        <item name="android:fontFamily">monospace</item>
     </style>
 
 </resources>

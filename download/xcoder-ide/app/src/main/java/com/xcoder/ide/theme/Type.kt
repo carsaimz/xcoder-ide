@@ -7,13 +7,25 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
+// ---------------------------------------------------------------------------
+//  Font Families
+// ---------------------------------------------------------------------------
 // Assuming the bundled font files live in res/font/.
 // If the resource is not found at runtime Android falls back to the default.
+
 private val JetBrainsMono = FontFamily(
     Font(resId = R.font.jetbrains_mono, weight = FontWeight.Normal),
     Font(resId = R.font.jetbrains_mono_bold, weight = FontWeight.Bold),
-    Font(resId = R.font.jetbrains_mono_italic, weight = FontWeight.Normal, style = androidx.compose.ui.text.font.FontStyle.Italic),
-    Font(resId = R.font.jetbrains_mono_bold_italic, weight = FontWeight.Bold, style = androidx.compose.ui.text.font.FontStyle.Italic)
+    Font(
+        resId = R.font.jetbrains_mono_italic,
+        weight = FontWeight.Normal,
+        style = androidx.compose.ui.text.font.FontStyle.Italic
+    ),
+    Font(
+        resId = R.font.jetbrains_mono_bold_italic,
+        weight = FontWeight.Bold,
+        style = androidx.compose.ui.text.font.FontStyle.Italic
+    )
 )
 
 private val Inter = FontFamily(
@@ -23,11 +35,15 @@ private val Inter = FontFamily(
     Font(resId = R.font.inter_bold, weight = FontWeight.Bold)
 )
 
+// ---------------------------------------------------------------------------
+//  M3 Typography Scale (UI text — Inter)
+// ---------------------------------------------------------------------------
+
 /**
- * XCoder IDE typography scale.
+ * XCoder IDE M3 typography scale.
  *
  * - **UI text** uses [Inter] for readability.
- * - **Code text** uses [JetBrainsMono] for monospaced rendering.
+ * - **Code text** uses [JetBrainsMono] — see [CodeTypography].
  */
 val XCoderTypography = Typography(
     // --- Display ---
@@ -142,10 +158,22 @@ val XCoderTypography = Typography(
     )
 )
 
+// ---------------------------------------------------------------------------
+//  IDE-Specific Typography (JetBrains Mono)
+// ---------------------------------------------------------------------------
+
 /**
- * Typography styles used inside the code editor.
+ * Typography styles for IDE-specific surfaces.
+ *
+ * These are NOT part of the M3 [Typography] scale because M3 does not
+ * have slots for code-editor text, line numbers, terminal output, etc.
+ * Use them directly in composables via `CodeTypography.editorBody` etc.
  */
 object CodeTypography {
+
+    // ---- Code Editor ----
+
+    /** Main editor text — the default font/size for the code area. */
     val editorBody = TextStyle(
         fontFamily = JetBrainsMono,
         fontWeight = FontWeight.Normal,
@@ -153,6 +181,8 @@ object CodeTypography {
         lineHeight = 22.sp,
         letterSpacing = 0.sp
     )
+
+    /** Larger variant for accessibility / presentation mode. */
     val editorBodyLarge = TextStyle(
         fontFamily = JetBrainsMono,
         fontWeight = FontWeight.Normal,
@@ -160,6 +190,8 @@ object CodeTypography {
         lineHeight = 26.sp,
         letterSpacing = 0.sp
     )
+
+    /** Compact variant for code previews / collapsed blocks. */
     val editorBodySmall = TextStyle(
         fontFamily = JetBrainsMono,
         fontWeight = FontWeight.Normal,
@@ -167,6 +199,17 @@ object CodeTypography {
         lineHeight = 18.sp,
         letterSpacing = 0.sp
     )
+
+    /** Extra-compact for inline code or chips. */
+    val editorBodyExtraSmall = TextStyle(
+        fontFamily = JetBrainsMono,
+        fontWeight = FontWeight.Normal,
+        fontSize = 11.sp,
+        lineHeight = 16.sp,
+        letterSpacing = 0.sp
+    )
+
+    /** Gutter line numbers — slightly smaller than editor body, same line height. */
     val lineNumbers = TextStyle(
         fontFamily = JetBrainsMono,
         fontWeight = FontWeight.Normal,
@@ -174,6 +217,13 @@ object CodeTypography {
         lineHeight = 22.sp,
         letterSpacing = 0.sp
     )
+
+    /** Active line number — uses the same size but the caller applies [LocalIdeColors.current.editorLineNumberActive]. */
+    val lineNumberActive = lineNumbers
+
+    // ---- Terminal ----
+
+    /** Terminal emulator text — slightly smaller than editor. */
     val terminal = TextStyle(
         fontFamily = JetBrainsMono,
         fontWeight = FontWeight.Normal,
@@ -181,11 +231,130 @@ object CodeTypography {
         lineHeight = 20.sp,
         letterSpacing = 0.sp
     )
+
+    /** Terminal text at a larger size for readability. */
+    val terminalLarge = TextStyle(
+        fontFamily = JetBrainsMono,
+        fontWeight = FontWeight.Normal,
+        fontSize = 14.sp,
+        lineHeight = 22.sp,
+        letterSpacing = 0.sp
+    )
+
+    // ---- Minimap ----
+
+    /** Minimap character size — 1-2px effective rendering. */
     val miniMap = TextStyle(
         fontFamily = JetBrainsMono,
         fontWeight = FontWeight.Normal,
         fontSize = 2.sp,
         lineHeight = 3.sp,
         letterSpacing = 0.sp
+    )
+
+    // ---- File Tree ----
+
+    /** File name in the tree / sidebar. */
+    val fileTreeItem = TextStyle(
+        fontFamily = JetBrainsMono,
+        fontWeight = FontWeight.Normal,
+        fontSize = 13.sp,
+        lineHeight = 20.sp,
+        letterSpacing = 0.sp
+    )
+
+    /** Folder / section header in the file tree. */
+    val fileTreeSectionHeader = TextStyle(
+        fontFamily = Inter,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 11.sp,
+        lineHeight = 16.sp,
+        letterSpacing = 0.05.sp
+    )
+
+    // ---- Status Bar ----
+
+    /** Status bar text — compact, all-caps style for sections. */
+    val statusBar = TextStyle(
+        fontFamily = Inter,
+        fontWeight = FontWeight.Normal,
+        fontSize = 11.sp,
+        lineHeight = 16.sp,
+        letterSpacing = 0.03.sp
+    )
+
+    // ---- Breadcrumb ----
+
+    /** Breadcrumb path segments. */
+    val breadcrumb = TextStyle(
+        fontFamily = Inter,
+        fontWeight = FontWeight.Normal,
+        fontSize = 12.sp,
+        lineHeight = 18.sp,
+        letterSpacing = 0.sp
+    )
+
+    // ---- Diff / Patch ----
+
+    /** Diff header line (file path, hunk info). */
+    val diffHeader = TextStyle(
+        fontFamily = JetBrainsMono,
+        fontWeight = FontWeight.Bold,
+        fontSize = 13.sp,
+        lineHeight = 20.sp,
+        letterSpacing = 0.sp
+    )
+
+    /** Diff content line. */
+    val diffLine = TextStyle(
+        fontFamily = JetBrainsMono,
+        fontWeight = FontWeight.Normal,
+        fontSize = 13.sp,
+        lineHeight = 20.sp,
+        letterSpacing = 0.sp
+    )
+
+    // ---- Search ----
+
+    /** Search result match line. */
+    val searchResult = TextStyle(
+        fontFamily = JetBrainsMono,
+        fontWeight = FontWeight.Normal,
+        fontSize = 13.sp,
+        lineHeight = 20.sp,
+        letterSpacing = 0.sp
+    )
+
+    // ---- AI / Chat Code Blocks ----
+
+    /** Code block inside AI chat responses. */
+    val chatCodeBlock = TextStyle(
+        fontFamily = JetBrainsMono,
+        fontWeight = FontWeight.Normal,
+        fontSize = 13.sp,
+        lineHeight = 20.sp,
+        letterSpacing = 0.sp
+    )
+
+    // ---- Build Output / Log ----
+
+    /** Build output lines, similar to terminal. */
+    val buildOutput = TextStyle(
+        fontFamily = JetBrainsMono,
+        fontWeight = FontWeight.Normal,
+        fontSize = 12.sp,
+        lineHeight = 18.sp,
+        letterSpacing = 0.sp
+    )
+
+    // ---- Tooltip ----
+
+    /** Tooltip text — small but readable. */
+    val tooltip = TextStyle(
+        fontFamily = Inter,
+        fontWeight = FontWeight.Normal,
+        fontSize = 12.sp,
+        lineHeight = 16.sp,
+        letterSpacing = 0.02.sp
     )
 }

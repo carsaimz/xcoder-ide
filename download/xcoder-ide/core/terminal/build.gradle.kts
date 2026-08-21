@@ -37,8 +37,8 @@ android {
 }
 
 dependencies {
-    // ── Termux terminal-emulator ───────────────────────────────────────
-    api(libs.termux.terminal.emulator)
+    // ── Termux terminal-view (transitively includes terminal-emulator + libtermux.so) ─
+    api(libs.termux.terminal.view)
 
     // ── AndroidX ───────────────────────────────────────────────────────
     implementation(libs.androidx.core.ktx)

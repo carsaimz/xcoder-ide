@@ -1,9 +1,13 @@
 <resources>
-    <!-- App -->
+    <!-- ================================================================ -->
+    <!--  App Identity                                                     -->
+    <!-- ================================================================ -->
     <string name="app_name">XCoder IDE</string>
     <string name="app_description">Mobile integrated development environment</string>
 
-    <!-- Navigation -->
+    <!-- ================================================================ -->
+    <!--  Navigation                                                       -->
+    <!-- ================================================================ -->
     <string name="nav_web_editor">Editor</string>
     <string name="nav_native_editor">Editor</string>
     <string name="nav_visual_editor">Visual Editor</string>
@@ -14,27 +18,50 @@
     <string name="nav_settings">Settings</string>
     <string name="nav_projects">Projects</string>
 
-    <!-- Bottom Bar -->
+    <!-- ================================================================ -->
+    <!--  Bottom Bar                                                       -->
+    <!-- ================================================================ -->
     <string name="bottom_web">Editor</string>
     <string name="bottom_native">Native</string>
     <string name="bottom_visual">Visual</string>
     <string name="bottom_more">More</string>
 
-    <!-- Editor -->
+    <!-- ================================================================ -->
+    <!--  Editor                                                           -->
+    <!-- ================================================================ -->
     <string name="editor_untitled">Untitled</string>
     <string name="editor_new_file">New File</string>
     <string name="editor_save">Save</string>
     <string name="editor_save_as">Save As…</string>
     <string name="editor_close_tab">Close Tab</string>
     <string name="editor_close_others">Close Others</string>
+    <string name="editor_close_all">Close All</string>
     <string name="editor_search">Search files…</string>
     <string name="editor_find_replace">Find &amp; Replace</string>
     <string name="editor_go_to_line">Go to Line</string>
+    <string name="editor_go_to_symbol">Go to Symbol</string>
+    <string name="editor_go_to_definition">Go to Definition</string>
     <string name="editor_format">Format Code</string>
     <string name="editor_undo">Undo</string>
     <string name="editor_redo">Redo</string>
+    <string name="editor_cut">Cut</string>
+    <string name="editor_copy">Copy</string>
+    <string name="editor_paste">Paste</string>
+    <string name="editor_select_all">Select All</string>
+    <string name="editor_toggle_comment">Toggle Comment</string>
+    <string name="editor_fold_all">Fold All</string>
+    <string name="editor_unfold_all">Unfold All</string>
+    <string name="editor_word_wrap">Word Wrap</string>
+    <string name="editor_minimap">Minimap</string>
+    <string name="editor_line_numbers">Line Numbers</string>
+    <string name="editor_indent_guides">Indent Guides</string>
+    <string name="editor_soft_wrap">Soft Wrap</string>
+    <string name="editor_read_only">Read-Only</string>
+    <string name="editor_file_type_unknown">Unknown</string>
 
-    <!-- File Tree -->
+    <!-- ================================================================ -->
+    <!--  File Tree                                                        -->
+    <!-- ================================================================ -->
     <string name="file_tree_explorer">Explorer</string>
     <string name="file_tree_new_file">New File</string>
     <string name="file_tree_new_folder">New Folder</string>
@@ -42,8 +69,13 @@
     <string name="file_tree_delete">Delete</string>
     <string name="file_tree_refresh">Refresh</string>
     <string name="file_tree_show_hidden">Show Hidden Files</string>
+    <string name="file_tree_collapse_all">Collapse All</string>
+    <string name="file_tree_empty">No files to display</string>
+    <string name="file_tree_search">Search files…</string>
 
-    <!-- Build -->
+    <!-- ================================================================ -->
+    <!--  Build                                                            -->
+    <!-- ================================================================ -->
     <string name="build_run">Build &amp; Run</string>
     <string name="build_stop">Stop</string>
     <string name="build_clean">Clean</string>
@@ -51,40 +83,81 @@
     <string name="build_successful">BUILD SUCCESSFUL</string>
     <string name="build_failed">BUILD FAILED</string>
     <string name="build_running">Building…</string>
+    <string name="build_task">Build Task</string>
+    <string name="build_duration">Duration: %1$s</string>
 
-    <!-- Terminal -->
+    <!-- ================================================================ -->
+    <!--  Terminal                                                         -->
+    <!-- ================================================================ -->
     <string name="terminal_title">Terminal</string>
     <string name="terminal_new_session">New Session</string>
     <string name="terminal_close_session">Close Session</string>
     <string name="terminal_clear">Clear</string>
     <string name="terminal_copy">Copy</string>
     <string name="terminal_paste">Paste</string>
+    <string name="terminal_select_all">Select All</string>
+    <string name="terminal_split_horizontal">Split Horizontal</string>
+    <string name="terminal_split_vertical">Split Vertical</string>
+    <string name="terminal_font_size">Terminal Font Size</string>
 
-    <!-- Git -->
+    <!-- ================================================================ -->
+    <!--  Git                                                              -->
+    <!-- ================================================================ -->
     <string name="git_title">Git Manager</string>
     <string name="git_init">Initialize Repository</string>
     <string name="git_commit">Commit</string>
     <string name="git_push">Push</string>
     <string name="git_pull">Pull</string>
+    <string name="git_fetch">Fetch</string>
     <string name="git_branch">Branch</string>
     <string name="git_merge">Merge</string>
+    <string name="git_rebase">Rebase</string>
     <string name="git_log">History</string>
     <string name="git_diff">Diff</string>
     <string name="git_stash">Stash</string>
     <string name="git_clone">Clone Repository</string>
+    <string name="git_cherry_pick">Cherry Pick</string>
+    <string name="git_revert">Revert</string>
+    <string name="git_reset">Reset</string>
+    <string name="git_branch_create">Create Branch</string>
+    <string name="git_branch_switch">Switch Branch</string>
+    <string name="git_branch_delete">Delete Branch</string>
+    <string name="git_remote_add">Add Remote</string>
+    <string name="git_status_added">Added</string>
+    <string name="git_status_modified">Modified</string>
+    <string name="git_status_deleted">Deleted</string>
+    <string name="git_status_renamed">Renamed</string>
+    <string name="git_status_untracked">Untracked</string>
+    <string name="git_status_conflict">Conflict</string>
+    <string name="git_status_ignored">Ignored</string>
 
-    <!-- AI -->
+    <!-- ================================================================ -->
+    <!--  AI Assistant                                                     -->
+    <!-- ================================================================ -->
     <string name="ai_title">AI Assistant</string>
     <string name="ai_placeholder">Ask anything or describe what you want to build…</string>
     <string name="ai_send">Send</string>
+    <string name="ai_stop">Stop</string>
     <string name="ai_clear_chat">Clear Chat</string>
     <string name="ai_explain_code">Explain Code</string>
     <string name="ai_generate_code">Generate Code</string>
     <string name="ai_fix_errors">Fix Errors</string>
     <string name="ai_optimize">Optimize</string>
     <string name="ai_add_tests">Add Tests</string>
+    <string name="ai_document">Add Documentation</string>
+    <string name="ai_refactor">Refactor</string>
+    <string name="ai_convert_language">Convert Language</string>
+    <string name="ai_user_label">You</string>
+    <string name="ai_assistant_label">XCoder AI</string>
+    <string name="ai_copy_code">Copy Code</string>
+    <string name="ai_insert_code">Insert Code</string>
+    <string name="ai_regenerate">Regenerate</string>
+    <string name="ai_thinking">Thinking…</string>
+    <string name="ai_error_generic">An error occurred. Please try again.</string>
 
-    <!-- Plugins -->
+    <!-- ================================================================ -->
+    <!--  Plugins                                                          -->
+    <!-- ================================================================ -->
     <string name="plugins_title">Plugins</string>
     <string name="plugins_install">Install</string>
     <string name="plugins_uninstall">Uninstall</string>
@@ -93,66 +166,214 @@
     <string name="plugins_marketplace">Marketplace</string>
     <string name="plugins_installed">Installed</string>
     <string name="plugins_search">Search plugins…</string>
+    <string name="plugins_update_available">Update Available</string>
+    <string name="plugins_settings">Plugin Settings</string>
 
-    <!-- Visual Editor -->
+    <!-- ================================================================ -->
+    <!--  Visual Editor                                                    -->
+    <!-- ================================================================ -->
     <string name="visual_palette">Palette</string>
     <string name="visual_canvas">Canvas</string>
     <string name="visual_properties">Properties</string>
     <string name="visual_export_code">Export Code</string>
     <string name="visual_preview">Preview</string>
+    <string name="visual_component_tree">Component Tree</string>
+    <string name="visual_attributes">Attributes</string>
 
-    <!-- Settings -->
+    <!-- ================================================================ -->
+    <!--  Settings                                                         -->
+    <!-- ================================================================ -->
     <string name="settings_title">Settings</string>
+
+    <!-- Theme Section -->
+    <string name="settings_section_appearance">Appearance</string>
     <string name="settings_theme">Theme</string>
     <string name="settings_theme_dark">Dark</string>
     <string name="settings_theme_light">Light</string>
     <string name="settings_theme_system">Follow System</string>
+    <string name="settings_theme_description">Choose the application color scheme</string>
+    <string name="settings_accent_color">Accent Color</string>
+    <string name="settings_accent_color_description">Customize the primary accent color</string>
+    <string name="settings_accent_purple">Purple (Default)</string>
+    <string name="settings_accent_blue">Blue</string>
+    <string name="settings_accent_teal">Teal</string>
+    <string name="settings_accent_orange">Orange</string>
+    <string name="settings_accent_pink">Pink</string>
+    <string name="settings_accent_green">Green</string>
+    <string name="settings_use_dynamic_color">Dynamic Colors</string>
+    <string name="settings_use_dynamic_color_description">Use colors from your wallpaper (Android 12+)</string>
+
+    <!-- Editor Section -->
+    <string name="settings_section_editor">Editor</string>
     <string name="settings_font_size">Font Size</string>
+    <string name="settings_font_size_description">Editor text size in pixels</string>
     <string name="settings_font_family">Font Family</string>
+    <string name="settings_font_family_description">Monospaced font for the code editor</string>
     <string name="settings_keymap">Key Map</string>
+    <string name="settings_keymap_description">Keyboard shortcut scheme</string>
     <string name="settings_auto_save">Auto Save</string>
+    <string name="settings_auto_save_description">Automatically save files when switching tabs</string>
     <string name="settings_line_numbers">Line Numbers</string>
+    <string name="settings_line_numbers_description">Show line numbers in the gutter</string>
     <string name="settings_word_wrap">Word Wrap</string>
+    <string name="settings_word_wrap_description">Wrap long lines to fit the editor width</string>
     <string name="settings_minimap">Minimap</string>
+    <string name="settings_minimap_description">Show a minimap on the right side of the editor</string>
     <string name="settings_tab_size">Tab Size</string>
+    <string name="settings_tab_size_description">Number of spaces per tab</string>
+    <string name="settings_insert_spaces">Insert Spaces</string>
+    <string name="settings_insert_spaces_description">Use spaces instead of tabs for indentation</string>
+    <string name="settings_bracket_matching">Bracket Matching</string>
+    <string name="settings_bracket_matching_description">Highlight matching brackets</string>
+    <string name="settings_cursor_blinking">Cursor Blinking</string>
+    <string name="settings_cursor_blinking_description">Set the cursor blinking behavior</string>
+    <string name="settings_render_whitespace">Render Whitespace</string>
+    <string name="settings_render_whitespace_description">Show whitespace characters</string>
+    <string name="settings_scrolling_beyond_last_line">Scroll Beyond Last Line</string>
+
+    <!-- Files Section -->
+    <string name="settings_section_files">Files</string>
+    <string name="settings_default_encoding">Default Encoding</string>
+    <string name="settings_default_encoding_description">Character encoding for new files</string>
+    <string name="settings_end_of_line">End of Line</string>
+    <string name="settings_end_of_line_description">Line ending style for new files</string>
+    <string name="settings_trim_trailing_whitespace">Trim Trailing Whitespace</string>
+    <string name="settings_trim_trailing_whitespace_description">Remove trailing spaces on save</string>
+    <string name="settings_insert_final_newline">Insert Final Newline</string>
+
+    <!-- Terminal Section -->
+    <string name="settings_section_terminal">Terminal</string>
+    <string name="settings_shell_path">Shell Path</string>
+    <string name="settings_shell_path_description">Path to the shell executable</string>
+    <string name="settings_terminal_font_size">Terminal Font Size</string>
+
+    <!-- About Section -->
+    <string name="settings_section_about">About</string>
     <string name="settings_about">About</string>
     <string name="settings_version">Version %1$s</string>
+    <string name="settings_open_source_licenses">Open Source Licenses</string>
+    <string name="settings_privacy_policy">Privacy Policy</string>
+    <string name="settings_feedback">Send Feedback</string>
 
-    <!-- Projects -->
+    <!-- ================================================================ -->
+    <!--  Projects                                                         -->
+    <!-- ================================================================ -->
     <string name="projects_title">Projects</string>
     <string name="projects_new">New Project</string>
     <string name="projects_open">Open Project</string>
     <string name="projects_recent">Recent</string>
     <string name="projects_import">Import Project</string>
+    <string name="projects_template_empty">Empty Project</string>
+    <string name="projects_template_kotlin">Kotlin App</string>
+    <string name="projects_template_java">Java App</string>
+    <string name="projects_template_compose">Compose App</string>
+    <string name="projects_project_name">Project Name</string>
+    <string name="projects_project_path">Project Path</string>
+    <string name="projects_template">Template</string>
+    <string name="projects_create">Create</string>
+    <string name="projects_delete">Delete Project</string>
+    <string name="projects_delete_confirm">Are you sure you want to delete this project? This cannot be undone.</string>
 
-    <!-- Notifications -->
+    <!-- ================================================================ -->
+    <!--  Search                                                           -->
+    <!-- ================================================================ -->
+    <string name="search_title">Search</string>
+    <string name="search_placeholder">Search in project…</string>
+    <string name="search_replace_placeholder">Replace with…</string>
+    <string name="search_case_sensitive">Case Sensitive</string>
+    <string name="search_whole_word">Whole Word</string>
+    <string name="search_regex">Regular Expression</string>
+    <string name="search_in_selection">In Selection</string>
+    <string name="search_results_count">%1$d results in %2$d files</string>
+    <string name="search_no_results">No results found</string>
+    <string name="search_replace_all">Replace All</string>
+    <string name="search_next">Next Match</string>
+    <string name="search_previous">Previous Match</string>
+
+    <!-- ================================================================ -->
+    <!--  Notifications                                                    -->
+    <!-- ================================================================ -->
     <string name="notification_channel_build">Build Progress</string>
     <string name="notification_channel_terminal">Terminal Output</string>
     <string name="notification_channel_git">Git Operations</string>
     <string name="notification_channel_ai">AI Assistant</string>
     <string name="notification_channel_plugins">Plugin System</string>
 
-    <!-- Errors -->
+    <!-- ================================================================ -->
+    <!--  Errors                                                           -->
+    <!-- ================================================================ -->
     <string name="error_file_not_found">File not found</string>
     <string name="error_permission_denied">Permission denied</string>
     <string name="error_unsaved_changes">You have unsaved changes</string>
+    <string name="error_unsaved_changes_discard">Discard unsaved changes?</string>
     <string name="error_build_failed">Build failed. Check the build output for details.</string>
     <string name="error_git_not_initialized">Not a git repository</string>
     <string name="error_network_required">Network connection required</string>
+    <string name="error_file_already_exists">File already exists</string>
+    <string name="error_invalid_file_name">Invalid file name</string>
+    <string name="error_cannot_delete">Cannot delete: %1$s</string>
+    <string name="error_cannot_rename">Cannot rename: %1$s</string>
+    <string name="error_project_open">Failed to open project</string>
+    <string name="error_save_failed">Failed to save file</string>
 
-    <!-- Permissions -->
+    <!-- ================================================================ -->
+    <!--  Permissions                                                      -->
+    <!-- ================================================================ -->
     <string name="permission_storage_rationale">XCoder needs storage access to open and save project files.</string>
     <string name="permission_notification_rationale">Enable notifications for build and git status updates.</string>
     <string name="permission_grant">Grant Permission</string>
     <string name="permission_denied_forever">Permission permanently denied. Please enable it in Settings.</string>
 
-    <!-- About / Credits -->
+    <!-- ================================================================ -->
+    <!--  About / Credits                                                  -->
+    <!-- ================================================================ -->
     <string name="about_title">About XCoder IDE</string>
     <string name="about_version">Version %1$s</string>
-    <string name="about_description">A powerful mobile IDE for Android</string>
+    <string name="about_build">Build %1$s</string>
+    <string name="about_description">A powerful mobile IDE for Android development</string>
     <string name="about_thanks_title">Thanks to</string>
     <string name="about_thanks_rosemoe">Rosemoe for the awesome CodeEditor</string>
     <string name="about_thanks_termux">Termux for Terminal Emulator</string>
     <string name="about_thanks_bogdan">Bogdan Melnychuk for AndroidTreeView</string>
     <string name="about_thanks_george">George Fraser for the Java Language Server</string>
+
+    <!-- ================================================================ -->
+    <!--  Common / Shared                                                   -->
+    <!-- ================================================================ -->
+    <string name="common_ok">OK</string>
+    <string name="common_cancel">Cancel</string>
+    <string name="common_confirm">Confirm</string>
+    <string name="common_delete">Delete</string>
+    <string name="common_rename">Rename</string>
+    <string name="common_copy">Copy</string>
+    <string name="common_paste">Paste</string>
+    <string name="common_cut">Cut</string>
+    <string name="common_select_all">Select All</string>
+    <string name="common_close">Close</string>
+    <string name="common_apply">Apply</string>
+    <string name="common_reset">Reset</string>
+    <string name="common_loading">Loading…</string>
+    <string name="common_empty_state">Nothing here yet</string>
+    <string name="common_retry">Retry</string>
+    <string name="common_done">Done</string>
+    <string name="common_yes">Yes</string>
+    <string name="common_no">No</string>
+    <string name="common_file">File</string>
+    <string name="common_edit">Edit</string>
+    <string name="common_view">View</string>
+    <string name="common_tools">Tools</string>
+    <string name="common_help">Help</string>
+
+    <!-- ================================================================ -->
+    <!--  Status Bar                                                       -->
+    <!-- ================================================================ -->
+    <string name="status_bar_line">Ln %1$d, Col %2$d</string>
+    <string name="status_bar_selection">Ln %1$d, Col %2$d (%3$d selected)</string>
+    <string name="status_bar_encoding">UTF-8</string>
+    <string name="status_bar_tab_size">Spaces: %1$d</string>
+    <string name="status_bar_language">%1$s</string>
+    <string name="status_bar_git_branch">%1$s</string>
+    <string name="status_bar_insert">INSERT</string>
+    <string name="status_bar_overwrite">OVERWRITE</string>
+    <string name="status_bar_notifications">Notifications</string>
 </resources>
