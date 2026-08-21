@@ -1,0 +1,110 @@
+name: Update Changelog
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      from:
+        description: 'From tag (default: previous release tag)'
+        required: false
+      to:
+        description: 'To tag (default: latest commit)'
+        required: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  generate:
+    name: Generate Changelog
+    runs-on: ubuntu-latest
+    outputs:
+      changelog_body: ${{ steps.changelog.outputs.body }}
+      has_changes: ${{ steps.check.outputs.has_changes }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get previous tag
+        id: prev_tag
+        run: |
+          PREV_TAG=$(git tag --sort=-version:refname | head -2 | tail -1)
+          echo "prev_tag=${PREV_TAG}" >> $GITHUB_OUTPUT
+
+      - name: Get current tag
+        id: curr_tag
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            CURR_TAG=${GITHUB_REF#refs/tags/}
+          else
+            CURR_TAG=$(git tag --sort=-version:refname | head -1)
+          fi
+          echo "curr_tag=${CURR_TAG}" >> $GITHUB_OUTPUT
+
+      - name: Generate changelog
+        id: changelog
+        uses: mikepenz/release-changelog-builder-action@v4
+        with:
+          configuration: "${{ github.workspace }}/.github/changelog_configuration.json"
+          fromTag: ${{ inputs.from || steps.prev_tag.outputs.prev_tag }}
+          toTag: ${{ inputs.to || steps.curr_tag.outputs.curr_tag }}
+
+      - name: Check for changes
+        id: check
+        run: |
+          if [ -n "${{ steps.changelog.outputs.body }}" ]; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Save changelog
+        if: steps.check.outputs.has_changes == 'true'
+        run: |
+          echo "${{ steps.changelog.outputs.body }}" > /tmp/changelog_latest.md
+
+      - name: Update CHANGELOG.md
+        if: steps.check.outputs.has_changes == 'true'
+        run: |
+          touch CHANGELOG.md
+          HEADER=$(head -20 CHANGELOG.md | grep -n "^## " | tail -1 | cut -d: -f1)
+          if [ -z "$HEADER" ]; then
+            HEADER=1
+          fi
+          
+          # Create new file with latest changelog + existing content
+          head -$((HEADER - 1)) CHANGELOG.md > /tmp/changelog_new.md 2>/dev/null || true
+          cat /tmp/changelog_latest.md >> /tmp/changelog_new.md
+          echo "" >> /tmp/changelog_new.md
+          tail -n +$HEADER CHANGELOG.md >> /tmp/changelog_new.md 2>/dev/null || true
+          mv /tmp/changelog_new.md CHANGELOG.md
+
+      - name: Upload changelog
+        if: steps.check.outputs.has_changes == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: changelog
+          path: CHANGELOG.md
+
+      - name: Commit changelog
+        if: steps.check.outputs.has_changes == 'true' && github.event_name == 'push'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git diff --staged --quiet || git commit -m "docs: update CHANGELOG.md for ${{ steps.curr_tag.outputs.curr_tag }}"
+          git push
+
+      - name: Create PR for changelog
+        if: steps.check.outputs.has_changes == 'true' && github.event_name == 'workflow_dispatch'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          title: "docs: update CHANGELOG.md"
+          body: |
+            Automated changelog update from ${{ inputs.from || steps.prev_tag.outputs.prev_tag }} to ${{ inputs.to || steps.curr_tag.outputs.curr_tag }}
+          branch: changelog-update
+          commit-message: "docs: update CHANGELOG.md"

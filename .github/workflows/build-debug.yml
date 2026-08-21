@@ -1,0 +1,85 @@
+name: Build Debug (Pre-Release)
+
+on:
+  push:
+    branches: [develop, 'feature/**']
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Branch, tag, or SHA to build'
+        required: false
+        default: 'develop'
+
+concurrency:
+  group: build-debug-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-debug:
+    name: Build Debug APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle (auto-generates wrapper)
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.5'
+
+      - name: Generate version info
+        id: version
+        run: |
+          VERSION_NAME=$(grep 'versionName' app/build.gradle.kts | head -1 | sed "s/.*"\(.*\)".*/\1/")
+          BUILD_NUMBER=${{ github.run_number }}
+          echo "version_name=${VERSION_NAME}" >> $GITHUB_OUTPUT
+          echo "build_number=${BUILD_NUMBER}" >> $GITHUB_OUTPUT
+          echo "version_code=${VERSION_NAME%%-*}-debug.${BUILD_NUMBER}" >> $GITHUB_OUTPUT
+
+      - name: Build debug APK
+        run: gradle assembleDebug --no-daemon --stacktrace
+
+      - name: Rename APK
+        run: |
+          mkdir -p output
+          cp app/build/outputs/apk/debug/*.apk output/XCoder-IDE-${{ steps.version.outputs.version_name }}-debug.${{ steps.version.outputs.build_number }}.apk
+
+      - name: Upload debug artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcoder-debug-${{ steps.version.outputs.build_number }}
+          path: output/*.apk
+          retention-days: 90
+
+      - name: Create pre-release on develop push
+        if: github.ref == 'refs/heads/develop'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version_name }}-debug.${{ steps.version.outputs.build_number }}
+          name: "XCoder IDE ${{ steps.version.outputs.version_name }} Debug #${{ steps.version.outputs.build_number }}"
+          body: |
+            ## Debug Pre-Release
+
+            **Version:** ${{ steps.version.outputs.version_name }}-debug.${{ steps.version.outputs.build_number }}
+            **Commit:** `${GITHUB_SHA:0:7}`
+            **Branch:** `${{ github.ref_name }}`
+
+            ### Installation
+            1. Download the APK below
+            2. Enable "Install from unknown sources" on your device
+            3. Install the APK
+
+            > This is a debug build. Expect potential instability.
+          files: output/*.apk
+          prerelease: true
+          target_commitish: ${{ github.ref }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

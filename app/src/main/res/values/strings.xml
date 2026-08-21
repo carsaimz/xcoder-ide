@@ -1,0 +1,158 @@
+<resources>
+    <!-- App -->
+    <string name="app_name">XCoder IDE</string>
+    <string name="app_description">Mobile integrated development environment</string>
+
+    <!-- Navigation -->
+    <string name="nav_web_editor">Editor</string>
+    <string name="nav_native_editor">Editor</string>
+    <string name="nav_visual_editor">Visual Editor</string>
+    <string name="nav_terminal">Terminal</string>
+    <string name="nav_git">Git Manager</string>
+    <string name="nav_ai_chat">AI Assistant</string>
+    <string name="nav_plugins">Plugins</string>
+    <string name="nav_settings">Settings</string>
+    <string name="nav_projects">Projects</string>
+
+    <!-- Bottom Bar -->
+    <string name="bottom_web">Editor</string>
+    <string name="bottom_native">Native</string>
+    <string name="bottom_visual">Visual</string>
+    <string name="bottom_more">More</string>
+
+    <!-- Editor -->
+    <string name="editor_untitled">Untitled</string>
+    <string name="editor_new_file">New File</string>
+    <string name="editor_save">Save</string>
+    <string name="editor_save_as">Save As…</string>
+    <string name="editor_close_tab">Close Tab</string>
+    <string name="editor_close_others">Close Others</string>
+    <string name="editor_search">Search files…</string>
+    <string name="editor_find_replace">Find &amp; Replace</string>
+    <string name="editor_go_to_line">Go to Line</string>
+    <string name="editor_format">Format Code</string>
+    <string name="editor_undo">Undo</string>
+    <string name="editor_redo">Redo</string>
+
+    <!-- File Tree -->
+    <string name="file_tree_explorer">Explorer</string>
+    <string name="file_tree_new_file">New File</string>
+    <string name="file_tree_new_folder">New Folder</string>
+    <string name="file_tree_rename">Rename</string>
+    <string name="file_tree_delete">Delete</string>
+    <string name="file_tree_refresh">Refresh</string>
+    <string name="file_tree_show_hidden">Show Hidden Files</string>
+
+    <!-- Build -->
+    <string name="build_run">Build &amp; Run</string>
+    <string name="build_stop">Stop</string>
+    <string name="build_clean">Clean</string>
+    <string name="build_output">Build Output</string>
+    <string name="build_successful">BUILD SUCCESSFUL</string>
+    <string name="build_failed">BUILD FAILED</string>
+    <string name="build_running">Building…</string>
+
+    <!-- Terminal -->
+    <string name="terminal_title">Terminal</string>
+    <string name="terminal_new_session">New Session</string>
+    <string name="terminal_close_session">Close Session</string>
+    <string name="terminal_clear">Clear</string>
+    <string name="terminal_copy">Copy</string>
+    <string name="terminal_paste">Paste</string>
+
+    <!-- Git -->
+    <string name="git_title">Git Manager</string>
+    <string name="git_init">Initialize Repository</string>
+    <string name="git_commit">Commit</string>
+    <string name="git_push">Push</string>
+    <string name="git_pull">Pull</string>
+    <string name="git_branch">Branch</string>
+    <string name="git_merge">Merge</string>
+    <string name="git_log">History</string>
+    <string name="git_diff">Diff</string>
+    <string name="git_stash">Stash</string>
+    <string name="git_clone">Clone Repository</string>
+
+    <!-- AI -->
+    <string name="ai_title">AI Assistant</string>
+    <string name="ai_placeholder">Ask anything or describe what you want to build…</string>
+    <string name="ai_send">Send</string>
+    <string name="ai_clear_chat">Clear Chat</string>
+    <string name="ai_explain_code">Explain Code</string>
+    <string name="ai_generate_code">Generate Code</string>
+    <string name="ai_fix_errors">Fix Errors</string>
+    <string name="ai_optimize">Optimize</string>
+    <string name="ai_add_tests">Add Tests</string>
+
+    <!-- Plugins -->
+    <string name="plugins_title">Plugins</string>
+    <string name="plugins_install">Install</string>
+    <string name="plugins_uninstall">Uninstall</string>
+    <string name="plugins_enable">Enable</string>
+    <string name="plugins_disable">Disable</string>
+    <string name="plugins_marketplace">Marketplace</string>
+    <string name="plugins_installed">Installed</string>
+    <string name="plugins_search">Search plugins…</string>
+
+    <!-- Visual Editor -->
+    <string name="visual_palette">Palette</string>
+    <string name="visual_canvas">Canvas</string>
+    <string name="visual_properties">Properties</string>
+    <string name="visual_export_code">Export Code</string>
+    <string name="visual_preview">Preview</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_system">Follow System</string>
+    <string name="settings_font_size">Font Size</string>
+    <string name="settings_font_family">Font Family</string>
+    <string name="settings_keymap">Key Map</string>
+    <string name="settings_auto_save">Auto Save</string>
+    <string name="settings_line_numbers">Line Numbers</string>
+    <string name="settings_word_wrap">Word Wrap</string>
+    <string name="settings_minimap">Minimap</string>
+    <string name="settings_tab_size">Tab Size</string>
+    <string name="settings_about">About</string>
+    <string name="settings_version">Version %1$s</string>
+
+    <!-- Projects -->
+    <string name="projects_title">Projects</string>
+    <string name="projects_new">New Project</string>
+    <string name="projects_open">Open Project</string>
+    <string name="projects_recent">Recent</string>
+    <string name="projects_import">Import Project</string>
+
+    <!-- Notifications -->
+    <string name="notification_channel_build">Build Progress</string>
+    <string name="notification_channel_terminal">Terminal Output</string>
+    <string name="notification_channel_git">Git Operations</string>
+    <string name="notification_channel_ai">AI Assistant</string>
+    <string name="notification_channel_plugins">Plugin System</string>
+
+    <!-- Errors -->
+    <string name="error_file_not_found">File not found</string>
+    <string name="error_permission_denied">Permission denied</string>
+    <string name="error_unsaved_changes">You have unsaved changes</string>
+    <string name="error_build_failed">Build failed. Check the build output for details.</string>
+    <string name="error_git_not_initialized">Not a git repository</string>
+    <string name="error_network_required">Network connection required</string>
+
+    <!-- Permissions -->
+    <string name="permission_storage_rationale">XCoder needs storage access to open and save project files.</string>
+    <string name="permission_notification_rationale">Enable notifications for build and git status updates.</string>
+    <string name="permission_grant">Grant Permission</string>
+    <string name="permission_denied_forever">Permission permanently denied. Please enable it in Settings.</string>
+
+    <!-- About / Credits -->
+    <string name="about_title">About XCoder IDE</string>
+    <string name="about_version">Version %1$s</string>
+    <string name="about_description">A powerful mobile IDE for Android</string>
+    <string name="about_thanks_title">Thanks to</string>
+    <string name="about_thanks_rosemoe">Rosemoe for the awesome CodeEditor</string>
+    <string name="about_thanks_termux">Termux for Terminal Emulator</string>
+    <string name="about_thanks_bogdan">Bogdan Melnychuk for AndroidTreeView</string>
+    <string name="about_thanks_george">George Fraser for the Java Language Server</string>
+</resources>

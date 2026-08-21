@@ -1,0 +1,1 @@
+// Plugin system root — submodules included in settings.gradle.kts

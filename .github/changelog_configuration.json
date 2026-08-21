@@ -1,0 +1,55 @@
+{
+  "categories": [
+    {
+      "title": "## 🚀 Features",
+      "labels": ["feature", "enhancement", "feat"]
+    },
+    {
+      "title": "## 🐛 Bug Fixes",
+      "labels": ["bug", "fix", "bugfix"]
+    },
+    {
+      "title": "## 📝 Documentation",
+      "labels": ["documentation", "docs"]
+    },
+    {
+      "title": "## 🔧 Refactoring",
+      "labels": ["refactor", "refactoring"]
+    },
+    {
+      "title": "## ⚡ Performance",
+      "labels": ["performance", "perf"]
+    },
+    {
+      "title": "## 🔒 Security",
+      "labels": ["security"]
+    },
+    {
+      "title": "## 🏗️ Build & CI",
+      "labels": ["build", "ci", "cd", "dependencies"]
+    },
+    {
+      "title": "## 🧪 Testing",
+      "labels": ["test", "testing"]
+    }
+  ],
+  "ignore_labels": ["skip-changelog", "wip", "duplicate", "question", "invalid"],
+  "template": "#{{CHANGELOG}}",
+  "pr_template": "- #{{NUMBER}} {{TITLE}} (@{{AUTHOR}})",
+  "empty_template": "No changes since last release.",
+  "label_extractor": {
+    "method": "regex",
+    "pattern": "^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?:\s*(.+)"  
+  },
+  "duplicate_filter": {
+    "pattern": "\\[.+\\]",
+    "source": "pr_title",
+    "target": "body"
+  },
+  "transformers": [
+    {
+      "pattern": "^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?:\s*(.+)",
+      "target": "title"
+    }
+  ]
+}
