@@ -39,7 +39,7 @@ termux-terminal = "v0.118.0"
 android-tree-view = "v1.0.0"
 
 # --- LSP (Language Server Protocol) ---
-lsp4j = "0.21.1"
+lsp4j = "1.0.0"
 
 [libraries]
 # AndroidX Core
