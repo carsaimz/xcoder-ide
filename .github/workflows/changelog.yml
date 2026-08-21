@@ -47,7 +47,7 @@ jobs:
 
       - name: Generate changelog
         id: changelog
-        uses: mikepenz/release-changelog-builder-action@v4
+        uses: mikepenz/release-changelog-builder-action@v6
         with:
           configuration: "${{ github.workspace }}/.github/changelog_configuration.json"
           fromTag: ${{ inputs.from || steps.prev_tag.outputs.prev_tag }}
