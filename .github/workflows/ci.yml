@@ -24,7 +24,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Setup Gradle (auto-generates wrapper)
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: '8.5'
 
@@ -53,7 +53,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Setup Gradle (auto-generates wrapper)
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: '8.5'
 
@@ -82,7 +82,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Setup Gradle (auto-generates wrapper)
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: '8.5'
 
