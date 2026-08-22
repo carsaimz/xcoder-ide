@@ -1,6 +1,7 @@
 /*
  * XCoder IDE — Root Build Configuration
  * Applies common Android and Kotlin configuration to all subprojects.
+ * The :app module configures itself fully; only library modules get defaults here.
  */
 
 plugins {
@@ -23,9 +24,12 @@ subprojects {
         }
     }
 
-    // ── Android Configuration ─────────────────────────────────────────
+    // ── Android Configuration (library modules only) ─────────────────
+    // The :app module declares its own full configuration.
     afterEvaluate {
-        if (plugins.hasPlugin("com.android.application") || plugins.hasPlugin("com.android.library")) {
+        if (name == "app") return@afterEvaluate
+
+        if (plugins.hasPlugin("com.android.library")) {
             extensions.configure<com.android.build.gradle.BaseExtension> {
                 compileSdkVersion(34)
 
@@ -42,17 +46,9 @@ subprojects {
                     targetCompatibility = JavaVersion.VERSION_17
                 }
 
-                val isApp = plugins.hasPlugin("com.android.application")
                 buildTypes {
                     named("release") {
-                        isMinifyEnabled = isApp
-                        if (isApp) {
-                            isShrinkResources = true
-                            proguardFiles(
-                                getDefaultProguardFile("proguard-android-optimize.txt"),
-                                file("proguard-rules.pro")
-                            )
-                        }
+                        isMinifyEnabled = false
                     }
                     named("debug") {
                         isMinifyEnabled = false
@@ -77,12 +73,6 @@ subprojects {
                     jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
                 }
             }
-        }
-
-        // ── Kapt: auto-apply when Hilt or Room is on the classpath ────
-        val hasKapt = configurations.any { it.name == "kapt" }
-        if (hasKapt && !plugins.hasPlugin("org.jetbrains.kotlin.kapt")) {
-            apply(plugin = "org.jetbrains.kotlin.kapt")
         }
     }
 }

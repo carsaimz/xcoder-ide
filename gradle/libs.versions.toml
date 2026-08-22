@@ -36,7 +36,7 @@ sora-editor = "0.23.5"
 termux-terminal = "v0.118.0"
 
 # --- AndroidTreeView (Bogdan Melnychuk) ---
-android-tree-view = "v1.0.0"
+android-tree-view = "2.5.1"
 
 # --- LSP (Language Server Protocol) ---
 lsp4j = "0.21.1"

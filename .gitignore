@@ -95,3 +95,10 @@ plugins/.gradle/
 
 # ── Misc ───────────────────────────────────────────────────────────────
 *.hprof
+
+# ── Workspace artifacts (not part of the project) ─────────────────────
+skills/
+download/
+agent-ctx/
+tool-results/
+worklog.md
