@@ -196,6 +196,8 @@ class GitCredentials @Inject constructor(
                 session.connect()
                 return object : org.eclipse.jgit.transport.RemoteSession {
                     override fun disconnect() { session.disconnect() }
+                    override fun exec(command: String, timeout: Int): Process =
+                        session.exec(command, timeout)
                 }
             }
         }
