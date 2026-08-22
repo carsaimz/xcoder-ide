@@ -5,6 +5,7 @@ import androidx.compose.runtime.*
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import io.github.rosemoe.sora.lsp.client.ServerStatus
 import io.github.rosemoe.sora.widget.CodeEditor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
@@ -15,27 +16,52 @@ import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
 
+// ── LSP state ───────────────────────────────────────────────────────────────
+
+/**
+ * LSP connection state exposed to the UI.
+ *
+ * AndroidIDE shows the LSP status in the status bar (e.g. "Java: Connected",
+ * "Java: Indexing...", "Java: Error"). This data class provides that information.
+ *
+ * @property status Current server status from sora-editor's LSP client.
+ * @property language The language ID the server is connected for (e.g. "java").
+ * @property errorCount Number of error diagnostics in the current file.
+ * @property warningCount Number of warning diagnostics in the current file.
+ * @property isConnected Whether the server is in a usable state.
+ * @property isIndexing Whether the server is currently indexing.
+ */
+data class LspState(
+    val status: ServerStatus = ServerStatus.INITIALIZING,
+    val language: String = "",
+    val errorCount: Int = 0,
+    val warningCount: Int = 0,
+) {
+    val isConnected: Boolean
+        get() = status == ServerStatus.READY
+
+    val isIndexing: Boolean
+        get() = status == ServerStatus.INDEXING
+
+    val statusDisplay: String
+        get() = when (status) {
+            ServerStatus.INITIALIZING -> "Initializing..."
+            ServerStatus.STARTING -> "Starting..."
+            ServerStatus.READY -> "Connected"
+            ServerStatus.INDEXING -> "Indexing..."
+            ServerStatus.STOPPED -> "Stopped"
+            ServerStatus.ERROR -> "Error"
+        }
+}
+
 // ── Editor settings (persisted) ─────────────────────────────────────────────
 
 /**
  * Persisted editor settings, following AndroidIDE's preference model.
+ *
  * AndroidIDE reads editor preferences (font size, tab size, color scheme,
  * word wrap, etc.) from SharedPreferences and applies them to each
  * CodeEditorView on creation.
- *
- * @property fontSize Font size in sp.
- * @property tabSize Tab width in spaces.
- * @property isDark Whether the editor uses a dark color scheme.
- * @property wordWrap Enable soft word wrap.
- * @property showLineNumbers Show line number gutter.
- * @property showMinimap Show code minimap.
- * @property showIndentGuides Show indent guide lines.
- * @property stickyScroll Enable sticky scroll for block headers.
- * @property autoIndent Auto-indent new lines.
- * @property autoCompletion Enable completion popup.
- * @property symbolCompletion Auto-close brackets/quotes.
- * @property smartBackspace Smart backspace behavior.
- * @property pinchZoom Pinch to zoom font size.
  */
 data class EditorSettings(
     val fontSize: Float = 14f,
@@ -52,7 +78,6 @@ data class EditorSettings(
     val smartBackspace: Boolean = true,
     val pinchZoom: Boolean = true,
 ) {
-    /** Convert to [EditorConfig] for the Compose wrapper. */
     fun toConfig() = EditorConfig(
         fontSize = fontSize,
         tabSize = tabSize,
@@ -74,15 +99,9 @@ data class EditorSettings(
 
 /**
  * Search state that persists across tabs.
- * AndroidIDE's search wraps sora-editor's built-in Searcher, supporting
- * regex and case-insensitive modes. This state mirrors that model.
  *
- * @property query The search query text.
- * @property replacement The replacement text.
- * @property caseSensitive Whether search is case-sensitive.
- * @property useRegex Whether the query is treated as a regex pattern.
- * @property matchCount Number of matches found (-1 if not yet searched).
- * @property currentMatchIndex Index of the current match (-1 if none).
+ * AndroidIDE's search wraps sora-editor's built-in Searcher, supporting
+ * regex and case-insensitive modes.
  */
 data class SearchState(
     val query: String = "",
@@ -98,8 +117,8 @@ data class SearchState(
 
 /**
  * Current cursor/selection info displayed in the status bar.
- * AndroidIDE shows `Ln X, Col Y` in the bottom bar; we also include
- * selection range and total lines.
+ *
+ * AndroidIDE shows `Ln X, Col Y` in the bottom bar.
  */
 data class CursorInfo(
     val line: Int = 1,
@@ -109,10 +128,7 @@ data class CursorInfo(
     val totalLines: Int = 0,
     val selectedText: String? = null,
 ) {
-    /** Whether there is an active text selection. */
     val hasSelection: Boolean get() = selectionStart >= 0 && selectionEnd != selectionStart
-
-    /** Selected character count. */
     val selectionLength: Int
         get() = if (hasSelection) kotlin.math.abs(selectionEnd - selectionStart) else 0
 }
@@ -133,6 +149,22 @@ data class UnsavedDialogState(
     val pendingAction: (() -> Unit)? = null,
 )
 
+// ── Undo/redo history state per file ────────────────────────────────────────
+
+/**
+ * Per-file undo/redo state. AndroidIDE preserves undo/redo history
+ * when switching between tabs so that each file has its own history.
+ *
+ * @property filePath The file path this history belongs to.
+ * @property canUndo Whether the editor can perform undo.
+ * @property canRedo Whether the editor can perform redo.
+ */
+data class UndoRedoState(
+    val filePath: String,
+    val canUndo: Boolean = false,
+    val canRedo: Boolean = false,
+)
+
 // ── ViewModel ───────────────────────────────────────────────────────────────
 
 /**
@@ -147,9 +179,10 @@ data class UnsavedDialogState(
  * - **Search state**: Persistent across tab switches
  * - **Cursor info**: Live cursor position for status bar
  * - **Editor settings**: Font size, tab size, color scheme, toggles
+ * - **LSP state**: Connection status, indexing, diagnostics
+ * - **Undo/redo**: Per-file history tracking
  *
  * The ViewModel is the single source of truth for the editor UI.
- * The Compose `EditorScreen` observes these state flows and renders accordingly.
  */
 @HiltViewModel
 class SoraEditorViewModel @Inject constructor() : ViewModel() {
@@ -158,19 +191,10 @@ class SoraEditorViewModel @Inject constructor() : ViewModel() {
 
     private val _tabManager = EditorTabManager()
 
-    /** Observable tab list for Compose. */
     val tabs: StateFlow<List<EditorTab>> = MutableStateFlow(_tabManager.tabs)
-
-    /** Observable active tab index. */
     val activeTabIndex: StateFlow<Int> = MutableStateFlow(_tabManager.activeTabIndex)
-
-    /** Disambiguation map for tab display names (AndroidIDE pattern). */
     val disambigMap: StateFlow<Map<Long, Int?>> = MutableStateFlow(emptyMap())
-
-    /** Whether the active tab has unsaved changes. */
     val isCurrentModified: StateFlow<Boolean> = MutableStateFlow(false)
-
-    /** Can we reopen a recently closed tab? */
     val canReopen: StateFlow<Boolean> = MutableStateFlow(false)
 
     private fun refreshTabState() {
@@ -181,44 +205,29 @@ class SoraEditorViewModel @Inject constructor() : ViewModel() {
         (canReopen as MutableStateFlow).value = _tabManager.canReopen
     }
 
-    /** Get the active tab's file path. */
     val activeFilePath: String get() = _tabManager.activeTab?.filePath ?: ""
-
-    /** Get the active tab's display name. */
     val activeTabDisplayName: String get() = _tabManager.activeTab?.displayName() ?: ""
-
-    /** Get the active tab's language name. */
     val activeTabLanguage: String get() = _tabManager.activeTab?.let { getLanguageName(it.filePath) } ?: ""
-
-    /** Get the active tab's encoding. */
     val activeTabEncoding: String get() = _tabManager.activeTab?.encoding ?: "UTF-8"
-
-    /** Get the active tab's initial content (for editor initialization). */
     val activeTabContent: String get() = _tabManager.activeTab?.content ?: ""
-
-    /** Get the active tab's cursor state (for restoring on tab switch). */
     val activeTabCursorState: Triple<Int, Int, Int>? get() {
         val tab = _tabManager.activeTab ?: return null
         return Triple(tab.cursorLine, tab.cursorColumn, tab.scrollY)
     }
-
-    /** Get a snapshot of the current tab for reference (to detect modifications). */
     val activeTabOriginalContent: String get() = _tabManager.activeTab?.content ?: ""
 
     // ── Editor reference ─────────────────────────────────────────────────
 
-    /** Direct reference to the current CodeEditor (set from Compose wrapper). */
     var editor: CodeEditor? = null
         private set
 
-    /** Register the editor instance (called from Compose wrapper). */
     fun attachEditor(editor: CodeEditor) {
         this.editor = editor
     }
 
-    /** Detach the editor (on tab switch or cleanup). */
     fun detachEditor() {
         saveCurrentCursorState()
+        saveUndoRedoState()
         editor = null
     }
 
@@ -227,7 +236,6 @@ class SoraEditorViewModel @Inject constructor() : ViewModel() {
     private val _cursorInfo = MutableStateFlow(CursorInfo())
     val cursorInfo: StateFlow<CursorInfo> = _cursorInfo
 
-    /** Update cursor info from editor events. */
     fun updateCursorInfo(line: Int, column: Int, selStart: Int, selEnd: Int) {
         val totalLines = editor?.let { getLineCount(it) } ?: 0
         _cursorInfo.value = CursorInfo(
@@ -243,6 +251,73 @@ class SoraEditorViewModel @Inject constructor() : ViewModel() {
                 )?.toString()
             } else null,
         )
+    }
+
+    // ── LSP state ─────────────────────────────────────────────────────────
+
+    private val _lspState = MutableStateFlow(LspState())
+    val lspState: StateFlow<LspState> = _lspState
+
+    /** Update the LSP server status. Called from [IDEEditor.onServerStatusChanged]. */
+    fun updateLspStatus(status: ServerStatus, language: String = "") {
+        _lspState.value = _lspState.value.copy(
+            status = status,
+            language = language.ifEmpty { _lspState.value.language }
+        )
+    }
+
+    /** Update diagnostic counts from the overlay. */
+    fun updateDiagnosticCounts(errorCount: Int, warningCount: Int) {
+        _lspState.value = _lspState.value.copy(
+            errorCount = errorCount,
+            warningCount = warningCount,
+        )
+    }
+
+    // ── Undo/redo state ──────────────────────────────────────────────────
+
+    /** Per-file undo/redo state tracking. */
+    private val _undoRedoStates = mutableMapOf<String, UndoRedoState>()
+
+    private val _canUndo = MutableStateFlow(false)
+    val canUndo: StateFlow<Boolean> = _canUndo
+
+    private val _canRedo = MutableStateFlow(false)
+    val canRedo: StateFlow<Boolean> = _canRedo
+
+    /** Update undo/redo state from the editor. */
+    fun updateUndoRedoState() {
+        val ed = editor ?: return
+        val path = activeFilePath
+        if (path.isEmpty()) return
+        val state = UndoRedoState(
+            filePath = path,
+            canUndo = ed.canUndo(),
+            canRedo = ed.canRedo(),
+        )
+        _undoRedoStates[path] = state
+        _canUndo.value = state.canUndo
+        _canRedo.value = state.canRedo
+    }
+
+    /** Save the current editor's undo/redo state before switching tabs. */
+    private fun saveUndoRedoState() {
+        val ed = editor ?: return
+        val path = activeFilePath
+        if (path.isEmpty()) return
+        _undoRedoStates[path] = UndoRedoState(
+            filePath = path,
+            canUndo = ed.canUndo(),
+            canRedo = ed.canRedo(),
+        )
+    }
+
+    /** Restore undo/redo state for the active tab. */
+    private fun restoreUndoRedoState() {
+        val path = activeFilePath
+        val state = _undoRedoStates[path]
+        _canUndo.value = state?.canUndo ?: false
+        _canRedo.value = state?.canRedo ?: false
     }
 
     // ── Search state ─────────────────────────────────────────────────────
@@ -276,6 +351,8 @@ class SoraEditorViewModel @Inject constructor() : ViewModel() {
 
     // ── Unsaved changes dialog ───────────────────────────────────────────
 
+    private const val TAG = "XCoderEditorVM"
+
     private val _unsavedDialog = MutableStateFlow(UnsavedDialogState())
     val unsavedDialog: StateFlow<UnsavedDialogState> = _unsavedDialog
 
@@ -283,7 +360,6 @@ class SoraEditorViewModel @Inject constructor() : ViewModel() {
         _unsavedDialog.value = UnsavedDialogState()
     }
 
-    /** Save and proceed with the pending action. */
     fun saveAndProceed() {
         val state = _unsavedDialog.value
         saveActiveFile()
@@ -291,10 +367,8 @@ class SoraEditorViewModel @Inject constructor() : ViewModel() {
         _unsavedDialog.value = UnsavedDialogState()
     }
 
-    /** Discard changes and proceed with the pending action. */
     fun discardAndProceed() {
         val state = _unsavedDialog.value
-        // Mark the tab as unmodified, then proceed
         val idx = state.tabIndex
         if (idx >= 0) _tabManager.markSaved(idx)
         refreshTabState()
@@ -307,7 +381,6 @@ class SoraEditorViewModel @Inject constructor() : ViewModel() {
     private val _settings = MutableStateFlow(EditorSettings())
     val settings: StateFlow<EditorSettings> = _settings
 
-    /** Update settings (partial). */
     fun updateSettings(transform: (EditorSettings) -> EditorSettings) {
         _settings.value = transform(_settings.value)
     }
@@ -321,7 +394,7 @@ class SoraEditorViewModel @Inject constructor() : ViewModel() {
         if (filePath.isEmpty()) return
         val current = _recentFiles.value.filter { it.filePath != filePath }
         _recentFiles.value = listOf(RecentFileEntry(filePath)) + current
-            .take(50) // Keep last 50
+            .take(50)
     }
 
     // ── Pending action for the editor ────────────────────────────────────
@@ -329,12 +402,10 @@ class SoraEditorViewModel @Inject constructor() : ViewModel() {
     private val _pendingAction = MutableStateFlow<EditorAction?>(null)
     val pendingAction: StateFlow<EditorAction?> = _pendingAction
 
-    /** Dispatch an action to the editor (one-shot, consumed after handling). */
     fun dispatchAction(action: EditorAction) {
         _pendingAction.value = action
     }
 
-    /** Clear the pending action (called after the editor handles it). */
     fun clearPendingAction() {
         _pendingAction.value = null
     }
@@ -347,21 +418,18 @@ class SoraEditorViewModel @Inject constructor() : ViewModel() {
      * Following AndroidIDE's pattern: if the file is already open in a tab,
      * just switch to that tab. Otherwise, read the file content (with encoding
      * detection) and create a new tab.
-     *
-     * @param filePath Absolute path to the file.
-     * @param onFileNotFound Called when the file doesn't exist.
      */
     fun openFile(filePath: String, onFileNotFound: ((String) -> Unit)? = null) {
         viewModelScope.launch {
-            // If already open, just switch
             if (_tabManager.isOpen(filePath)) {
                 saveCurrentCursorState()
+                saveUndoRedoState()
                 _tabManager.switchToPath(filePath)
                 refreshTabState()
+                restoreUndoRedoState()
                 return@launch
             }
 
-            // Read file content on IO thread
             val result = withContext(Dispatchers.IO) {
                 readFileWithEncoding(filePath)
             }
@@ -373,40 +441,34 @@ class SoraEditorViewModel @Inject constructor() : ViewModel() {
 
             val (content, encoding) = result
             addToRecent(filePath)
-
-            // Save current tab's cursor state before switching
             saveCurrentCursorState()
-
+            saveUndoRedoState()
             _tabManager.openFile(filePath, content, encoding, activate = true)
             refreshTabState()
+            restoreUndoRedoState()
         }
     }
 
-    /**
-     * Open a file with pre-loaded content (no disk I/O).
-     * Used when content is already available (e.g. from file picker).
-     */
     fun openFileWithContent(filePath: String, content: String, encoding: String = "UTF-8") {
         addToRecent(filePath)
         saveCurrentCursorState()
+        saveUndoRedoState()
         _tabManager.openFile(filePath, content, encoding, activate = true)
         refreshTabState()
+        restoreUndoRedoState()
     }
 
-    /** Open a new untitled tab. */
     fun openUntitled() {
         saveCurrentCursorState()
+        saveUndoRedoState()
         _tabManager.openUntitled()
         refreshTabState()
+        restoreUndoRedoState()
     }
 
-    /**
-     * Save the active file to disk.
-     * @return The saved text, or null if there's nothing to save.
-     */
     fun saveActiveFile(): String? {
         val tab = _tabManager.activeTab ?: return null
-        if (tab.isUntitled) return null  // Untitled files can't be saved without a path
+        if (tab.isUntitled) return null
 
         val text = editor?.text?.toString() ?: tab.content
         val encoding = tab.encoding
@@ -420,9 +482,6 @@ class SoraEditorViewModel @Inject constructor() : ViewModel() {
         return text
     }
 
-    /**
-     * Save active file as a new path (Save As).
-     */
     fun saveActiveFileAs(newPath: String, newEncoding: String? = null) {
         val text = editor?.text?.toString() ?: ""
         val encoding = newEncoding ?: _tabManager.activeTab?.encoding ?: "UTF-8"
@@ -440,9 +499,6 @@ class SoraEditorViewModel @Inject constructor() : ViewModel() {
         addToRecent(newPath)
     }
 
-    /**
-     * Close a tab by index, showing unsaved dialog if needed.
-     */
     fun closeTab(index: Int) {
         val result = _tabManager.closeTabAt(index)
         when (result) {
@@ -462,64 +518,50 @@ class SoraEditorViewModel @Inject constructor() : ViewModel() {
         }
     }
 
-    /** Close a specific file (by path). */
     fun closeFile(filePath: String) {
         val index = _tabManager.indexOfPath(filePath)
         if (index >= 0) closeTab(index)
     }
 
-    /** Switch to a tab by index. */
     fun switchToTab(index: Int) {
         if (index == _tabManager.activeTabIndex) return
         saveCurrentCursorState()
+        saveUndoRedoState()
         _tabManager.switchTo(index)
         refreshTabState()
+        restoreUndoRedoState()
     }
 
-    /** Reopen the most recently closed tab. */
     fun reopenClosedTab() {
         val idx = _tabManager.reopenLastClosed()
         if (idx >= 0) refreshTabState()
     }
 
-    /** Close all tabs except the active one. */
     fun closeOtherTabs() {
         saveCurrentCursorState()
-        val unsaved = _tabManager.closeOtherTabs(force = true)
+        _tabManager.closeOtherTabs(force = true)
         refreshTabState()
     }
 
-    /**
-     * Save the current cursor/scroll state to the active tab.
-     * Called before tab switches (AndroidIDE pattern: preserve state per tab).
-     */
     fun saveCurrentCursorState() {
         val ed = editor ?: return
         val (line, col) = getCursorPosition(ed)
         _tabManager.updateActiveCursorState(
             line = line,
             column = col,
-            scrollX = 0,  // sora-editor doesn't easily expose scroll X
+            scrollX = 0,
             scrollY = ed.scrollY,
             selectionStart = ed.cursor?.left ?: -1,
             selectionEnd = ed.cursor?.right ?: -1,
         )
-        // Also save current content
         _tabManager.updateActiveContent(ed.text.toString(), activeTabOriginalContent)
     }
 
-    /** Get all modified tabs (for "save all" or app exit check). */
     fun getModifiedTabs(): List<EditorTab> = _tabManager.modifiedTabs
-
-    /** Get all open file paths (for session restoration). */
     fun getOpenFilePaths(): List<String> = _tabManager.getOpenFilePaths()
 
     // ── Encoding detection ───────────────────────────────────────────────
 
-    /**
-     * Detect file encoding using BOM (Byte Order Mark) and heuristic analysis.
-     * Falls back to UTF-8 which is the safest default.
-     */
     fun detectEncoding(path: String): String {
         val file = File(path)
         if (!file.exists()) return "UTF-8"
@@ -541,26 +583,22 @@ class SoraEditorViewModel @Inject constructor() : ViewModel() {
         }
     }
 
-    // ── Content change handler (from editor callback) ───────────────────
+    // ── Content change handler ───────────────────────────────────────────
 
-    /**
-     * Called when the editor content changes.
-     * Updates the active tab's dirty flag following AndroidIDE's pattern:
-     * the tab text shows `*` prefix when modified.
-     */
     fun onEditorContentChanged(newText: String) {
         val idx = _tabManager.activeTabIndex
         if (idx >= 0) {
             _tabManager.updateContent(idx, newText, activeTabOriginalContent)
             refreshTabState()
         }
+        // Update undo/redo state after content changes
+        updateUndoRedoState()
     }
 
     // ── Formatting helpers ───────────────────────────────────────────────
 
     private val dateFormatter = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
 
-    /** Format a timestamp for display. */
     fun formatTimestamp(timestamp: Long): String = dateFormatter.format(Date(timestamp))
 
     // ── Cleanup ──────────────────────────────────────────────────────────
@@ -568,17 +606,15 @@ class SoraEditorViewModel @Inject constructor() : ViewModel() {
     override fun onCleared() {
         super.onCleared()
         saveCurrentCursorState()
+        saveUndoRedoState()
         editor = null
         _tabManager.clear()
+        _undoRedoStates.clear()
     }
 }
 
-// ── File I/O utilities (coroutine-safe) ─────────────────────────────────────
+// ── File I/O utilities ──────────────────────────────────────────────────────
 
-/**
- * Read a file with automatic encoding detection.
- * @return Pair of (content, encoding) or null if the file doesn't exist.
- */
 private suspend fun readFileWithEncoding(path: String): Pair<String, String>? {
     return withContext(Dispatchers.IO) {
         val file = File(path)
@@ -589,7 +625,6 @@ private suspend fun readFileWithEncoding(path: String): Pair<String, String>? {
             val content = file.readText(charset(encoding))
             content to encoding
         } catch (e: Exception) {
-            // Fallback: try UTF-8
             try {
                 file.readText(Charsets.UTF_8) to "UTF-8"
             } catch (e2: Exception) {
@@ -599,9 +634,6 @@ private suspend fun readFileWithEncoding(path: String): Pair<String, String>? {
     }
 }
 
-/**
- * Detect encoding from BOM.
- */
 private fun detectEncodingForFile(path: String): String {
     val file = File(path)
     if (!file.exists()) return "UTF-8"

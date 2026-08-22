@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  XCoder IDE — Main Activity Layout (View-based fallback)
+
+  This XML layout exists as a fallback for any View-based components
+  that cannot be expressed in Compose (e.g. sora-editor's CodeEditor,
+  Termux's TerminalView, or plugin-provided views).
+
+  The primary rendering path is Compose via MainActivity.setContent().
+  This layout is only inflated when a hybrid approach is needed.
+
+  Pattern based on AndroidIDE's activity_main.xml and
+  Sketchware-IA's main_activity.xml.
+-->
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/coordinator"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true">
+
+    <!-- ComposeView hosts the full Compose UI -->
+    <androidx.compose.ui.platform.ComposeView
+        android:id="@+id/compose_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

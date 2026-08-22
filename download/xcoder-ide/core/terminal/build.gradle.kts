@@ -37,27 +37,35 @@ android {
 }
 
 dependencies {
-    // ── Termux terminal-view (transitively includes terminal-emulator + libtermux.so) ─
-    api(libs.termux.terminal.view)
+    // ── Termux terminal-emulator (JNI + TerminalSession) ──────────────────
+    implementation(libs.termux.terminal.emulator)
 
-    // ── AndroidX ───────────────────────────────────────────────────────
+    // ── Termux terminal-view (TerminalView + TerminalEmulatorView) ───────
+    implementation(libs.termux.terminal.view)
+
+    // ── Guava (empty jar to resolve transitive conflict) ──────────────────
+    // Termux's terminal-emulator depends on Guava, but our Hilt
+    // already brings in Guava. This empty jar avoids version conflicts.
+    implementation(libs.guava.empty)
+
+    // ── AndroidX ───────────────────────────────────────────────────────────
     implementation(libs.androidx.core.ktx)
 
-    // ── Compose ────────────────────────────────────────────────────────
+    // ── Compose ────────────────────────────────────────────────────────────
     api(platform(libs.compose.bom))
     api(libs.compose.ui)
     api(libs.compose.foundation)
     api(libs.compose.material3)
 
-    // ── Hilt ───────────────────────────────────────────────────────────
+    // ── Hilt ───────────────────────────────────────────────────────────────
     implementation(libs.hilt.android)
     kapt(libs.hilt.compiler)
 
-    // ── Coroutines ─────────────────────────────────────────────────────
+    // ── Coroutines ─────────────────────────────────────────────────────────
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.core)
 
-    // ── Testing ────────────────────────────────────────────────────────
+    // ── Testing ────────────────────────────────────────────────────────────
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

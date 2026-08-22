@@ -41,11 +41,18 @@ android-tree-view = "v1.0.0"
 # --- LSP (Language Server Protocol) ---
 lsp4j = "0.21.1"
 
+# --- DEX/APK editing (from Dalvikus) ---
+dexlib2 = "2.5.2"
+baksmali = "3.0.5"
+smali = "3.0.5"
+apksig = "8.2.0"
+
 # --- Extra ---
 appcompat = "1.6.1"
 sshj = "0.38.0"
 commons-net = "3.10.0"
 documentfile = "1.0.0"
+viewpager2 = "1.0.0"
 
 [libraries]
 # AndroidX Core
@@ -153,6 +160,16 @@ sshj = { group = "com.hierynomus", name = "sshj", version.ref = "sshj" }
 
 # Apache Commons Net (FTP)
 commons-net = { group = "commons-net", name = "commons-net", version.ref = "commons-net" }
+
+# ── DEX/APK editing (Dalvikus pattern) ──────────────────────────────────
+dexlib2 = { group = "com.android.tools.dexlib2", name = "dexlib2", version.ref = "dexlib2" }
+baksmali = { group = "com.android.tools.smali", name = "smali-baksmali", version.ref = "baksmali" }
+smali-lib = { group = "com.android.tools.smali", name = "smali", version.ref = "smali" }
+apksig = { group = "com.android.tools.build", name = "apksig", version.ref = "apksig" }
+bcpkix-jdk18on = { group = "org.bouncycastle", name = "bcpkix-jdk18on", version.ref = "bouncycastle" }
+
+# ViewPager2 (terminal session drawer)
+androidx-viewpager2 = { group = "androidx.viewpager2", name = "viewpager2", version.ref = "viewpager2" }
 
 # Testing
 junit = { group = "junit", name = "junit", version.ref = "junit" }

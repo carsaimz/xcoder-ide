@@ -67,7 +67,10 @@ xcoder-ide/
 ## Thanks to
 
 - **[Rosemoe](https://github.com/Rosemoe)** for the awesome [CodeEditor](https://github.com/Rosemoe/sora-editor)
-- **[Termux](https://github.com/termux)** for [Terminal Emulator](https://github.com/termux/termux-app)
+- **[Termux](https://github.com/termux)** for [Terminal Emulator](https://github.com/termux/termux-app) (terminal-emulator & terminal-view modules)
+- **[AndroidIDE](https://github.com/AndroidIDE/AndroidIDE)** for editor integration patterns, LSP client architecture, build system design, and UI patterns (Apache 2.0)
+- **[Sketchware-IA](https://github.com/FabioSilva11/Sketchware-IA)** for visual editor architecture, widget models (ViewBean/LayoutBean/TextBean), XML parser/generator, AAPT2 build pipeline, and project structure patterns (GPL-3.0)
+- **[Dalvikus](https://github.com/loerting/dalvikus)** for APK/DEX tree architecture, smali editing, resource table browsing, and APK signing patterns (MIT)
 - **[Bogdan Melnychuk](https://github.com/bmelnychuk)** for [AndroidTreeView](https://github.com/bmelnychuk/AndroidTreeView)
 - **[George Fraser](https://github.com/GotoFuse)** for the [Java Language Server](https://github.com/eclipse-jdtls/eclipse.jdt.ls)
 

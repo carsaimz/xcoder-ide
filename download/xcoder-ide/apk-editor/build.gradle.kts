@@ -22,14 +22,34 @@ android {
 }
 
 dependencies {
+    // ── AndroidX ──────────────────────────────────────────────────
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.documentfile)
+
+    // ── Hilt ──────────────────────────────────────────────────────
     implementation(libs.hilt.android)
     kapt(libs.hilt.compiler)
+
+    // ── Coroutines ────────────────────────────────────────────────
     implementation(libs.kotlinx.coroutines.android)
+
+    // ── DEX/Smali (dexlib2, baksmali, smali) ─────────────────────
     implementation("org.jf.dexlib2:dexlib2:2.5.2")
-    implementation("com.github.nicholasgasior:androguard:1.0.0")
+    implementation("org.jf.baksmali:baksmali:3.0.8")
+    implementation("org.jf.smali:smali:3.0.8")
+
+    // ── APK Signing (apksig + BouncyCastle) ──────────────────────
+    implementation("com.android.tools.build:apksig:8.2.2")
+    implementation(libs.bouncycastle)
+    implementation("org.bouncycastle:bcpkix-jdk18on:1.77")
+
+    // ── I/O ───────────────────────────────────────────────────────
+    implementation(libs.apache.commons.io)
+
+    // ── JSON ──────────────────────────────────────────────────────
     implementation(libs.gson)
-    implementation(libs.androidx.documentfile)
 }
+
+kapt { correctErrorTypes = true }

@@ -20,16 +20,20 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.xcoder.editor.sora.EditorScreen
-import com.xcoder.core.terminal.TermuxTerminalScreen
+import com.xcoder.ide.ui.editor.EditorScreen
+import com.xcoder.ide.ui.terminal.TerminalScreen
 import com.xcoder.ide.ui.visual.VisualEditorScreen
 
 /**
  * Main navigation graph that wires every [Screen] to its composable.
  *
- * The UI is split into:
- *  - A **bottom bar** with the 2 primary modes (Editor, Visual).
- *  - A **side drawer** with secondary tools (Terminal, Git, AI, Plugins, Settings).
+ * Layout model:
+ * - **Bottom bar**: 3 primary destinations (Editor, Terminal, Visual).
+ * - **Side drawer**: all remaining tools (APK Editor, Build, Search,
+ *   Bookmarks, Git, AI, Plugins, Settings).
+ *
+ * Pattern from AndroidIDE's `BaseEditorActivity` tab model and
+ * Sketchware-IA's `DrawerLayout` navigation pattern.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -79,32 +83,84 @@ fun MainNavigation(
                 navController = navController,
                 startDestination = Screen.CodeEditor.route,
                 modifier = Modifier.padding(innerPadding),
-                enterTransition = { slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left) },
-                exitTransition = { slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Left) },
-                popEnterTransition = { slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right) },
-                popExitTransition = { slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right) }
+                enterTransition = {
+                    slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left)
+                },
+                exitTransition = {
+                    slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Left)
+                },
+                popEnterTransition = {
+                    slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right)
+                },
+                popExitTransition = {
+                    slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right)
+                }
             ) {
                 // ── Editor (Rosemoe sora-editor) ──────────────────────
                 composable(Screen.CodeEditor.route) {
                     EditorScreen(
-                        filePath = "",
-                        initialContent = "// Welcome to XCoder IDE\n// Powered by Rosemoe sora-editor\n\nfun main() {\n    println(\"Hello, XCoder!\")\n}\n",
-                        onBack = { navController.popBackStack() }
+                        filePath = initialFileUri?.toString() ?: "",
+                        onBack = { navController.popBackStack() },
+                        onOpenFile = { /* navigate to editor with file */ }
                     )
-                }
-
-                // ── Visual Editor ────────────────────────────────────
-                composable(Screen.VisualEditor.route) {
-                    VisualEditorScreen()
                 }
 
                 // ── Terminal (Termux terminal-emulator) ──────────────
                 composable(Screen.Terminal.route) {
-                    TermuxTerminalScreen(
-                        fontSize = 14f,
-                        onSessionExit = { exitCode ->
-                            // Handle session exit
-                        }
+                    TerminalScreen()
+                }
+
+                // ── Visual Editor (Sketchware-IA pattern) ────────────
+                composable(Screen.VisualEditor.route) {
+                    VisualEditorScreen()
+                }
+
+                // ── APK Editor ──────────────────────────────────────
+                composable(Screen.ApkEditor.route) {
+                    PlaceholderScreen(
+                        icon = Icons.Default.Android,
+                        title = "APK Editor",
+                        description = "Decompile, edit smali/resources, and re-sign APKs.\n" +
+                            "Powered by apktool and baksmali."
+                    )
+                }
+
+                // ── Build Console ──────────────────────────────────
+                composable(Screen.Build.route) {
+                    PlaceholderScreen(
+                        icon = Icons.Default.Build,
+                        title = "Build",
+                        description = "Gradle build console with real-time output.\n" +
+                            "Supports Gradle, Maven, and direct javac/kotlinc."
+                    )
+                }
+
+                // ── Search ──────────────────────────────────────────
+                composable(Screen.Search.route) {
+                    PlaceholderScreen(
+                        icon = Icons.Default.Search,
+                        title = "Search in Project",
+                        description = "Full-text search across all project files.\n" +
+                            "Regex support, file filtering, and result navigation."
+                    )
+                }
+
+                // ── Bookmarks ───────────────────────────────────────
+                composable(Screen.Bookmarks.route) {
+                    PlaceholderScreen(
+                        icon = Icons.Default.BookmarkBorder,
+                        title = "Bookmarks",
+                        description = "Quick access to bookmarked lines and files."
+                    )
+                }
+
+                // ── Projects ────────────────────────────────────────
+                composable(Screen.ProjectList.route) {
+                    PlaceholderScreen(
+                        icon = Icons.Default.FolderOpen,
+                        title = "Projects",
+                        description = "Open recent projects or create a new one.\n" +
+                            "File tree powered by AndroidTreeView."
                     )
                 }
 
@@ -113,20 +169,22 @@ fun MainNavigation(
                     PlaceholderScreen(
                         icon = Icons.Default.AccountTree,
                         title = "Git Manager",
-                        description = "Branch, commit, push, pull, and view history.\nPowered by JGit."
+                        description = "Branch, commit, push, pull, and view history.\n" +
+                            "Powered by JGit."
                     )
                 }
 
-                // ── AI Assistant ──────────────────────────────────────
+                // ── AI Assistant ────────────────────────────────────
                 composable(Screen.AiChat.route) {
                     PlaceholderScreen(
                         icon = Icons.Default.SmartToy,
                         title = "AI Assistant",
-                        description = "Ask questions, generate code, and get suggestions.\nSupports OpenAI, Gemini, Claude."
+                        description = "Ask questions, generate code, and get suggestions.\n" +
+                            "Supports OpenAI, Gemini, Claude."
                     )
                 }
 
-                // ── Plugins ──────────────────────────────────────────
+                // ── Plugins ─────────────────────────────────────────
                 composable(Screen.PluginManager.route) {
                     PlaceholderScreen(
                         icon = Icons.Default.Extension,
@@ -135,21 +193,13 @@ fun MainNavigation(
                     )
                 }
 
-                // ── Settings ─────────────────────────────────────────
+                // ── Settings ────────────────────────────────────────
                 composable(Screen.Settings.route) {
                     PlaceholderScreen(
                         icon = Icons.Default.Settings,
                         title = "Settings",
-                        description = "Customize your IDE experience."
-                    )
-                }
-
-                // ── Projects ─────────────────────────────────────────
-                composable(Screen.ProjectList.route) {
-                    PlaceholderScreen(
-                        icon = Icons.Default.FolderOpen,
-                        title = "Projects",
-                        description = "Open recent projects or create a new one.\nFile tree powered by AndroidTreeView."
+                        description = "Customize your IDE experience.\n" +
+                            "Theme, font size, key bindings, terminal, LSP, and more."
                     )
                 }
             }
@@ -157,9 +207,9 @@ fun MainNavigation(
     }
 }
 
-// ---------------------------------------------------------------------------
-// Bottom Navigation Bar
-// ---------------------------------------------------------------------------
+// ==========================================================================
+//  Bottom Navigation Bar
+// ==========================================================================
 
 @Composable
 private fun BottomNavigationBar(
@@ -167,17 +217,17 @@ private fun BottomNavigationBar(
     onNavigate: (Screen) -> Unit,
     onOpenDrawer: () -> Unit
 ) {
-    val primaryScreens = listOf(
-        Triple(Screen.CodeEditor, Icons.Default.Edit, "Editor"),
-        Triple(Screen.VisualEditor, Icons.Default.Dashboard, "Visual"),
-    )
-
     NavigationBar {
-        primaryScreens.forEach { (screen, icon, label) ->
+        Screen.bottomNavScreens.forEach { screen ->
             val selected = currentRoute == screen.route
             NavigationBarItem(
-                icon = { Icon(icon, contentDescription = label) },
-                label = { Text(label) },
+                icon = {
+                    Icon(
+                        imageVector = screen.icon,
+                        contentDescription = screen.label
+                    )
+                },
+                label = { Text(screen.label) },
                 selected = selected,
                 onClick = { onNavigate(screen) },
                 colors = NavigationBarItemDefaults.colors(
@@ -189,6 +239,7 @@ private fun BottomNavigationBar(
                 )
             )
         }
+        // "More" button opens the drawer.
         NavigationBarItem(
             icon = { Icon(Icons.Default.Menu, contentDescription = "More") },
             label = { Text("More") },
@@ -202,9 +253,9 @@ private fun BottomNavigationBar(
     }
 }
 
-// ---------------------------------------------------------------------------
-// Side Drawer
-// ---------------------------------------------------------------------------
+// ==========================================================================
+//  Side Drawer
+// ==========================================================================
 
 @Composable
 private fun DrawerContent(
@@ -212,38 +263,41 @@ private fun DrawerContent(
     onNavigate: (Screen) -> Unit,
     onCloseDrawer: () -> Unit
 ) {
-    val drawerItems = listOf(
-        Triple(Screen.Terminal, Icons.Default.Terminal, "Terminal"),
-        Triple(Screen.GitManager, Icons.Default.AccountTree, "Git Manager"),
-        Triple(Screen.AiChat, Icons.Default.SmartToy, "AI Assistant"),
-        Triple(Screen.PluginManager, Icons.Default.Extension, "Plugins"),
-        Triple(Screen.ProjectList, Icons.Default.FolderOpen, "Projects"),
-        Triple(Screen.Settings, Icons.Default.Settings, "Settings"),
-    )
-
-    ModalDrawerSheet(
-        modifier = Modifier.width(280.dp)
-    ) {
+    ModalDrawerSheet(modifier = Modifier.width(280.dp)) {
+        // ── Header ────────────────────────────────────────────────
         Spacer(Modifier.height(16.dp))
-        Text(
-            text = "XCoder IDE",
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(horizontal = 24.dp)
-        )
-        Text(
-            text = "Powered by sora-editor, Termux, AndroidTreeView",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp)
-        )
+        Row(
+            modifier = Modifier.padding(horizontal = 24.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                Icons.Default.Code,
+                contentDescription = null,
+                modifier = Modifier.size(28.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Spacer(Modifier.width(12.dp))
+            Column {
+                Text(
+                    text = "XCoder IDE",
+                    style = MaterialTheme.typography.headlineMedium
+                )
+                Text(
+                    text = "v1.0.0  •  Kotlin + Compose",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
         HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
 
+        // ── Drawer items ─────────────────────────────────────────
         LazyColumn {
-            items(drawerItems) { (screen, icon, label) ->
+            items(Screen.drawerOnlyScreens) { screen ->
                 val selected = currentRoute == screen.route
                 NavigationDrawerItem(
-                    icon = { Icon(icon, contentDescription = label) },
-                    label = { Text(label) },
+                    icon = { Icon(screen.icon, contentDescription = screen.label) },
+                    label = { Text(screen.label) },
                     selected = selected,
                     onClick = { onNavigate(screen) },
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp),
@@ -256,35 +310,23 @@ private fun DrawerContent(
             }
         }
 
-        // ── Credits ────────────────────────────────────────────────
+        // ── Credits ──────────────────────────────────────────────
         Spacer(Modifier.weight(1f))
         HorizontalDivider()
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                "Thanks to",
+                "Powered by",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                "Rosemoe for the awesome CodeEditor",
+                "Rosemoe sora-editor  •  Termux terminal-emulator",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
             )
             Text(
-                "Termux for Terminal Emulator",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
-            )
-            Text(
-                "Bogdan Melnychuk for AndroidTreeView",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
-            )
-            Text(
-                "George Fraser for the Java Language Server",
+                "AndroidTreeView  •  Java Language Server",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
             )
@@ -292,12 +334,12 @@ private fun DrawerContent(
     }
 }
 
-// ---------------------------------------------------------------------------
-// Placeholder Screen
-// ---------------------------------------------------------------------------
+// ==========================================================================
+//  Placeholder Screen
+// ==========================================================================
 
 @Composable
-private fun PlaceholderScreen(
+internal fun PlaceholderScreen(
     icon: ImageVector,
     title: String,
     description: String

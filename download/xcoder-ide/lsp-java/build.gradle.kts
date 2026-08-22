@@ -21,32 +21,25 @@ android {
 }
 
 dependencies {
+    // ── sora-editor integration ────────────────────────────────────
     implementation(project(":editor:sora-editor"))
 
-    // ── sora-editor LSP bridge ────────────────────────────────────────
-    implementation(libs.sora.editor)
-    implementation(libs.sora.editor.lsp)
-    implementation(libs.sora.editor.language.java)
-
-    // ── LSP4J (Language Server Protocol client) ────────────────────────
+    // ── LSP4J (Language Server Protocol 3.16) ─────────────────────
     implementation(libs.lsp4j)
     implementation(libs.lsp4j.jsonrpc)
 
-    // ── AndroidX ───────────────────────────────────────────────────────
+    // ── AndroidX ──────────────────────────────────────────────────
     implementation(libs.androidx.core.ktx)
 
-    // ── Hilt ───────────────────────────────────────────────────────────
+    // ── Hilt ──────────────────────────────────────────────────────
     implementation(libs.hilt.android)
     kapt(libs.hilt.compiler)
 
-    // ── Coroutines ─────────────────────────────────────────────────────
+    // ── Coroutines ────────────────────────────────────────────────
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.core)
 
-    // ── OkHttp (for LSP stdio bridge) ──────────────────────────────────
-    implementation(libs.okhttp)
-
-    // ── Testing ────────────────────────────────────────────────────────
+    // ── Testing ──────────────────────────────────────────────────
     testImplementation(libs.junit)
 }
 
