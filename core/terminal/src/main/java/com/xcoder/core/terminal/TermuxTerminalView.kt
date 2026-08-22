@@ -172,7 +172,7 @@ class XCoderTerminalSessionClient(
         Log.d(LOG_TAG, "Shell PID for '${session.mSessionName}': $pid")
     }
 
-    override fun getTerminalCursorStyle(): Integer {
+    override fun getTerminalCursorStyle(): Int? {
         // 0 = block, 1 = underline, 2 = bar (vertical line)
         return 1
     }
