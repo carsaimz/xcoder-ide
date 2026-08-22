@@ -23,6 +23,7 @@ android {
 dependencies {
     // ── sora-editor integration ────────────────────────────────────
     implementation(project(":editor:sora-editor"))
+    implementation(libs.sora.editor)
 
     // ── LSP4J (Language Server Protocol 3.16) ─────────────────────
     implementation(libs.lsp4j)

@@ -53,6 +53,10 @@ dependencies {
     // ── TextMate grammars bundled as assets ─────────────────────────────
     // We bundle common grammar JSON files in assets/textmate/
 
+    // ── LSP4J (needed by EditorDiagnosticOverlay, EditorCompletionWindow) ──
+    implementation(libs.lsp4j)
+    implementation(libs.lsp4j.jsonrpc)
+
     // ── Testing ────────────────────────────────────────────────────────
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

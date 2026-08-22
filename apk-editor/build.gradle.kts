@@ -42,6 +42,9 @@ dependencies {
     // ── I/O ───────────────────────────────────────────────────────
     implementation(libs.apache.commons.io)
 
+    // ── sora-editor (for smali syntax highlighting) ─────────────────
+    implementation(libs.sora.editor)
+
     // ── JSON ─────────────────────────────────────────────────────
     implementation(libs.gson)
 }
