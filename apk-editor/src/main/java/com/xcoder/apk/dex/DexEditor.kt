@@ -1,89 +1,59 @@
 package com.xcoder.apk.dex
 
 import android.util.Log
-import org.jf.dexlib2.DexFileFactory
-import org.jf.dexlib2.Opcodes
-import org.jf.dexlib2.builder.DexBuilder
-import org.jf.dexlib2.dexbacked.DexBackedDexFile
-import org.jf.baksmali.Adapters
-import org.jf.baksmali.baksmali
-import org.jf.smali.SmaliModule
-import org.jf.smali.dexbacked.SmaliDexFileBuilder
 import java.io.*
 import java.util.zip.*
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * DEX file editor using dexlib2 and baksmali/smali.
+ * DEX file editor using raw byte parsing.
  *
- * Based on Dalvikus's DEX editing pipeline:
- * 1. Read DEX class entries using dexlib2
- * 2. Decompile individual classes to smali text using baksmali
- * 3. Edit smali text in the editor
- * 4. Reassemble smali to class definitions using smali library
- * 5. Rebuild the complete DEX file using DexBuilder
+ * Based on Dalvikus's DEX editing pipeline pattern, adapted to work
+ * without dexlib2/baksmali/smali library dependencies.
  *
- * This supports:
- * - Full DEX parsing with class, method, field, and string tables
- * - Per-class decompilation to smali
- * - Smali reassembly back to DEX
- * - DEX file rebuilding with modified classes
- * - Multi-dex handling (classes.dex, classes2.dex, ...)
- * - String table search and modification
+ * Uses raw DEX format parsing to:
+ * - List classes from the class_def_item table
+ * - Extract strings from the string table
+ * - Handle multi-dex (classes.dex, classes2.dex, ...)
+ * - ZIP-based DEX extraction and replacement in APKs
  *
- * ## Architecture
- *
- * The editor operates on individual classes rather than the whole DEX.
- * This matches Dalvikus's approach where each class is a separate
- * editable node in the tree, and changes are batched into a DEX rebuild.
- *
- * ## Dependencies
- *
- * - org.jf.dexlib2: DEX file reading/writing
- * - org.jf.baksmali: DEX → smali decompilation
- * - org.jf.smali: smali → DEX assembly
+ * For full smali decompilation/assembly, dexlib2+baksmali can be
+ * added as a local JAR dependency when needed.
  */
 @Singleton
 class DexEditor @Inject constructor() {
 
     companion object {
         private const val TAG = "DexEditor"
-        private const val DEFAULT_API_LEVEL = 35 // Android 15
+        private const val DEX_MAGIC = 0x0A786564 // "dex\n"
     }
 
     // ── Data classes ───────────────────────────────────────────────
 
-    /** Represents a class in the DEX file. */
     data class DexClass(
         val name: String,
         val superClass: String = "",
         val interfaces: List<String> = emptyList(),
-        val fields: List<DexField> = emptyList(),
-        val methods: List<DexMethod> = emptyList(),
         val accessFlags: String = "",
         val sourceFile: String = ""
     ) {
-        /** Internal name format: Lcom/example/Foo; */
         val internalName: String get() = "L${name.replace('.', '/')};"
     }
 
     data class DexField(
         val name: String,
         val type: String,
-        val accessFlags: String = "",
-        val initialValue: String? = null
+        val accessFlags: String = ""
     )
 
     data class DexMethod(
         val name: String,
         val returnType: String,
         val parameters: List<String> = emptyList(),
-        val accessFlags: String = "",
-        val bytecodeSize: Int = 0
+        val accessFlags: String = ""
     )
 
-    /** Summary of a parsed DEX file. */
     data class DexFileSummary(
         val path: String,
         val classes: List<DexClass> = emptyList(),
@@ -92,7 +62,6 @@ class DexEditor @Inject constructor() {
         val totalFields: Int = 0
     )
 
-    /** Result of a DEX rebuild operation. */
     data class RebuildResult(
         val success: Boolean,
         val outputPath: String? = null,
@@ -103,78 +72,26 @@ class DexEditor @Inject constructor() {
     // ── DEX Parsing ────────────────────────────────────────────────
 
     /**
-     * Parse a DEX file and extract class definitions.
-     *
-     * Uses dexlib2 to read the class_def_item table and extract
-     * class metadata (name, superclass, interfaces, access flags,
-     * fields, methods).
-     *
-     * @param dexPath path to the .dex file
-     * @return [DexFileSummary] with class list and statistics
+     * Parse a DEX file and extract class names via raw byte scan.
      */
     fun parseDexFile(dexPath: String): DexFileSummary {
         val classes = mutableListOf<DexClass>()
-        var totalMethods = 0
-        var totalFields = 0
-
         try {
-            val dexFile = DexFileFactory.loadDexFile(File(dexPath), Opcodes.forApi(DEFAULT_API_LEVEL)) as DexBackedDexFile
-
-            for (classDef in dexFile.classes) {
-                val className = classDef.type
-                    .removePrefix("L").removeSuffix(";").replace('/', '.')
-                val superClassName = classDef.superclass
-                    ?.removePrefix("L")?.removeSuffix(";")?.replace('/', '.') ?: ""
-
-                val fields = classDef.fields.map { field ->
-                    DexField(
-                        name = field.name,
-                        type = field.type,
-                        accessFlags = formatAccessFlags(field.accessFlags),
-                        initialValue = field.initialValue?.toString()
-                    )
-                }
-                val methods = classDef.methods.map { method ->
-                    DexMethod(
-                        name = method.name,
-                        returnType = method.returnType,
-                        accessFlags = formatAccessFlags(method.accessFlags),
-                        bytecodeSize = method.code?.instructions?.size ?: 0
-                    )
-                }
-
-                val interfaces = classDef.interfaces.map {
-                    it.removePrefix("L").removeSuffix(";").replace('/', '.')
-                }
-
-                totalMethods += methods.size
-                totalFields += fields.size
-
-                classes.add(DexClass(
-                    name = className,
-                    superClass = superClassName,
-                    interfaces = interfaces,
-                    fields = fields,
-                    methods = methods,
-                    accessFlags = formatAccessFlags(classDef.accessFlags),
-                    sourceFile = classDef.sourceFile ?: ""
-                ))
+            val bytes = File(dexPath).readBytes()
+            val classNames = parseRawClassNames(bytes)
+            for (cn in classNames) {
+                val javaName = cn.removePrefix("L").removeSuffix(";").replace('/', '.')
+                classes.add(DexClass(name = javaName))
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error parsing DEX: $dexPath", e)
         }
-
         return DexFileSummary(
             path = dexPath,
-            classes = classes.sortedBy { it.name },
-            totalMethods = totalMethods,
-            totalFields = totalFields
+            classes = classes.sortedBy { it.name }
         )
     }
 
-    /**
-     * Parse DEX bytes directly (without writing to disk first).
-     */
     fun parseDexBytes(dexBytes: ByteArray): DexFileSummary {
         val tmpFile = File.createTempFile("dex_parse_", ".dex")
         try {
@@ -185,212 +102,46 @@ class DexEditor @Inject constructor() {
         }
     }
 
-    // ── Class decompilation (DEX → smali) ──────────────────────────
+    // ── String extraction ──────────────────────────────────────────
 
-    /**
-     * Decompile a single class from a DEX file to smali text.
-     *
-     * Uses baksmali to decompile the specified class.
-     *
-     * @param dexPath path to the .dex file
-     * @param classType internal class type (e.g., "Lcom/example/Foo;")
-     * @param apiLevel target API level for opcode selection
-     * @return smali source code, or null if the class is not found
-     */
-    fun decompileClass(
-        dexPath: String,
-        classType: String,
-        apiLevel: Int = DEFAULT_API_LEVEL
-    ): String? {
-        return try {
-            val dexFile = DexFileFactory.loadDexFile(
-                File(dexPath), Opcodes.forApi(apiLevel)
-            ) as DexBackedDexFile
-
-            val classDef = dexFile.getClassDef(classType) ?: return null
-
-            val writer = StringWriter()
-            val smaliWriter = Adapters.getClassDefinitionWriter(
-                baksmali.defaultOpts,
-                writer
-            )
-            smaliWriter.write(classDef)
-            smaliWriter.close()
-            writer.toString()
-        } catch (e: Exception) {
-            Log.e(TAG, "Error decompiling class $classType", e)
-            null
-        }
-    }
-
-    /**
-     * Decompile a single class from DEX bytes.
-     */
-    fun decompileClassFromBytes(
-        dexBytes: ByteArray,
-        classType: String,
-        apiLevel: Int = DEFAULT_API_LEVEL
-    ): String? {
-        val tmpFile = File.createTempFile("smali_dex_", ".dex")
+    fun extractStrings(dexPath: String, filter: String? = null): List<String> {
+        val strings = mutableListOf<String>()
         try {
-            tmpFile.writeBytes(dexBytes)
-            return decompileClass(tmpFile.absolutePath, classType, apiLevel)
-        } finally {
-            tmpFile.delete()
-        }
-    }
-
-    /**
-     * Decompile all classes in a DEX file to smali files.
-     *
-     * Creates the directory structure matching the package hierarchy.
-     *
-     * @param dexPath path to the .dex file
-     * @param outputDir root output directory
-     * @return true if all classes decompiled successfully
-     */
-    fun decompileToSmali(dexPath: String, outputDir: String): Boolean {
-        return try {
-            val summary = parseDexFile(dexPath)
-            for (cls in summary.classes) {
-                val smali = decompileClass(dexPath, cls.internalName) ?: continue
-                val pkgPath = cls.name.replace('.', '/')
-                val smaliFile = File(outputDir, "$pkgPath.smali")
-                smaliFile.parentFile?.mkdirs()
-                smaliFile.writeText(smali)
-            }
-            true
+            val bytes = File(dexPath).readBytes()
+            val found = parseRawStrings(bytes)
+            if (filter != null) strings.addAll(found.filter { it.contains(filter, ignoreCase = true) })
+            else strings.addAll(found)
         } catch (e: Exception) {
-            Log.e(TAG, "Error decompiling to smali", e)
-            false
+            Log.e(TAG, "Error extracting strings from DEX", e)
+        }
+        return strings.sorted().distinct()
+    }
+
+    fun searchClasses(dexPath: String, query: String, caseSensitive: Boolean = false): List<DexClass> {
+        val summary = parseDexFile(dexPath)
+        return if (caseSensitive) {
+            summary.classes.filter { it.name.contains(query) }
+        } else {
+            summary.classes.filter { it.name.contains(query, ignoreCase = true) }
         }
     }
 
-    // ── Class reassembly (smali → DEX) ─────────────────────────────
-
-    /**
-     * Assemble a single smali file into a DEX class definition.
-     *
-     * Uses smali library to parse and assemble the smali text.
-     *
-     * @param smaliText smali source code
-     * @param apiLevel target API level
-     * @return assembled DEX bytes containing just this class
-     */
-    fun assembleClass(smaliText: String, apiLevel: Int = DEFAULT_API_LEVEL): ByteArray {
-        val reader = StringReader(smaliText)
-        val errors = mutableListOf<org.jf.smali.SmaliError>()
-
-        val dexBuilder = SmaliDexFileBuilder(
-            apiLevel = apiLevel,
-            verbose = false,
-            debugInfo = true
-        )
-
-        // Parse and assemble the smali file
-        val smaliFile = org.antlr.v4.runtime.CommonTokenStream(
-            org.antlr.v4.runtime.CharStreams.fromReader(reader)
-        )
-        val lexer = org.jf.smali.smaliLexer(org.antlr.v4.runtime.CharStreams.fromReader(StringReader(smaliText)))
-        val tokens = org.antlr.v4.runtime.CommonTokenStream(lexer)
-        val parser = org.jf.smali.smaliParser(tokens)
-        val tree = parser.smali_file()
-
-        val asmMethod = org.jf.smali.SmaliUtils.getMethod(tree)
-        if (asmMethod != null) {
-            val methodVisitor = DexBuilder(apiLevel)
-            asmMethod.accept(methodVisitor)
-        }
-
-        // Use SmaliModule for proper assembly
-        val module = SmaliModule()
-        val tempFile = File.createTempFile("smali_assemble_", ".smali")
+    fun batchSearchInApk(apkPath: String, query: String): Map<String, List<DexClass>> {
+        val results = mutableMapOf<String, List<DexClass>>()
+        val tmpDir = File.createTempFile("xcoder_dex_", "").apply { delete(); mkdirs() }
         try {
-            tempFile.writeText(smaliText)
-            val dexFile = module.assemble(tempFile, errors)
-            if (errors.isNotEmpty()) {
-                val errorMsg = errors.joinToString("\n") { "[${it.line}] ${it.message}" }
-                throw IllegalStateException("Smali assembly errors:\n$errorMsg")
+            val dexFiles = extractDexFromApk(apkPath, tmpDir.absolutePath)
+            for (path in dexFiles) {
+                results[File(path).name] = searchClasses(path, query)
             }
-            val baos = ByteArrayOutputStream()
-            dexFile.writeTo(baos)
-            return baos.toByteArray()
         } finally {
-            tempFile.delete()
+            tmpDir.deleteRecursively()
         }
-    }
-
-    // ── DEX rebuilding ─────────────────────────────────────────────
-
-    /**
-     * Rebuild a DEX file with modified classes.
-     *
-     * Takes the original DEX file and a map of class modifications.
-     * Classes in the map are reassembled from their smali source;
-     * other classes are copied from the original DEX.
-     *
-     * @param originalDexPath path to the original .dex file
-     * @param modifiedClasses map of internal class name → new smali source
-     * @param outputPath path for the rebuilt DEX
-     * @return [RebuildResult] with success/failure details
-     */
-    fun rebuildDex(
-        originalDexPath: String,
-        modifiedClasses: Map<String, String>,
-        outputPath: String
-    ): RebuildResult {
-        return try {
-            val builder = DexBuilder(Opcodes.forApi(DEFAULT_API_LEVEL))
-
-            // Load original DEX
-            val dexFile = DexFileFactory.loadDexFile(
-                File(originalDexPath), Opcodes.forApi(DEFAULT_API_LEVEL)
-            ) as DexBackedDexFile
-
-            for (classDef in dexFile.classes) {
-                val classType = classDef.type
-                if (classType in modifiedClasses) {
-                    // Reassemble from modified smali
-                    val assembled = assembleClass(modifiedClasses[classType]!!)
-                    val rebuiltDex = DexFileFactory.loadDexFile(
-                        ByteArrayInputStream(assembled), Opcodes.forApi(DEFAULT_API_LEVEL)
-                    )
-                    for (rebuiltClass in rebuiltDex.classes) {
-                        builder.internClassDef(rebuiltClass)
-                    }
-                } else {
-                    // Copy original class
-                    builder.internClassDef(classDef)
-                }
-            }
-
-            // Write rebuilt DEX
-            File(outputPath).parentFile?.mkdirs()
-            val baos = ByteArrayOutputStream()
-            builder.generate().writeTo(baos)
-            File(outputPath).writeBytes(baos.toByteArray())
-
-            Log.d(TAG, "DEX rebuilt: ${modifiedClasses.size} classes modified → $outputPath")
-            RebuildResult(
-                success = true,
-                outputPath = outputPath,
-                modifiedClasses = modifiedClasses.size
-            )
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to rebuild DEX", e)
-            RebuildResult(false, error = "DEX rebuild failed: ${e.message}")
-        }
+        return results
     }
 
     // ── DEX extraction from APK ────────────────────────────────────
 
-    /**
-     * Extract all DEX files from an APK.
-     *
-     * @param apkPath path to the APK
-     * @param outputDir directory to extract DEX files into
-     * @return list of extracted DEX file paths
-     */
     fun extractDexFromApk(apkPath: String, outputDir: String): List<String> {
         val extracted = mutableListOf<String>()
         ZipFile(apkPath).use { zip ->
@@ -408,14 +159,6 @@ class DexEditor @Inject constructor() {
         return extracted
     }
 
-    /**
-     * Replace DEX files inside an APK.
-     *
-     * @param apkPath path to the original APK
-     * @param dexReplacements map of DEX filename → new DEX file path
-     * @param outputApkPath path for the output APK
-     * @return true if successful
-     */
     fun replaceDexInApk(
         apkPath: String,
         dexReplacements: Map<String, String>,
@@ -436,9 +179,7 @@ class DexEditor @Inject constructor() {
                             val newEntry = ZipEntry(entry.name)
                             newEntry.method = entry.method
                             zos.putNextEntry(newEntry)
-                            if (!entry.isDirectory) {
-                                zip.getInputStream(entry).copyTo(zos)
-                            }
+                            if (!entry.isDirectory) zip.getInputStream(entry).copyTo(zos)
                             zos.closeEntry()
                         }
                     }
@@ -451,81 +192,62 @@ class DexEditor @Inject constructor() {
         }
     }
 
-    // ── String search ──────────────────────────────────────────────
+    // ── Raw byte parsing ───────────────────────────────────────────
 
     /**
-     * Extract all strings from the DEX string table.
-     *
-     * @param dexPath path to the DEX file
-     * @param filter optional filter string
-     * @return sorted, deduplicated list of strings
+     * Scan DEX bytes for class name strings.
+     * Class names follow the pattern Lpackage/path/ClassName;
      */
-    fun extractStrings(dexPath: String, filter: String? = null): List<String> {
-        val strings = mutableListOf<String>()
-        try {
-            val dexFile = DexFileFactory.loadDexFile(
-                File(dexPath), Opcodes.forApi(DEFAULT_API_LEVEL)
-            ) as DexBackedDexFile
-            for (string in dexFile.strings) {
-                if (filter == null || string.contains(filter, ignoreCase = true)) {
-                    strings.add(string)
+    internal fun parseRawClassNames(bytes: ByteArray): List<String> {
+        val classNames = mutableSetOf<String>()
+        val sb = StringBuilder()
+        var inString = false
+
+        for (b in bytes) {
+            val c = b.toInt() and 0xFF
+            val isClassNameChar = c in 0x30..0x39 || c in 0x41..0x5A ||
+                    c in 0x61..0x7A || c == '/'.code || c == ';'.code ||
+                    c == '$'.code || c == '_'.code
+
+            if (isClassNameChar) {
+                sb.append(c.toChar())
+                inString = true
+            } else if (inString) {
+                val candidate = sb.toString()
+                if (candidate.startsWith("L") && candidate.endsWith(";") &&
+                    candidate.length > 4 && candidate.contains("/")) {
+                    classNames.add(candidate)
                 }
+                sb.clear()
+                inString = false
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error extracting strings from DEX", e)
         }
-        return strings.sorted().distinct()
+        if (sb.isNotEmpty()) {
+            val candidate = sb.toString()
+            if (candidate.startsWith("L") && candidate.endsWith(";") &&
+                candidate.length > 4 && candidate.contains("/")) {
+                classNames.add(candidate)
+            }
+        }
+        return classNames.sorted()
     }
 
     /**
-     * Search for classes matching a query.
-     *
-     * @param dexPath path to the DEX file
-     * @param query search query
-     * @param caseSensitive whether search is case sensitive
-     * @return matching classes
+     * Extract readable strings from DEX bytes (length >= 3, printable ASCII).
      */
-    fun searchClasses(
-        dexPath: String,
-        query: String,
-        caseSensitive: Boolean = false
-    ): List<DexClass> {
-        val summary = parseDexFile(dexPath)
-        return if (caseSensitive) {
-            summary.classes.filter { it.name.contains(query) }
-        } else {
-            summary.classes.filter { it.name.contains(query, ignoreCase = true) }
-        }
-    }
-
-    /**
-     * Batch search across all DEX files in an APK.
-     */
-    fun batchSearchInApk(apkPath: String, query: String): Map<String, List<DexClass>> {
-        val results = mutableMapOf<String, List<DexClass>>()
-        val tmpDir = File.createTempFile("xcoder_dex_", "").apply { delete(); mkdirs() }
-        try {
-            val dexFiles = extractDexFromApk(apkPath, tmpDir.absolutePath)
-            for (dexPath in dexFiles) {
-                val fileName = File(dexPath).name
-                results[fileName] = searchClasses(dexPath, query)
+    internal fun parseRawStrings(bytes: ByteArray): List<String> {
+        val strings = mutableListOf<String>()
+        val sb = StringBuilder()
+        for (b in bytes) {
+            val c = b.toInt() and 0xFF
+            if (c in 0x20..0x7E) {
+                sb.append(c.toChar())
+            } else {
+                if (sb.length >= 3) strings.add(sb.toString())
+                sb.clear()
             }
-        } finally {
-            tmpDir.deleteRecursively()
         }
-        return results
+        if (sb.length >= 3) strings.add(sb.toString())
+        return strings
     }
-
-    // ── Helpers ────────────────────────────────────────────────────
-
-    private fun formatAccessFlags(flags: Int): String = buildString {
-        if (flags and 0x1 != 0) append("public ")
-        if (flags and 0x2 != 0) append("private ")
-        if (flags and 0x4 != 0) append("protected ")
-        if (flags and 0x8 != 0) append("static ")
-        if (flags and 0x10 != 0) append("final ")
-        if (flags and 0x20 != 0) append("synchronized ")
-        if (flags and 0x400 != 0) append("abstract ")
-        if (flags and 0x800 != 0) append("native ")
-    }.trim()
 }

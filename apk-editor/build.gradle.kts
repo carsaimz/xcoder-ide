@@ -34,9 +34,6 @@ dependencies {
     // ── Coroutines ────────────────────────────────────────────────
     implementation(libs.kotlinx.coroutines.android)
 
-    // ── DEX/Smali (JitPack: bundles dexlib2 + baksmali + smali) ──
-    implementation(libs.smali.bundle)
-
     // ── APK Signing (apksig + BouncyCastle) ──────────────────────
     implementation(libs.apksig)
     implementation(libs.bouncycastle)

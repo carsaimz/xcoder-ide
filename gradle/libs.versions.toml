@@ -41,8 +41,7 @@ android-tree-view = "v1.0.0"
 # --- LSP (Language Server Protocol) ---
 lsp4j = "0.21.1"
 
-# --- DEX/APK editing (JitPack smali bundles dexlib2+baksmali+smali) ---
-jesusfreke-smali = "v3.0.5"
+# --- APK signing ---
 apksig = "8.2.0"
 
 # --- Extra ---
@@ -159,8 +158,7 @@ sshj = { group = "com.hierynomus", name = "sshj", version.ref = "sshj" }
 # Apache Commons Net (FTP)
 commons-net = { group = "commons-net", name = "commons-net", version.ref = "commons-net" }
 
-# ── DEX/APK editing (JitPack) ────────────────────────────────────────────
-smali-bundle = { group = "com.github.JesusFreke", name = "smali", version.ref = "jesusfreke-smali" }
+# ── APK signing ─────────────────────────────────────────────────────────
 apksig = { group = "com.android.tools.build", name = "apksig", version.ref = "apksig" }
 bcpkix-jdk18on = { group = "org.bouncycastle", name = "bcpkix-jdk18on", version.ref = "bouncycastle" }
 
