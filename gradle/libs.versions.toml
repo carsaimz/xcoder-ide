@@ -41,10 +41,8 @@ android-tree-view = "v1.0.0"
 # --- LSP (Language Server Protocol) ---
 lsp4j = "0.21.1"
 
-# --- DEX/APK editing (from Dalvikus) ---
-dexlib2 = "2.5.2"
-baksmali = "3.0.5"
-smali = "3.0.5"
+# --- DEX/APK editing (JitPack smali bundles dexlib2+baksmali+smali) ---
+jesusfreke-smali = "v3.0.5"
 apksig = "8.2.0"
 
 # --- Extra ---
@@ -161,10 +159,8 @@ sshj = { group = "com.hierynomus", name = "sshj", version.ref = "sshj" }
 # Apache Commons Net (FTP)
 commons-net = { group = "commons-net", name = "commons-net", version.ref = "commons-net" }
 
-# ── DEX/APK editing (Dalvikus pattern) ──────────────────────────────────
-dexlib2 = { group = "com.android.tools.dexlib2", name = "dexlib2", version.ref = "dexlib2" }
-baksmali = { group = "com.android.tools.smali", name = "smali-baksmali", version.ref = "baksmali" }
-smali-lib = { group = "com.android.tools.smali", name = "smali", version.ref = "smali" }
+# ── DEX/APK editing (JitPack) ────────────────────────────────────────────
+smali-bundle = { group = "com.github.JesusFreke", name = "smali", version.ref = "jesusfreke-smali" }
 apksig = { group = "com.android.tools.build", name = "apksig", version.ref = "apksig" }
 bcpkix-jdk18on = { group = "org.bouncycastle", name = "bcpkix-jdk18on", version.ref = "bouncycastle" }
 

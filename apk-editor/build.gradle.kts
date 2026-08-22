@@ -25,7 +25,6 @@ dependencies {
     // ── AndroidX ──────────────────────────────────────────────────
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.documentfile)
 
     // ── Hilt ──────────────────────────────────────────────────────
@@ -35,20 +34,18 @@ dependencies {
     // ── Coroutines ────────────────────────────────────────────────
     implementation(libs.kotlinx.coroutines.android)
 
-    // ── DEX/Smali (dexlib2, baksmali, smali) ─────────────────────
-    implementation("org.jf.dexlib2:dexlib2:2.5.2")
-    implementation("org.jf.baksmali:baksmali:3.0.8")
-    implementation("org.jf.smali:smali:3.0.8")
+    // ── DEX/Smali (JitPack: bundles dexlib2 + baksmali + smali) ──
+    implementation(libs.smali.bundle)
 
     // ── APK Signing (apksig + BouncyCastle) ──────────────────────
-    implementation("com.android.tools.build:apksig:8.2.2")
+    implementation(libs.apksig)
     implementation(libs.bouncycastle)
-    implementation("org.bouncycastle:bcpkix-jdk18on:1.77")
+    implementation(libs.bcpkix.jdk18on)
 
     // ── I/O ───────────────────────────────────────────────────────
     implementation(libs.apache.commons.io)
 
-    // ── JSON ──────────────────────────────────────────────────────
+    // ── JSON ─────────────────────────────────────────────────────
     implementation(libs.gson)
 }
 
