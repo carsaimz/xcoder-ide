@@ -19,7 +19,7 @@ private const val TAG = "XCoderTermSessionMgr"
 private const val MAX_SESSIONS = 8
 
 /** Default number of transcript (scrollback) rows. Based on Termux's default. */
-private const val DEFAULT_TRANSCRIPT_ROWS = 5000
+internal const val DEFAULT_TRANSCRIPT_ROWS = 5000
 
 /**
  * A minimal [TerminalSessionClient] that satisfies all 16 interface methods with
@@ -71,27 +71,20 @@ private class BootstrapTerminalSessionClient : TerminalSessionClient {
         // No view to toggle cursor blinker.
     }
 
-    override fun setTerminalShellPid(session: TerminalSession, pid: Int) {
-        Log.d(
-            TAG,
-            "Bootstrap client: shell PID for '${session.mSessionName}' = $pid"
-        )
-    }
-
-    override fun getTerminalCursorStyle(): Integer {
+    override fun getTerminalCursorStyle(): Int {
         return 1 // underline
     }
 
-    override fun logError(tag: String, message: String) = Log.e(tag, message)
-    override fun logWarn(tag: String, message: String) = Log.w(tag, message)
-    override fun logInfo(tag: String, message: String) = Log.i(tag, message)
-    override fun logDebug(tag: String, message: String) = Log.d(tag, message)
-    override fun logVerbose(tag: String, message: String) = Log.v(tag, message)
+    override fun logError(tag: String, message: String) { Log.e(tag, message) }
+    override fun logWarn(tag: String, message: String) { Log.w(tag, message) }
+    override fun logInfo(tag: String, message: String) { Log.i(tag, message) }
+    override fun logDebug(tag: String, message: String) { Log.d(tag, message) }
+    override fun logVerbose(tag: String, message: String) { Log.v(tag, message) }
     override fun logStackTraceWithMessage(
         tag: String,
         message: String,
         e: Exception,
-    ) = Log.e(tag, message, e)
+    ) { Log.e(tag, message, e) }
 
     override fun logStackTrace(tag: String, e: Exception) =
         Log.e(tag, e.message ?: "(no message)", e)

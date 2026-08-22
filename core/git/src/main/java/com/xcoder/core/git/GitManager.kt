@@ -251,7 +251,7 @@ class GitManager @Inject constructor(
             .setMaxCount(maxCount)
             .setSkip(skip)
         val commits = logCommand.call().map { it.toCommitInfo() }
-        GitLogResult(commits, commits.size)
+        GitSuccess(GitLogResult(commits, commits.size))
     }
 
     suspend fun logForFile(path: String, maxCount: Int = 20): GitResult<List<CommitInfo>> =
@@ -435,7 +435,7 @@ class GitManager @Inject constructor(
 
     suspend fun removeRemote(name: String): GitResult<Unit> = withGit { git ->
         git.remoteRemove()
-            .setName(name)
+            .setRemoteName(name)
             .call()
         GitSuccess(Unit)
     }
@@ -450,7 +450,7 @@ class GitManager @Inject constructor(
 
     suspend fun stash(message: String? = null): GitResult<Unit> = withGit { git ->
         val stashCommand = git.stashCreate()
-        message?.let { stashCommand.setMessage(it) }
+        if (message != null) stashCommand.setWorkingDirectoryMessage(message)
         stashCommand.call()
         GitSuccess(Unit)
     }
@@ -470,7 +470,7 @@ class GitManager @Inject constructor(
                             index = index,
                             message = commit.shortMessage,
                             authorName = commit.authorIdent.name,
-                            commitTime = commit.commitTime.toLong() * 1000L
+                            commitTime = commit.commitTime * 1000L
                         )
                     )
                     ref = ref.objectId?.let { walk.parseCommit(it).parents?.getOrNull(0)?.let { parent -> git.repository.findRef(parent.name) } }
@@ -493,13 +493,13 @@ class GitManager @Inject constructor(
     }
 
     suspend fun stashApply(index: Int = 0): GitResult<Unit> = withGit { git ->
-        git.stashApply().setStashRef(index).call()
+        git.stashApply().setStashRef("refs/stash@{$index}").call()
         emitEvent(GitEventType.STASH_APPLIED, "Applied stash $index")
         GitSuccess(Unit)
     }
 
     suspend fun stashPop(index: Int = 0): GitResult<Unit> = withGit { git ->
-        git.stashApply().setStashRef(index).call()
+        git.stashApply().setStashRef("refs/stash@{$index}").call()
         try {
             val refName = "refs/stash@{$index}"
             val refUpdate = git.repository.updateRef(refName)

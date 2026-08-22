@@ -4,21 +4,18 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
-import com.jcraft.jsch.AgentIdentityRepository
-import com.jcraft.jsch.Identity
 import com.jcraft.jsch.JSch
-import com.jcraft.jsch.KeyPair
 import com.jcraft.jsch.Session
 import com.jcraft.jsch.UserInfo
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import org.eclipse.jgit.errors.UnsupportedCredentialItem
 import org.eclipse.jgit.transport.CredentialItem
 import org.eclipse.jgit.transport.CredentialsProvider
+import org.eclipse.jgit.transport.SshSessionFactory
 import org.eclipse.jgit.transport.URIish
 import java.io.ByteArrayInputStream
-import java.io.File
 import java.security.KeyStore
 import java.util.Base64
 import javax.inject.Inject
@@ -27,8 +24,6 @@ import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
 @Singleton
 class GitCredentials @Inject constructor(
@@ -49,7 +44,7 @@ class GitCredentials @Inject constructor(
                     .putString("https_$host", "${username}::${Base64.getEncoder().encodeToString(encrypted)}")
                     .apply()
                 true
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 false
             }
         }
@@ -77,7 +72,7 @@ class GitCredentials @Inject constructor(
                 prefs.edit()
                     .putString(
                         "ssh_$host",
-                        "${Base64.getEncoder().encodeToString(encryptedKey)}::${passphrase}"
+                        "${Base64.getEncoder().encodeToString(encryptedKey)}::$passphrase"
                     )
                     .apply()
                 true
@@ -126,7 +121,7 @@ class GitCredentials @Inject constructor(
     }
 
     fun getCredentialProvider(): CredentialsProvider {
-        return object : CredentialsProvider {
+        return object : CredentialsProvider() {
             override fun isInteractive(): Boolean = true
 
             override fun supports(items: Array<out CredentialItem>?): Boolean {
@@ -170,33 +165,37 @@ class GitCredentials @Inject constructor(
         }
     }
 
-    fun createSshSessionFactory(sshKey: String? = null, passphrase: String? = null): org.eclipse.jgit.transport.SshSessionFactory {
+    fun createSshSessionFactory(sshKey: String? = null, passphrase: String? = null): SshSessionFactory {
         val jsch = JSch()
         val keyToUse = sshKey ?: runBlocking { getDefaultSshKey()?.first }
         val passToUse = passphrase ?: runBlocking { getDefaultSshKey()?.second }
         if (keyToUse != null) {
-            val bais = ByteArrayInputStream(keyToUse.toByteArray(Charsets.UTF_8))
             jsch.addIdentity("xcoder_key", keyToUse.toByteArray(), null, passToUse?.toByteArray())
         }
-        jsch.setKnownHosts(java.io.File(context.filesDir, ".ssh/known_hosts").absolutePath)
+        val knownHostsFile = java.io.File(context.filesDir, ".ssh/known_hosts")
+        knownHostsFile.parentFile?.mkdirs()
+        if (knownHostsFile.exists()) {
+            jsch.setKnownHosts(knownHostsFile.absolutePath)
+        }
 
-        val factory = object : org.eclipse.jgit.transport.JschConfigSessionFactory() {
-            override fun createDefaultJSch(fs: org.eclipse.jgit.transport.FileBasedConfig?): JSch {
-                return jsch
-            }
+        val configuredJsch = jsch
+        val configuredPass = passToUse
 
-            override fun configure(host: org.eclipse.jgit.transport.OpenSshConfig.Host?, session: Session?) {
-                session?.setUserInfo(object : UserInfo {
-                    override fun getPassphrase(): String = passToUse ?: ""
+        return object : SshSessionFactory() {
+            override fun getSession(uri: URIish?, credentialsProvider: CredentialsProvider?, fsTimeout: Int, tsTimeout: Int): Session {
+                val session = configuredJsch.getSession(uri?.user, uri?.host, uri?.port)
+                session.setUserInfo(object : UserInfo {
+                    override fun getPassphrase(): String = configuredPass ?: ""
                     override fun getPassword(): String = ""
                     override fun promptPassword(message: String?): Boolean = true
                     override fun promptPassphrase(message: String?): Boolean = true
                     override fun promptYesNo(message: String?): Boolean = true
                     override fun showMessage(message: String?) {}
                 })
+                session.connect()
+                return session
             }
         }
-        return factory
     }
 
     private fun getOrCreateEncryptionKey(): SecretKey {
@@ -241,8 +240,4 @@ class GitCredentials @Inject constructor(
     companion object {
         private const val ANDROID_KEYSTORE = "AndroidKeyStore"
     }
-}
-
-private fun runBlocking(block: suspend () -> Unit): Unit {
-    kotlinx.coroutines.runBlocking { block() }
 }
