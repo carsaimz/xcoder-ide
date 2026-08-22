@@ -19,7 +19,7 @@ private const val TAG = "XCoderTermSessionMgr"
 private const val MAX_SESSIONS = 8
 
 /** Default number of transcript (scrollback) rows. Based on Termux's default. */
-internal const val DEFAULT_TRANSCRIPT_ROWS = 5000
+internal const val XCODER_TRANSCRIPT_ROWS = 5000
 
 /**
  * A minimal [TerminalSessionClient] that satisfies all 16 interface methods with
@@ -86,8 +86,9 @@ private class BootstrapTerminalSessionClient : TerminalSessionClient {
         e: Exception,
     ) { Log.e(tag, message, e) }
 
-    override fun logStackTrace(tag: String, e: Exception) =
+    override fun logStackTrace(tag: String, e: Exception) {
         Log.e(tag, e.message ?: "(no message)", e)
+    }
 }
 
 /**
@@ -193,7 +194,7 @@ class TerminalSessionManager @Inject constructor(
     private var _defaultShell: String? = null
 
     /** Number of transcript (scrollback) rows for new sessions. */
-    var transcriptRows: Int = DEFAULT_TRANSCRIPT_ROWS
+    var transcriptRows: Int = XCODER_TRANSCRIPT_ROWS
 
     // ── Public API ──────────────────────────────────────────────────────────
 

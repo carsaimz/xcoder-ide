@@ -182,8 +182,9 @@ class GitCredentials @Inject constructor(
         val configuredPass = passToUse
 
         return object : SshSessionFactory() {
-            override fun getSession(uri: URIish?, credentialsProvider: CredentialsProvider?, fsTimeout: Int, tsTimeout: Int): Session {
-                val session = configuredJsch.getSession(uri?.user, uri?.host, uri?.port)
+            override fun getSession(uri: URIish?, credentialsProvider: CredentialsProvider?, fs: org.eclipse.jgit.util.FS?, tms: Int): org.eclipse.jgit.transport.RemoteSession {
+                val port = uri?.port ?: 22
+                val session = configuredJsch.getSession(uri?.user, uri?.host, port)
                 session.setUserInfo(object : UserInfo {
                     override fun getPassphrase(): String = configuredPass ?: ""
                     override fun getPassword(): String = ""
@@ -193,7 +194,8 @@ class GitCredentials @Inject constructor(
                     override fun showMessage(message: String?) {}
                 })
                 session.connect()
-                return session
+                @Suppress("UNCHECKED_CAST")
+                return session as org.eclipse.jgit.transport.RemoteSession
             }
         }
     }
