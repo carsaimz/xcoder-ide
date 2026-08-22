@@ -239,7 +239,9 @@ class FileManager @Inject constructor(
                 ?: return@withContext Result.failure(
                     IllegalArgumentException("Cannot resolve document: $uri")
                 )
-            val parentUri = doc.parentUri
+            val uriStr = uri.toString()
+            val lastSlash = uriStr.lastIndexOf('/')
+            val parentUri = if (lastSlash > 0) Uri.parse(uriStr.substring(0, lastSlash)) else null
                 ?: return@withContext Result.failure(
                     IOException("Cannot determine parent directory for: $uri")
                 )
@@ -354,7 +356,8 @@ class FileManager @Inject constructor(
     fun watchFile(uri: Uri): FileWatcherHandle {
         val handle = FileWatcherHandle(uri)
         scope.launch {
-            handle.startWatching(contentResolver) { event ->
+            val flow = handle.createFlow(contentResolver)
+            flow.collect { event ->
                 _fileEvents.emit(event)
             }
         }
@@ -420,36 +423,33 @@ class FileWatcherHandle(private val uri: Uri) {
     @Volatile
     private var isWatching = false
 
-    suspend fun startWatching(
-        contentResolver: ContentResolver,
-        onEvent: (FileChangeEvent) -> Unit
-    ) {
-        if (isWatching) return
+    fun createFlow(
+        contentResolver: ContentResolver
+    ): kotlinx.coroutines.flow.Flow<FileChangeEvent> = callbackFlow {
+        if (isWatching) return@callbackFlow
         isWatching = true
-        callbackFlow<FileChangeEvent> {
-            val handler = Handler(Looper.getMainLooper())
-            val obs = object : ContentObserver(handler) {
-                override fun onChange(selfChange: Boolean, changedUri: Uri?) {
-                    val eventUri = changedUri ?: uri
-                    try {
-                        val changeEvent = FileChangeEvent(
-                            type = FileChangeType.MODIFIED,
-                            uri = eventUri,
-                            name = eventUri.lastPathSegment ?: "unknown",
-                            timestamp = System.currentTimeMillis()
-                        )
-                        trySend(changeEvent)
-                    } catch (_: Exception) {
-                    }
+        val handler = Handler(Looper.getMainLooper())
+        val obs = object : ContentObserver(handler) {
+            override fun onChange(selfChange: Boolean, changedUri: Uri?) {
+                val eventUri = changedUri ?: uri
+                try {
+                    val changeEvent = FileChangeEvent(
+                        type = FileChangeType.MODIFIED,
+                        uri = eventUri,
+                        name = eventUri.lastPathSegment ?: "unknown",
+                        timestamp = System.currentTimeMillis()
+                    )
+                    trySend(changeEvent)
+                } catch (_: Exception) {
                 }
             }
-            observer = obs
-            contentResolver.registerContentObserver(uri, true, obs)
-            awaitClose {
-                contentResolver.unregisterContentObserver(obs)
-                isWatching = false
-            }
-        }.collect { onEvent(it) }
+        }
+        observer = obs
+        contentResolver.registerContentObserver(uri, true, obs)
+        awaitClose {
+            contentResolver.unregisterContentObserver(obs)
+            isWatching = false
+        }
     }
 
     fun stopWatching(contentResolver: ContentResolver) {
