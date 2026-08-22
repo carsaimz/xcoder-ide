@@ -29,7 +29,7 @@ jobs:
           gradle-version: '8.5'
 
       - name: Run lint
-        run: gradle clean lintDebug --no-daemon --stacktrace --no-configuration-cache
+        run: gradle lintDebug --no-daemon --stacktrace --no-configuration-cache
 
       - name: Upload lint reports
         if: always()
