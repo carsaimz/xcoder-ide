@@ -46,6 +46,7 @@ apksig = "8.2.0"
 # --- Extra ---
 appcompat = "1.6.1"
 sshj = "0.38.0"
+jsch = "0.1.55"
 commons-net = "3.10.0"
 documentfile = "1.0.0"
 viewpager2 = "1.0.0"
@@ -151,6 +152,9 @@ androidx-documentfile = { group = "androidx.documentfile", name = "documentfile"
 
 # SSHJ
 sshj = { group = "com.hierynomus", name = "sshj", version.ref = "sshj" }
+
+# JSch (SFTP support)
+jsch = { group = "com.jcraft", name = "jsch", version.ref = "jsch" }
 
 # Apache Commons Net (FTP)
 commons-net = { group = "commons-net", name = "commons-net", version.ref = "commons-net" }

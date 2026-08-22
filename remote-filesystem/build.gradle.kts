@@ -37,6 +37,7 @@ dependencies {
     kapt(libs.hilt.compiler)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.sshj)
+    implementation(libs.jsch)
     implementation(libs.commons.net)
     implementation(libs.okhttp)
     implementation(libs.datastore.preferences)
