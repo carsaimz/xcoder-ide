@@ -231,9 +231,7 @@ object TerminalExtraKeys {
                 .trim()
                 .removePrefix("[")
                 .removeSuffix("]")
-            val rows = stripped.split("]
-          ,[
-          ".toRegex())
+            val rows = stripped.split(Regex("""\\]\s*,\\s*\\["""))
             rows.map { row ->
                 row
                     .removePrefix("[")
