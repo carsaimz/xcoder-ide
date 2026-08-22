@@ -2,7 +2,6 @@ package com.xcoder.apk.signing
 
 import android.util.Log
 import com.android.apksig.ApkSigner
-import com.android.apksig.SigningCertificateLineage
 import java.io.*
 import java.security.*
 import java.security.cert.CertificateFactory
@@ -16,26 +15,14 @@ import javax.inject.Singleton
 /**
  * APK signing implementation using com.android.apksig library.
  *
- * Based on Dalvikus's ApkSigner which provides:
- * - Debug keystore auto-generation (for testing)
+ * Provides:
  * - Custom keystore loading (JKS/PKCS12)
  * - V1 (JAR), V2 (APK Signature Scheme V2), V3 (APK Signature Scheme V3) signing
- * - Signing certificate lineage for key rotation (V3)
  * - Signature verification
+ * - Signing certificate extraction
  *
  * The apksig library is the same one used by the Android build system,
  * ensuring maximum compatibility with Android's verification logic.
- *
- * ## Usage
- *
- * ```kotlin
- * // Sign with auto-generated debug key
- * val result = signer.signDebug(inputApk, outputApk)
- *
- * // Sign with custom keystore
- * val key = signer.loadKeystore(keystorePath, "alias", "password")
- * val result = signer.signApk(inputApk, outputApk, key)
- * ```
  */
 @Singleton
 class ApkSigner @Inject constructor() {
@@ -44,9 +31,6 @@ class ApkSigner @Inject constructor() {
         private const val TAG = "ApkSigner"
         private const val DEFAULT_KEY_ALIAS = "xcoder"
         private const val DEFAULT_KEY_PASSWORD = "xcoder123"
-        private const val DEFAULT_KEY_SIZE = 2048
-        private const val DEFAULT_VALIDITY_YEARS = 10
-        private const val DEBUG_KEYSTORE_NAME = "xcoder_debug.keystore"
     }
 
     // ── Data classes ───────────────────────────────────────────────
@@ -59,9 +43,7 @@ class ApkSigner @Inject constructor() {
         val keystoreType: String = "PKCS12",
         val password: String = ""
     ) {
-        /** Primary signing certificate (first in chain). */
         val certificate: X509Certificate get() = certificates.first()
-
         val issuer: String get() = certificate.issuerX500Principal.name
         val subject: String get() = certificate.subjectX500Principal.name
         val serialNumber: String get() = certificate.serialNumber.toString(16)
@@ -94,118 +76,10 @@ class ApkSigner @Inject constructor() {
         val deterministicDsaSigning: Boolean = true
     )
 
-    // ── Debug keystore ─────────────────────────────────────────────
-
-    /**
-     * Generate or load a debug keystore.
-     *
-     * The keystore is saved to the specified directory. If it already
-     * exists, it is loaded instead of regenerated.
-     *
-     * @param keystoreDir directory to store the keystore
-     * @return the [SigningKey] for the debug certificate
-     */
-    fun getOrCreateDebugKey(keystoreDir: String): SigningKey {
-        val keystoreFile = File(keystoreDir, DEBUG_KEYSTORE_NAME)
-        if (keystoreFile.exists()) {
-            return loadKeystore(keystoreFile.absolutePath, DEFAULT_KEY_ALIAS, DEFAULT_KEY_PASSWORD)
-        }
-        return generateDebugKeystore(keystoreFile.absolutePath)
-    }
-
-    /**
-     * Generate a debug keystore and save it to disk.
-     *
-     * Creates a self-signed RSA 2048-bit certificate valid for 10 years.
-     * Uses BouncyCastle for keystore generation on Android.
-     *
-     * @param outputPath path to save the keystore file
-     * @return the [SigningKey] for the generated certificate
-     */
-    fun generateDebugKeystore(outputPath: String): SigningKey {
-        val keyPair = generateKeyPair("RSA", DEFAULT_KEY_SIZE)
-        val cert = generateSelfSignedCertificate(
-            keyPair = keyPair,
-            cn = "XCoder IDE Debug",
-            org = "XCoder",
-            validityDays = DEFAULT_VALIDITY_YEARS * 365
-        )
-
-        // Save to PKCS12 keystore
-        val password = DEFAULT_KEY_PASSWORD.toCharArray()
-        val ks = java.security.KeyStore.getInstance("PKCS12")
-        ks.load(null, null)
-        ks.setKeyEntry(DEFAULT_KEY_ALIAS, keyPair.private, password, arrayOf(cert))
-
-        File(outputPath).parentFile?.mkdirs()
-        java.io.FileOutputStream(outputPath).use { out ->
-            ks.store(out, password)
-        }
-
-        Log.d(TAG, "Debug keystore generated at $outputPath")
-        return SigningKey(
-            alias = DEFAULT_KEY_ALIAS,
-            privateKey = keyPair.private,
-            certificates = listOf(cert),
-            keystoreType = "PKCS12",
-            password = DEFAULT_KEY_PASSWORD
-        )
-    }
-
-    /**
-     * Generate a custom keystore with configurable parameters.
-     *
-     * @param outputPath path to save the keystore
-     * @param alias key alias
-     * @param password keystore/key password
-     * @param keyAlg key algorithm (RSA, EC, DSA)
-     * @param keySize key size in bits
-     * @param cn Common Name for the certificate
-     * @param org Organization name
-     * @param validityDays certificate validity in days
-     * @param keystoreType "PKCS12" or "JKS"
-     * @return the [SigningKey]
-     */
-    fun generateKeystore(
-        outputPath: String,
-        alias: String = DEFAULT_KEY_ALIAS,
-        password: String = DEFAULT_KEY_PASSWORD,
-        keyAlg: String = "RSA",
-        keySize: Int = DEFAULT_KEY_SIZE,
-        cn: String = "XCoder IDE",
-        org: String = "XCoder",
-        validityDays: Int = DEFAULT_VALIDITY_YEARS * 365,
-        keystoreType: String = "PKCS12"
-    ): SigningKey {
-        val keyPair = generateKeyPair(keyAlg, keySize)
-        val cert = generateSelfSignedCertificate(keyPair, cn, org, validityDays)
-
-        val pwdChars = password.toCharArray()
-        val ks = java.security.KeyStore.getInstance(keystoreType)
-        ks.load(null, null)
-        ks.setKeyEntry(alias, keyPair.private, pwdChars, arrayOf(cert))
-
-        File(outputPath).parentFile?.mkdirs()
-        java.io.FileOutputStream(outputPath).use { out ->
-            ks.store(out, pwdChars)
-        }
-
-        Log.d(TAG, "Keystore generated at $outputPath ($keystoreType)")
-        return SigningKey(
-            alias = alias,
-            privateKey = keyPair.private,
-            certificates = listOf(cert),
-            keystoreType = keystoreType,
-            password = password
-        )
-    }
-
     // ── Keystore loading ───────────────────────────────────────────
 
     /**
      * Load a signing key from a keystore file.
-     *
-     * Supports PKCS12 and JKS keystore formats.
      *
      * @param keystorePath path to the keystore file
      * @param alias the key alias to load
@@ -251,41 +125,12 @@ class ApkSigner @Inject constructor() {
     // ── Signing ────────────────────────────────────────────────────
 
     /**
-     * Sign an APK with the debug keystore.
-     *
-     * Convenience method that auto-creates/loads the debug key and
-     * signs with V1 + V2 + V3 schemes.
-     *
-     * @param inputApk path to the unsigned APK
-     * @param outputApk path for the signed APK
-     * @param keystoreDir directory for the debug keystore
-     * @param config optional signing configuration
-     * @return [SigningResult] with success/failure details
-     */
-    fun signDebug(
-        inputApk: String,
-        outputApk: String,
-        keystoreDir: String,
-        config: SigningConfig = SigningConfig()
-    ): SigningResult {
-        val key = getOrCreateDebugKey(keystoreDir)
-        return signApk(inputApk, outputApk, key, config)
-    }
-
-    /**
      * Sign an APK with a custom signing key.
      *
-     * Uses com.android.apksig library (same as AAPT2/apksigner)
-     * to produce a properly signed APK with:
-     * - V1 signing (JAR signature, compatible with all Android versions)
+     * Uses com.android.apksig library to produce a properly signed APK with:
+     * - V1 signing (JAR signature)
      * - V2 signing (APK Signature Scheme V2, Android 7.0+)
-     * - V3 signing (APK Signature Scheme V3, Android 9.0+, key rotation)
-     *
-     * @param inputApk path to the unsigned APK
-     * @param outputApk path for the signed APK
-     * @param key the signing key
-     * @param config signing configuration
-     * @return [SigningResult] with success/failure details
+     * - V3 signing (APK Signature Scheme V3, Android 9.0+)
      */
     fun signApk(
         inputApk: String,
@@ -300,7 +145,6 @@ class ApkSigner @Inject constructor() {
             val outputFile = File(outputApk)
             outputFile.parentFile?.mkdirs()
 
-            // Build apksig signer config
             val signerConfigs = listOf(
                 ApkSigner.SignerConfig.Builder(key.alias, key.privateKey, key.certificates)
                     .build()
@@ -323,7 +167,7 @@ class ApkSigner @Inject constructor() {
             builder.build().sign()
 
             val elapsed = System.currentTimeMillis() - startTime
-            Log.d(TAG, "APK signed in ${elapsed}ms → $outputApk")
+            Log.d(TAG, "APK signed in ${elapsed}ms -> $outputApk")
 
             SigningResult(
                 success = true,
@@ -341,15 +185,6 @@ class ApkSigner @Inject constructor() {
 
     /**
      * Re-sign an APK (strip existing signatures and re-sign).
-     *
-     * This is useful when modifying an APK and needing to
-     * replace the original signature.
-     *
-     * @param inputApk path to the APK to re-sign
-     * @param outputApk path for the re-signed APK
-     * @param key the signing key
-     * @param config signing configuration
-     * @return [SigningResult]
      */
     fun reSignApk(
         inputApk: String,
@@ -357,7 +192,6 @@ class ApkSigner @Inject constructor() {
         key: SigningKey,
         config: SigningConfig = SigningConfig()
     ): SigningResult {
-        // Strip existing signatures by re-zipping without META-INF
         val strippedApk = File.createTempFile("xcoder_stripped_", ".apk")
         try {
             ZipFile(inputApk).use { zip ->
@@ -366,7 +200,6 @@ class ApkSigner @Inject constructor() {
                         .filter { !it.name.startsWith("META-INF/") }
                         .forEach { entry ->
                             val newEntry = ZipEntry(entry.name)
-                            // Preserve compression method and alignment
                             newEntry.method = entry.method
                             newEntry.compressedSize = -1L
                             zos.putNextEntry(newEntry)
@@ -387,11 +220,6 @@ class ApkSigner @Inject constructor() {
 
     /**
      * Verify an APK's signatures.
-     *
-     * Uses apksig to verify V1, V2, and V3 signatures.
-     *
-     * @param apkPath path to the signed APK
-     * @return true if at least one valid signature exists
      */
     fun verifySignature(apkPath: String): Boolean {
         return try {
@@ -405,9 +233,6 @@ class ApkSigner @Inject constructor() {
 
     /**
      * Get detailed signature verification info.
-     *
-     * @param apkPath path to the signed APK
-     * @return map with verification details
      */
     fun getVerificationDetails(apkPath: String): Map<String, Any> {
         val details = mutableMapOf<String, Any>()
@@ -420,7 +245,6 @@ class ApkSigner @Inject constructor() {
             details["warnings"] = result.warnings.map { it.toString() }
             details["errors"] = result.errors.map { it.toString() }
 
-            // Extract signer info
             result.signerCertificates.forEachIndexed { index, cert ->
                 details["signer_${index}_subject"] = cert.subjectX500Principal.name
                 details["signer_${index}_issuer"] = cert.issuerX500Principal.name
@@ -438,9 +262,6 @@ class ApkSigner @Inject constructor() {
 
     /**
      * Extract signing certificate info from an APK.
-     *
-     * @param apkPath path to the APK
-     * @return list of certificate info maps
      */
     fun extractSigningCertificates(apkPath: String): List<Map<String, String>> {
         val certs = mutableListOf<Map<String, String>>()
@@ -460,60 +281,5 @@ class ApkSigner @Inject constructor() {
             Log.e(TAG, "Error extracting certificates", e)
         }
         return certs
-    }
-
-    // ── Key generation helpers ─────────────────────────────────────
-
-    private fun generateKeyPair(algorithm: String, keySize: Int): KeyPair {
-        val generator = if (algorithm.equals("EC", ignoreCase = true)) {
-            KeyPairGenerator.getInstance("EC")
-        } else {
-            KeyPairGenerator.getInstance(algorithm)
-        }
-        generator.initialize(
-            if (algorithm.equals("EC", ignoreCase = true)) {
-                java.security.spec.ECGenParameterSpec("secp256r1")
-            } else {
-                java.security.spec.RSAKeyGenParameterSpec(keySize, java.security.spec.RSAKeyGenParameterSpec.F4)
-            },
-            SecureRandom()
-        )
-        return generator.generateKeyPair()
-    }
-
-    private fun generateSelfSignedCertificate(
-        keyPair: KeyPair,
-        cn: String,
-        org: String,
-        validityDays: Int
-    ): X509Certificate {
-        // Use BouncyCastle's X509v3CertificateBuilder
-        val now = System.currentTimeMillis()
-        val notBefore = Date(now)
-        val notAfter = Date(now + validityDays.toLong() * 86400000)
-
-        val issuer = org.bouncycastle.asn1.x500.X500Name(
-            "CN=$cn, O=$org, L=Unknown, ST=Unknown, C=US"
-        )
-        val subject = issuer
-        val serial = java.math.BigInteger.valueOf(System.currentTimeMillis())
-
-        val certBuilder = org.bouncycastle.cert.X509v3CertificateBuilder(
-            issuer, serial, notBefore, notAfter, subject,
-            org.bouncycastle.asn1.x509.SubjectPublicKeyInfo.getInstance(
-                keyPair.public.encoded
-            )
-        )
-
-        val signer = org.bouncycastle.operator.jcajce.JcaContentSignerBuilder(
-            if (keyPair.private.algorithm.equals("EC", ignoreCase = true)) "SHA256withECDSA"
-            else "SHA256withRSA"
-        ).build(keyPair.private)
-
-        val certHolder = certBuilder.build(signer)
-        val certBytes = org.bouncycastle.cert.jcajce.JcaX509CertificateConverter()
-            .getCertificate(certHolder)
-
-        return certBytes
     }
 }

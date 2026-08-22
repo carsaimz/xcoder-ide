@@ -16,10 +16,6 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import io.github.rosemoe.sora.widget.CodeEditor
-import io.github.rosemoe.sora.widget.ComponentProvider
-import io.github.rosemoe.sora.widget_completion.CompletionLayout
-import io.github.rosemoe.sora.widget_completion.CompletionListItem
-import io.github.rosemoe.sora.widget_completion.DefaultCompletionItemRenderer
 import org.eclipse.lsp4j.CompletionItem
 import org.eclipse.lsp4j.CompletionItemKind
 import org.eclipse.lsp4j.InsertTextFormat

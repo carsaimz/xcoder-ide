@@ -23,17 +23,16 @@ android {
 dependencies {
     implementation(project(":core:file-manager"))
 
-    // ── Rosemoe sora-editor (CodeEditor) ───────────────────────────────
+    // -- Rosemoe sora-editor (CodeEditor) --
     implementation(libs.sora.editor)
-    implementation(libs.sora.editor.lsp)
     implementation(libs.sora.editor.language.java)
     implementation(libs.sora.editor.language.textmate)
 
-    // ── AndroidX ───────────────────────────────────────────────────────
+    // -- AndroidX --
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
 
-    // ── Compose ────────────────────────────────────────────────────────
+    // -- Compose --
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.foundation)
@@ -42,22 +41,19 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
 
-    // ── Hilt ───────────────────────────────────────────────────────────
+    // -- Hilt --
     implementation(libs.hilt.android)
     kapt(libs.hilt.compiler)
 
-    // ── Coroutines ─────────────────────────────────────────────────────
+    // -- Coroutines --
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.core)
 
-    // ── TextMate grammars bundled as assets ─────────────────────────────
-    // We bundle common grammar JSON files in assets/textmate/
-
-    // ── LSP4J (needed by EditorDiagnosticOverlay, EditorCompletionWindow) ──
+    // -- LSP4J (data model for diagnostics/completions) --
     implementation(libs.lsp4j)
     implementation(libs.lsp4j.jsonrpc)
 
-    // ── Testing ────────────────────────────────────────────────────────
+    // -- Testing --
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
 }

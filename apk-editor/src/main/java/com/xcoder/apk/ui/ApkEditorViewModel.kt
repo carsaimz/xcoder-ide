@@ -50,7 +50,8 @@ class ApkEditorViewModel @Inject constructor(
                 val dexFiles = dexEditor.extractDexFromApk(apkPath, File(apkPath).parent + "/xcoder_dex_temp")
                 val allClasses = dexFiles.flatMap { dexEditor.parseDexFile(it).classes }
                 val isSigned = apkSigner.verifySignature(apkPath)
-                val signingInfo = apkSigner.extractSigningInfo(apkPath)
+                val certs = apkSigner.extractSigningCertificates(apkPath)
+                val signingInfo = if (certs.isNotEmpty()) certs.first() else emptyMap()
                 File(apkPath).parent?.let { File(it, "xcoder_dex_temp").deleteRecursively() }
                 _state.value = _state.value.copy(
                     isLoaded = true, isLoading = false,

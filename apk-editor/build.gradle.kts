@@ -34,10 +34,8 @@ dependencies {
     // ── Coroutines ────────────────────────────────────────────────
     implementation(libs.kotlinx.coroutines.android)
 
-    // ── APK Signing (apksig + BouncyCastle) ──────────────────────
+    // ── APK Signing (apksig) ──────────────────────────────────
     implementation(libs.apksig)
-    implementation(libs.bouncycastle)
-    implementation(libs.bcpkix.jdk18on)
 
     // ── I/O ───────────────────────────────────────────────────────
     implementation(libs.apache.commons.io)

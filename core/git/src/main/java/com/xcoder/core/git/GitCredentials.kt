@@ -5,7 +5,6 @@ import android.content.SharedPreferences
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import com.jcraft.jsch.JSch
-import com.jcraft.jsch.KeyPair
 import com.jcraft.jsch.Session
 import com.jcraft.jsch.UserInfo
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -15,7 +14,6 @@ import kotlinx.coroutines.withContext
 import org.eclipse.jgit.transport.CredentialItem
 import org.eclipse.jgit.transport.CredentialsProvider
 import org.eclipse.jgit.transport.URIish
-import org.eclipse.jgit.transport.ssh.jsch.JschConfigSessionFactory
 import java.io.ByteArrayInputStream
 import java.security.KeyStore
 import java.util.Base64
@@ -166,27 +164,22 @@ class GitCredentials @Inject constructor(
         }
     }
 
-    fun createSshSessionFactory(sshKey: String? = null, passphrase: String? = null): JschConfigSessionFactory {
+    fun createSshSessionFactory(sshKey: String? = null, passphrase: String? = null): JSch {
         val keyToUse = sshKey ?: runBlocking { getDefaultSshKey()?.first }
         val passToUse = passphrase ?: runBlocking { getDefaultSshKey()?.second }
 
-        return object : JschConfigSessionFactory() {
-            override fun createDefaultJSch(): JSch {
-                val jsch = super.createDefaultJSch()
-                if (keyToUse != null) {
-                    val keyStream = ByteArrayInputStream(keyToUse.toByteArray())
-                    val passToByteArray = passToUse?.toByteArray()
-                    val pair = jsch.getIdentity("xcoder_key", keyStream, passToByteArray)
-                    if (pair != null) jsch.addIdentity("xcoder_key", pair)
-                }
-                val knownHostsFile = java.io.File(context.filesDir, ".ssh/known_hosts")
-                knownHostsFile.parentFile?.mkdirs()
-                if (knownHostsFile.exists()) {
-                    jsch.setKnownHosts(knownHostsFile.absolutePath)
-                }
-                return jsch
-            }
+        val jsch = JSch()
+        if (keyToUse != null) {
+            val keyStream = ByteArrayInputStream(keyToUse.toByteArray(Charsets.UTF_8))
+            val passStr = passToUse ?: ""
+            jsch.addIdentity("xcoder_key", keyStream.readBytes(), null, passStr.toByteArray(Charsets.UTF_8))
         }
+        val knownHostsFile = java.io.File(context.filesDir, ".ssh/known_hosts")
+        knownHostsFile.parentFile?.mkdirs()
+        if (knownHostsFile.exists()) {
+            jsch.setKnownHosts(knownHostsFile.absolutePath)
+        }
+        return jsch
     }
 
     private fun getOrCreateEncryptionKey(): SecretKey {

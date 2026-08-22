@@ -168,9 +168,8 @@ class XCoderTerminalSessionClient(
         // The TerminalView handles rendering; no action needed here.
     }
 
-    override fun setTerminalShellPid(session: TerminalSession, pid: Int) {
-        Log.d(LOG_TAG, "Shell PID for '${session.mSessionName}': $pid")
-    }
+    // setTerminalShellPid is not in the TerminalSessionClient interface in Termux v0.118.0
+    // Shell PID is handled internally by TerminalSession.
 
     override fun getTerminalCursorStyle(): Int? {
         // 0 = block, 1 = underline, 2 = bar (vertical line)

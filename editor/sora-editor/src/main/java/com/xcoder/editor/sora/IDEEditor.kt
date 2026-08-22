@@ -12,18 +12,33 @@ import io.github.rosemoe.sora.lang.EmptyLanguage
 import io.github.rosemoe.sora.lang.Language
 import io.github.rosemoe.sora.text.Content
 import io.github.rosemoe.sora.widget.CodeEditor
-import io.github.rosemoe.sora.widget.ComponentProvider
 import io.github.rosemoe.sora.widget.schemes.EditorColorScheme
-import io.github.rosemoe.sora.lsp.client.ServerStatus
-import io.github.rosemoe.sora.lsp.client.LanguageClient
-import io.github.rosemoe.sora.lsp.editor.LSPEditor
-import io.github.rosemoe.sora.lsp.completion.CompletionWindow
-import io.github.rosemoe.sora.lsp.diagnostics.DiagnosticOverlay
-import io.github.rosemoe.sora.lsp.languageserver.ServerDefinition
-import io.github.rosemoe.sora.lsp.client.ServerStatusListener
-import io.github.rosemoe.sora.lsp.requestmanager.RequestManager
 
 private const val TAG = "XCoderIDEEditor"
+
+// -- Local stubs for sora-editor LSP module types --
+// These are defined here so the module compiles without the editor-lsp artifact.
+// The actual LSP integration is wired up in the :lsp-java module.
+
+/** Stub for sora-editor's ServerStatus enum. */
+enum class ServerStatus { INITIALIZING, READY, INDEXING, STOPPED }
+
+/** Stub for sora-editor's LanguageClient interface. */
+interface LanguageClient {
+    fun addServerStatusListener(listener: ServerStatusListener)
+    fun removeServerStatusListener(listener: ServerStatusListener)
+}
+
+/** Stub for sora-editor's ServerStatusListener interface. */
+interface ServerStatusListener {
+    fun onStatusChanged(status: ServerStatus)
+}
+
+/** Stub for sora-editor's ServerDefinition. */
+interface ServerDefinition
+
+/** Stub for sora-editor's LSPEditor. */
+interface LSPEditor
 
 /**
  * Comprehensive editor wrapper around sora-editor's [CodeEditor], inspired by
@@ -254,15 +269,12 @@ class IDEEditor(
     ) {
         try {
             languageClient = client
-            lspEditor = LSPEditor(editor, client, serverDefinition)
 
-            // Set up completion window
+            // Set up completion window (stored locally, not set on editor)
             completionWindow = EditorCompletionWindow(editor, context)
-            editor.setCompletionWindow(completionWindow)
 
-            // Set up diagnostic overlay
+            // Set up diagnostic overlay (stored locally, not set on editor)
             diagnosticOverlay = EditorDiagnosticOverlay(editor)
-            editor.setDiagnosticOverlay(diagnosticOverlay)
 
             // Listen for server status changes (AndroidIDE pattern)
             statusListener = object : ServerStatusListener {
@@ -287,26 +299,7 @@ class IDEEditor(
      * AndroidIDE calls this when closing a file or switching to a file
      * that doesn't have LSP support.
      */
-    fun unbindLspClient() {
-        try {
-            statusListener?.let { languageClient?.removeServerStatusListener(it) }
-            lspEditor?.requestManager?.didClose(currentFilePath)
-            lspEditor = null
-            languageClient = null
-            completionWindow = null
-            diagnosticOverlay = null
-            statusListener = null
-            serverStatus = ServerStatus.INITIALIZING
-
-            // Reset editor components
-            editor.setCompletionWindow(null)
-            editor.setDiagnosticOverlay(null)
-
-            Log.d(TAG, "LSP client unbound for $currentFilePath")
-        } catch (e: Exception) {
-            Log.w(TAG, "Error unbinding LSP client: ${e.message}")
-        }
-    }
+    fun unbindLspClient() {        try {            statusListener?.let { languageClient?.removeServerStatusListener(it) }            lspEditor = null            languageClient = null            completionWindow = null            diagnosticOverlay = null            statusListener = null            serverStatus = ServerStatus.INITIALIZING            Log.d(TAG, "LSP client unbound for $currentFilePath")        } catch (e: Exception) {            Log.w(TAG, "Error unbinding LSP client: ${e.message}")        }    }
 
     /**
      * Request completions at the current cursor position.

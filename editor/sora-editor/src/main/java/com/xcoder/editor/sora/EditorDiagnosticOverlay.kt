@@ -10,7 +10,6 @@ import android.graphics.RectF
 import android.util.Log
 import android.widget.Toast
 import io.github.rosemoe.sora.widget.CodeEditor
-import io.github.rosemoe.sora.widget.EditorTouchEventHandler
 import io.github.rosemoe.sora.widget.schemes.EditorColorScheme
 import org.eclipse.lsp4j.Diagnostic
 import org.eclipse.lsp4j.DiagnosticSeverity
@@ -330,8 +329,6 @@ class EditorDiagnosticOverlay(
      * and straight underlines for info and hints.
      */
     private fun drawDiagnosticUnderline(canvas: Canvas, entry: DiagnosticEntry) {
-        val layout = editor.layout ?: return
-
         val paint = when (entry.severity) {
             DiagnosticSeverity.Error -> errorPaint
             DiagnosticSeverity.Warning -> warningPaint
@@ -340,22 +337,24 @@ class EditorDiagnosticOverlay(
             else -> errorPaint
         }
 
-        // Get the character positions for the diagnostic range
         val lineContent = editor.text.getLine(entry.startLine)
         val startCharPos = entry.startCol.coerceAtMost(lineContent.length)
         val endCharPos = entry.endCol.coerceAtMost(lineContent.length)
 
         if (startCharPos >= endCharPos) return
 
-        // Get the horizontal positions from the layout
-        val startX = layout.getCharHorizontalPosition(startCharPos, entry.startLine).toFloat()
-        val endX = layout.getCharHorizontalPosition(endCharPos, entry.startLine).toFloat()
+        // Use the editor's row height for vertical positioning
+        val rowHeight = editor.rowHeight.toFloat()
+        val firstVisibleLine = editor.firstVisibleLine
+        val lineY = (entry.startLine - firstVisibleLine + 0.5f) * rowHeight
+        val underlineY = lineY + UNDERLINE_OFFSET
 
-        // Get the vertical position (baseline + offset)
-        val baselineY = layout.getBaseline(entry.startLine).toFloat()
-        val underlineY = baselineY + UNDERLINE_OFFSET
+        // Estimate character width for horizontal positioning
+        val charWidth = editor.rowHeight * 0.6f
+        val startX = startCharPos * charWidth
+        val endX = endCharPos * charWidth
 
-        // Draw wavy underline
+
         drawWavyLine(canvas, startX, underlineY, endX, underlineY, paint)
     }
 
