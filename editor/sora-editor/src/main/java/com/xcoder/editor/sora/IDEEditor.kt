@@ -21,7 +21,7 @@ private const val TAG = "XCoderIDEEditor"
 // The actual LSP integration is wired up in the :lsp-java module.
 
 /** Stub for sora-editor's ServerStatus enum. */
-enum class ServerStatus { INITIALIZING, READY, INDEXING, STOPPED }
+enum class ServerStatus { INITIALIZING, STARTING, READY, INDEXING, STOPPED, ERROR }
 
 /** Stub for sora-editor's LanguageClient interface. */
 interface LanguageClient {
@@ -37,8 +37,17 @@ interface ServerStatusListener {
 /** Stub for sora-editor's ServerDefinition. */
 interface ServerDefinition
 
+/** Stub for sora-editor's LSP request manager. */
+interface LspRequestManager {
+    fun didOpen(filePath: String, content: String) {}
+    fun didChange(filePath: String, content: String, lineCount: Int) {}
+    fun signatureHelp(filePath: String, content: String, line: Int, column: Int) {}
+}
+
 /** Stub for sora-editor's LSPEditor. */
-interface LSPEditor
+interface LSPEditor {
+    val requestManager: LspRequestManager?
+}
 
 /**
  * Comprehensive editor wrapper around sora-editor's [CodeEditor], inspired by

@@ -1,7 +1,6 @@
 package com.xcoder.apk.signing
 
 import android.util.Log
-import com.android.apksig.ApkSigner
 import java.io.*
 import java.security.*
 import java.security.cert.CertificateFactory
@@ -146,11 +145,11 @@ class ApkSigner @Inject constructor() {
             outputFile.parentFile?.mkdirs()
 
             val signerConfigs = listOf(
-                ApkSigner.SignerConfig.Builder(key.alias, key.privateKey, key.certificates)
+                com.android.apksig.ApkSigner.SignerConfig.Builder(key.alias, key.privateKey, key.certificates)
                     .build()
             )
 
-            val builder = ApkSigner.Builder(signerConfigs)
+            val builder = com.android.apksig.ApkSigner.Builder(signerConfigs)
                 .setInputApk(inputFile)
                 .setOutputApk(outputFile)
                 .setMinSdkVersion(config.minSdkVersion)
