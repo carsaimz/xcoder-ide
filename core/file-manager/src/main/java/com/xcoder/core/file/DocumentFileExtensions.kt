@@ -53,9 +53,9 @@ val DocumentFile.fileExtension: String
         return if (lastDot >= 0) fullName.substring(lastDot + 1) else ""
     }
 
-suspend fun DocumentFile.readText(context: Context, charset: java.nio.charset.Charset = Charsets.UTF_8): String {
+suspend fun DocumentFile.readText(context: Context, charset: java.nio.charset.Charset = java.nio.charset.StandardCharsets.UTF_8): String {
     return context.contentResolver.openInputStream(uri)?.use { inputStream ->
-        inputStream.bufferedReader(charset).readText()
+        java.io.BufferedReader(java.io.InputStreamReader(inputStream, charset)).readText()
     } ?: ""
 }
 
@@ -65,9 +65,9 @@ suspend fun DocumentFile.readBytes(context: Context): ByteArray {
     } ?: ByteArray(0)
 }
 
-suspend fun DocumentFile.writeText(context: Context, text: String, charset: java.nio.charset.Charset = Charsets.UTF_8) {
+suspend fun DocumentFile.writeText(context: Context, text: String, charset: java.nio.charset.Charset = java.nio.charset.StandardCharsets.UTF_8) {
     context.contentResolver.openOutputStream(uri)?.use { outputStream ->
-        outputStream.bufferedWriter(charset).use { writer ->
+        java.io.BufferedWriter(java.io.OutputStreamWriter(outputStream, charset)).use { writer ->
             writer.write(text)
         }
     }

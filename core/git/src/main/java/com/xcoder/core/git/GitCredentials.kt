@@ -194,8 +194,9 @@ class GitCredentials @Inject constructor(
                     override fun showMessage(message: String?) {}
                 })
                 session.connect()
-                @Suppress("UNCHECKED_CAST")
-                return session as org.eclipse.jgit.transport.RemoteSession
+                return object : org.eclipse.jgit.transport.RemoteSession {
+                    override fun disconnect() { session.disconnect() }
+                }
             }
         }
     }

@@ -4,8 +4,6 @@ package com.xcoder.core.file
 import java.io.*
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
-import java.nio.file.*
-import java.nio.file.attribute.BasicFileAttributes
 import kotlin.math.log10
 
 private const val TAG = "XCoderFileUtil"
@@ -401,19 +399,19 @@ object FileUtil {
 
         val walk = dir.walk()
     
-        val filtered = if (showHidden) {
-            walk
-        } else {
-            walk.filter { !it.name.startsWith(".") && !it.toPath().segments().any { seg -> seg.startsWith(".") } }
-        }
-
         val depthLimited = if (maxDepth != null) {
-            filtered.maxDepth(maxDepth)
+            walk.maxDepth(maxDepth)
         } else {
-            filtered
+            walk
         }
 
-        return depthLimited
+        val filtered = if (showHidden) {
+            depthLimited
+        } else {
+            depthLimited.filter { !it.name.startsWith(".") && !it.absolutePath.contains("/.") }
+        }
+
+        return filtered
             .filter { it.isFile }
             .map { it.absolutePath }
             .toList()
