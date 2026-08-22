@@ -1,0 +1,1138 @@
+     1→package com.besome.sketch.editor.view;
+     2→
+     3→import android.animation.ObjectAnimator;
+     4→import android.annotation.SuppressLint;
+     5→import android.content.Context;
+     6→import android.graphics.Color;
+     7→import android.graphics.Typeface;
+     8→import android.os.Handler;
+     9→import android.os.Vibrator;
+    10→import android.util.AttributeSet;
+    11→import android.util.Log;
+    12→import android.view.Gravity;
+    13→import android.view.MotionEvent;
+    14→import android.view.View;
+    15→import android.view.ViewConfiguration;
+    16→import android.view.ViewGroup;
+    17→import android.view.ViewParent;
+    18→import android.view.animation.OvershootInterpolator;
+    19→import android.widget.FrameLayout;
+    20→import android.widget.ImageView;
+    21→import android.widget.LinearLayout;
+    22→import android.widget.RelativeLayout;
+    23→import android.widget.TextView;
+    24→
+    25→import androidx.annotation.StringRes;
+    26→import androidx.appcompat.content.res.AppCompatResources;
+    27→
+    28→import com.besome.sketch.beans.ProjectFileBean;
+    29→import com.besome.sketch.beans.ProjectResourceBean;
+    30→import com.besome.sketch.beans.ViewBean;
+    31→import com.besome.sketch.beans.WidgetCollectionBean;
+    32→import com.besome.sketch.editor.view.item.ItemHorizontalScrollView;
+    33→import com.besome.sketch.editor.view.item.ItemVerticalScrollView;
+    34→import com.besome.sketch.editor.view.palette.IconAdView;
+    35→import com.besome.sketch.editor.view.palette.IconBase;
+    36→import com.besome.sketch.editor.view.palette.IconLinearHorizontal;
+    37→import com.besome.sketch.editor.view.palette.IconLinearVertical;
+    38→import com.besome.sketch.editor.view.palette.IconMapView;
+    39→import com.besome.sketch.editor.view.palette.PaletteFavorite;
+    40→import com.besome.sketch.editor.view.palette.PaletteWidget;
+    41→import com.google.android.material.card.MaterialCardView;
+    42→import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+    43→
+    44→import java.io.File;
+    45→import java.util.ArrayList;
+    46→import java.util.HashMap;
+    47→
+    48→import a.a.a.DB;
+    49→import a.a.a.GB;
+    50→import a.a.a.Iw;
+    51→import a.a.a.Op;
+    52→import a.a.a.Rp;
+    53→import a.a.a.ay;
+    54→import a.a.a.bB;
+    55→import a.a.a.cC;
+    56→import a.a.a.cy;
+    57→import a.a.a.jC;
+    58→import a.a.a.oB;
+    59→import a.a.a.uy;
+    60→import a.a.a.wB;
+    61→import a.a.a.wq;
+    62→import mod.agus.jcoderz.beans.ViewBeans;
+    63→import mod.hey.studios.util.ProjectFile;
+    64→import mod.jbk.util.LogUtil;
+    65→import pro.sketchware.R;
+    66→import pro.sketchware.utility.ThemeUtils;
+    67→import pro.sketchware.widgets.IconCustomWidget;
+    68→import pro.sketchware.widgets.WidgetsCreatorManager;
+    69→import pro.sketchware.utility.TranslationFunction;
+    70→
+    71→@SuppressLint({"ClickableViewAccessibility", "SetTextI18n"})
+    72→public class ViewEditor extends RelativeLayout implements View.OnClickListener, View.OnTouchListener {
+    73→    private final int[] posDummy = new int[2];
+    74→    private final Handler handler = new Handler();
+    75→    public boolean isLayoutChanged = true;
+    76→    public PaletteWidget paletteWidget;
+    77→    public WidgetsCreatorManager widgetsCreatorManager;
+    78→    private ObjectAnimator animatorTranslateX;
+    79→    private boolean isAnimating = false;
+    80→    private boolean C = false;
+    81→    private boolean D = false;
+    82→    private ItemView selectedItem;
+    83→    private int defaultIconWidth = 50;
+    84→    private int defaultIconHeight = 30;
+    85→    private boolean useVibrate;
+    86→    private cy widgetSelectedListener;
+    87→    private Iw propertyClickListener;
+    88→    private DraggingListener draggingListener;
+    89→    private ay historyChangeListener;
+    90→    private ProjectFileBean projectFileBean;
+    91→    private boolean S = true;
+    92→    private boolean T = false;
+    93→    private LinearLayout paletteGroup;
+    94→    private String a;
+    95→    private LinearLayout aa;
+    96→    private String b;
+    97→    private int screenType;
+    98→    private boolean da = true;
+    99→    private int[] countItems = new int[20];
+   100→    private float dip = 0;
+   101→    private int displayWidth;
+   102→    private int displayHeight;
+   103→    private PaletteFavorite paletteFavorite;
+   104→    private LinearLayout bgStatus;
+   105→    private TextView fileName;
+   106→    private ImageView imgPhoneTopBg;
+   107→    private LinearLayout toolbar;
+   108→    private ViewPane viewPane;
+   109→    private Vibrator vibrator;
+   110→    private View currentTouchedView = null;
+   111→    private boolean isDragged = false;
+   112→    private float posInitX = 0;
+   113→    private float posInitY = 0;
+   114→    private int minDist = 0;
+   115→    private ViewDummy dummyView;
+   116→    private ImageView deleteIcon;
+   117→    private TextView deleteText;
+   118→    private MaterialCardView deleteView;
+   119→    private ObjectAnimator animatorTranslateY;
+   120→    private int colorSurfaceContainerHighest;
+   121→    private int colorCoolGreenContainer;
+   122→    private int colorCoolGreen;
+   123→    private int colorError;
+   124→    private final Runnable longPressRunnable = this::e;
+   125→    private int colorErrorContainer;
+   126→
+   127→    public ViewEditor(Context context) {
+   128→        this(context, null);
+   129→    }
+   130→
+   131→    public ViewEditor(Context context, AttributeSet attrs) {
+   132→        super(context, attrs);
+   133→        initialize(context);
+   134→    }
+   135→
+   136→    public static void shakeView(View view) {
+   137→        ObjectAnimator
+   138→                .ofFloat(view, "translationX", 0, 35, -35, 35, -35, 25, -25, 12, -12, 0)
+   139→                .setDuration(200)
+   140→                .start();
+   141→    }
+   142→
+   143→    private void animateUpDown() {
+   144→        animatorTranslateY = ObjectAnimator.ofFloat(deleteView, "TranslationY", 0.0f);
+   145→        animatorTranslateY.setDuration(500L);
+   146→        animatorTranslateY.setInterpolator(new OvershootInterpolator());
+   147→        animatorTranslateX = ObjectAnimator.ofFloat(deleteView, "TranslationY", deleteView.getHeight() * 2);
+   148→        animatorTranslateX.setDuration(500L);
+   149→        animatorTranslateX.setInterpolator(new OvershootInterpolator());
+   150→        isAnimating = true;
+   151→    }
+   152→
+   153→    private void addPaletteGroupItems() {
+   154→        LinearLayout.LayoutParams paletteLayoutParams =
+   155→                new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT);
+   156→        paletteLayoutParams.weight = 1f;
+   157→
+   158→        PaletteGroupItem basicPalette = new PaletteGroupItem(getContext());
+   159→        basicPalette.setLayoutParams(paletteLayoutParams);
+   160→        basicPalette.setPaletteGroup(PaletteGroup.BASIC);
+   161→        basicPalette.setSelected(true);
+   162→
+   163→        PaletteGroupItem favoritePalette = new PaletteGroupItem(getContext());
+   164→        favoritePalette.setLayoutParams(paletteLayoutParams);
+   165→        favoritePalette.setPaletteGroup(PaletteGroup.FAVORITE);
+   166→        favoritePalette.setSelected(false);
+   167→        favoritePalette.animate().scaleX(0.9f).scaleY(0.9f).alpha(0.6f).start();
+   168→
+   169→        basicPalette.setOnClickListener(v -> {
+   170→            showPaletteWidget();
+   171→            basicPalette.animate().scaleX(1).scaleY(1).alpha(1).start();
+   172→            favoritePalette.animate().scaleX(0.9f).scaleY(0.9f).alpha(0.6f).start();
+   173→            basicPalette.setSelected(true);
+   174→            favoritePalette.setSelected(false);
+   175→        });
+   176→
+   177→        favoritePalette.setOnClickListener(v -> {
+   178→            showPaletteFavorite();
+   179→            basicPalette.animate().scaleX(0.9f).scaleY(0.9f).alpha(0.6f).start();
+   180→            favoritePalette.animate().scaleX(1).scaleY(1).alpha(1).start();
+   181→            basicPalette.setSelected(false);
+   182→            favoritePalette.setSelected(true);
+   183→        });
+   184→
+   185→        paletteGroup.addView(basicPalette);
+   186→        paletteGroup.addView(favoritePalette);
+   187→    }
+   188→
+   189→    public ProjectFileBean getProjectFile() {
+   190→        return projectFileBean;
+   191→    }
+   192→
+   193→    public void h() {
+   194→        viewPane.setResourceManager(jC.d(a));
+   195→    }
+   196→
+   197→    public void i() {
+   198→        if (selectedItem != null) {
+   199→            selectedItem.setSelection(false);
+   200→            selectedItem = null;
+   201→        }
+   202→        if (widgetSelectedListener != null) widgetSelectedListener.a(false, "");
+   203→    }
+   204→
+   205→    public void j() {
+   206→        viewPane.updateRootLayout(a, projectFileBean.getXmlName());
+   207→        viewPane.clearViewPane();
+   208→        l();
+   209→        i();
+   210→    }
+   211→
+   212→    public void removeFab() {
+   213→        viewPane.removeFabView();
+   214→    }
+   215→
+   216→    public void l() {
+   217→        countItems = new int[99];
+   218→    }
+   219→
+   220→    private void showMoreProperties() {
+   221→        if (propertyClickListener != null) propertyClickListener.a(b, selectedItem.getBean());
+   222→    }
+   223→
+   224→    private void showPaletteFavorite() {
+   225→        paletteWidget.animate()
+   226→                .alpha(0f)
+   227→                .setDuration(100)
+   228→                .withEndAction(() -> {
+   229→                    paletteWidget.setVisibility(View.GONE);
+   230→                    paletteFavorite.setAlpha(0f);
+   231→                    paletteFavorite.setVisibility(View.VISIBLE);
+   232→                    paletteFavorite.animate()
+   233→                            .alpha(1f)
+   234→                            .setDuration(100)
+   235→                            .start();
+   236→                })
+   237→                .start();
+   238→    }
+   239→
+   240→    private void showPaletteWidget() {
+   241→        paletteFavorite.animate()
+   242→                .alpha(0f)
+   243→                .setDuration(100)
+   244→                .withEndAction(() -> {
+   245→                    paletteFavorite.setVisibility(View.GONE);
+   246→                    paletteWidget.setAlpha(0f);
+   247→                    paletteWidget.setVisibility(View.VISIBLE);
+   248→                    paletteWidget.animate()
+   249→                            .alpha(1f)
+   250→                            .setDuration(100)
+   251→                            .start();
+   252→                })
+   253→                .start();
+   254→    }
+   255→
+   256→
+   257→    @Override
+   258→    public void onClick(View view) {
+   259→        int id = view.getId();
+   260→        if (id == R.id.btn_editproperties) {
+   261→            showMoreProperties();
+   262→        }
+   263→    }
+   264→
+   265→    @Override
+   266→    public void onLayout(boolean changed, int left, int top, int right, int bottom) {
+   267→        super.onLayout(changed, left, top, right, bottom);
+   268→        if (isLayoutChanged) a();
+   269→    }
+   270→
+   271→    @Override
+   272→    public boolean onTouch(View view, MotionEvent motionEvent) {
+   273→        String str;
+   274→        int actionMasked = motionEvent.getActionMasked();
+   275→        if (motionEvent.getPointerId(motionEvent.getActionIndex()) > 0) {
+   276→            return true;
+   277→        }
+   278→        if (view == viewPane) {
+   279→            if (actionMasked == MotionEvent.ACTION_DOWN) {
+   280→                i();
+   281→                currentTouchedView = null;
+   282→            }
+   283→            return true;
+   284→        } else if (actionMasked == MotionEvent.ACTION_DOWN) {
+   285→            isDragged = false;
+   286→            posInitX = motionEvent.getRawX();
+   287→            posInitY = motionEvent.getRawY();
+   288→            currentTouchedView = view;
+   289→            if (view instanceof ItemView bean && bean.getFixed()) {
+   290→                return true;
+   291→            }
+   292→            if (isInsideItemScrollView(view) && draggingListener != null) {
+   293→                draggingListener.b();
+   294→            }
+   295→            handler.postDelayed(longPressRunnable, ViewConfiguration.getLongPressTimeout() / 2);
+   296→            return true;
+   297→        } else if (actionMasked != MotionEvent.ACTION_UP) {
+   298→            if (actionMasked != MotionEvent.ACTION_MOVE) {
+   299→                if (actionMasked == MotionEvent.ACTION_CANCEL || actionMasked == MotionEvent.ACTION_SCROLL) {
+   300→                    paletteWidget.setScrollEnabled(true);
+   301→                    paletteFavorite.setScrollEnabled(true);
+   302→                    if (draggingListener != null) {
+   303→                        draggingListener.d();
+   304→                    }
+   305→                    b(false, false);
+   306→                    dummyView.setDummyVisibility(View.GONE);
+   307→                    viewPane.clearViews();
+   308→                    handler.removeCallbacks(longPressRunnable);
+   309→                    isDragged = false;
+   310→                    return true;
+   311→                }
+   312→                return true;
+   313→            } else if (!isDragged) {
+   314→                if (Math.abs(posInitX - motionEvent.getRawX()) >= minDist || Math.abs(posInitY - motionEvent.getRawY()) >= minDist) {
+   315→                    currentTouchedView = null;
+   316→                    handler.removeCallbacks(longPressRunnable);
+   317→                    return true;
+   318→                }
+   319→                return true;
+   320→            } else {
+   321→                handler.removeCallbacks(longPressRunnable);
+   322→                dummyView.a(view, motionEvent.getRawX(), motionEvent.getRawY(), posInitX, posInitY);
+   323→                if (hitTestIconDelete(motionEvent.getRawX(), motionEvent.getRawY())) {
+   324→                    dummyView.setAllow(true);
+   325→                    updateDeleteIcon(true, currentTouchedView instanceof IconCustomWidget);
+   326→                    return true;
+   327→                }
+   328→                if (D) updateDeleteIcon(false, currentTouchedView instanceof IconCustomWidget);
+   329→                if (hitTestToPane(motionEvent.getRawX(), motionEvent.getRawY())) {
+   330→                    dummyView.setAllow(true);
+   331→                    boolean isNotIcon = !isViewAnIconBase(currentTouchedView);
+   332→                    int width = isNotIcon ? currentTouchedView.getWidth() : currentTouchedView instanceof IconLinearHorizontal ?
+   333→                            ViewGroup.LayoutParams.MATCH_PARENT : defaultIconWidth;
+   334→                    int height = isNotIcon ? currentTouchedView.getHeight() : currentTouchedView instanceof IconLinearVertical ?
+   335→                            ViewGroup.LayoutParams.MATCH_PARENT : defaultIconHeight;
+   336→                    viewPane.updateView((int) motionEvent.getRawX(), (int) motionEvent.getRawY(), width, height);
+   337→                } else {
+   338→                    dummyView.setAllow(false);
+   339→                    viewPane.resetView(true);
+   340→                }
+   341→                return true;
+   342→            }
+   343→        } else if (!isDragged) {
+   344→            if (currentTouchedView instanceof ItemView sy) {
+   345→                a(sy, true);
+   346→            }
+   347→            if (draggingListener != null) {
+   348→                draggingListener.d();
+   349→            }
+   350→            dummyView.setDummyVisibility(View.GONE);
+   351→            currentTouchedView = null;
+   352→            viewPane.clearViews();
+   353→            handler.removeCallbacks(longPressRunnable);
+   354→            return true;
+   355→        } else {
+   356→            lol:
+   357→            if (dummyView.getAllow()) {
+   358→                if (D && currentTouchedView instanceof ItemView widget) {
+   359→                    deleteWidget(widget.getBean());
+   360→                    break lol;
+   361→                }
+   362→                if (D && currentTouchedView instanceof uy collectionWidget) {
+   363→                    deleteWidgetFromCollection(collectionWidget.getName());
+   364→                    break lol;
+   365→                }
+   366→                if (D && currentTouchedView instanceof IconCustomWidget) {
+   367→                    widgetsCreatorManager.showActionsDialog((int) view.getTag());
+   368→                    break lol;
+   369→                }
+   370→                viewPane.resetView(false);
+   371→                if (currentTouchedView instanceof uy uyVar) {
+   372→                    ArrayList<ViewBean> arrayList = new ArrayList<>();
+   373→                    oB oBVar = new oB();
+   374→                    boolean areImagesAdded = false;
+   375→                    for (int i3 = 0; i3 < uyVar.getData().size(); i3++) {
+   376→                        ViewBean viewBean = uyVar.getData().get(i3);
+   377→                        arrayList.add(viewBean.clone());
+   378→                        String backgroundResource = viewBean.layout.backgroundResource;
+   379→                        String resName = viewBean.image.resName;
+   380→                        if (!jC.d(a).l(backgroundResource) && Op.g().b(backgroundResource)) {
+   381→                            ProjectResourceBean a2 = Op.g().a(backgroundResource);
+   382→                            try {
+   383→                                oBVar.a(wq.a() + File.separator + "image" + File.separator + "data" + File.separator + a2.resFullName, wq.g() + File.separator + a + File.separator + a2.resFullName);
+   384→                            } catch (Exception e) {
+   385→                                LogUtil.e("ViewEditor", "", e);
+   386→                            }
+   387→                            jC.d(a).b.add(a2);
+   388→                            areImagesAdded = true;
+   389→                        }
+   390→                        if (!jC.d(a).l(resName) && Op.g().b(resName)) {
+   391→                            ProjectResourceBean a3 = Op.g().a(resName);
+   392→                            try {
+   393→                                oBVar.a(wq.a() + File.separator + "image" + File.separator + "data" + File.separator + a3.resFullName, wq.g() + File.separator + a + File.separator + a3.resFullName);
+   394→                            } catch (Exception e2) {
+   395→                                LogUtil.e("ViewEditor", "", e2);
+   396→                            }
+   397→                            jC.d(a).b.add(a3);
+   398→                            areImagesAdded = true;
+   399→                        }
+   400→                    }
+   401→                    if (areImagesAdded) {
+   402→                        bB.a(getContext(), getString(R.string.view_widget_favorites_image_auto_added), bB.TOAST_NORMAL).show();
+   403→                    }
+   404→                    if (!arrayList.isEmpty()) {
+   405→                        HashMap<String, String> idMappings = new HashMap<>();
+   406→                        viewPane.updateViewBeanProperties(arrayList.get(0), (int) motionEvent.getRawX(), (int) motionEvent.getRawY());
+   407→                        for (ViewBean next : arrayList) {
+   408→                            if (jC.a(a).h(projectFileBean.getXmlName(), next.id)) {
+   409→                                idMappings.put(next.id, generateWidgetId(next));
+   410→                            } else {
+   411→                                idMappings.put(next.id, next.id);
+   412→                            }
+   413→                            next.id = idMappings.get(next.id);
+   414→                            if (arrayList.indexOf(next) != 0 && (str = next.parent) != null && !str.isEmpty()) {
+   415→                                next.parent = idMappings.get(next.parent);
+   416→                            }
+   417→                            jC.a(a).a(b, next);
+   418→                        }
+   419→                        a(a(arrayList, true), true);
+   420→                    }
+   421→                } else if (currentTouchedView instanceof IconBase icon) {
+   422→                    ViewBean bean = icon.getBean();
+   423→                    bean.id = generateWidgetId(bean);
+   424→                    viewPane.updateViewBeanProperties(bean, (int) motionEvent.getRawX(), (int) motionEvent.getRawY());
+   425→                    jC.a(a).a(b, bean);
+   426→                    if (bean.type == 3 && projectFileBean.fileType == ProjectFileBean.PROJECT_FILE_TYPE_ACTIVITY) {
+   427→                        jC.a(a).a(projectFileBean.getJavaName(), 1, bean.type, bean.id, "onClick");
+   428→                    }
+   429→                    a(a(bean, true), true);
+   430→                } else if (currentTouchedView instanceof ItemView sy) {
+   431→                    ViewBean bean = sy.getBean();
+   432→                    viewPane.updateViewBeanProperties(bean, (int) motionEvent.getRawX(), (int) motionEvent.getRawY());
+   433→                    a(b(bean, true), true);
+   434→                }
+   435→            } else {
+   436→                if (currentTouchedView instanceof ItemView) {
+   437→                    currentTouchedView.setVisibility(View.VISIBLE);
+   438→                }
+   439→            }
+   440→            paletteWidget.setScrollEnabled(true);
+   441→            paletteFavorite.setScrollEnabled(true);
+   442→            if (draggingListener != null) {
+   443→                draggingListener.d();
+   444→            }
+   445→            b(false, false);
+   446→            dummyView.setDummyVisibility(View.GONE);
+   447→            currentTouchedView = null;
+   448→            viewPane.clearViews();
+   449→            handler.removeCallbacks(longPressRunnable);
+   450→            isDragged = false;
+   451→            return true;
+   452→        }
+   453→    }
+   454→
+   455→    public void deleteWidget(ViewBean viewBean) {
+   456→        ArrayList<ViewBean> b2 = jC.a(a).b(b, viewBean);
+   457→        for (int size = b2.size() - 1; size >= 0; size--) {
+   458→            jC.a(a).a(projectFileBean, b2.get(size));
+   459→        }
+   460→        b(b2, true);
+   461→    }
+   462→
+   463→    public void setFavoriteData(ArrayList<WidgetCollectionBean> arrayList) {
+   464→        clearCollectionWidget();
+   465→        for (WidgetCollectionBean next : arrayList) {
+   466→            addFavoriteViews(next.name, next.widgets);
+   467→        }
+   468→    }
+   469→
+   470→    public void setIsAdLoaded(boolean z) {
+   471→        da = z;
+   472→    }
+   473→
+   474→    public void setOnDraggingListener(DraggingListener dragListener) {
+   475→        draggingListener = dragListener;
+   476→    }
+   477→
+   478→    public void setOnHistoryChangeListener(ay ayVar) {
+   479→        historyChangeListener = ayVar;
+   480→    }
+   481→
+   482→    public void setOnPropertyClickListener(Iw iw) {
+   483→        propertyClickListener = iw;
+   484→    }
+   485→
+   486→    public void setOnWidgetSelectedListener(cy cyVar) {
+   487→        widgetSelectedListener = cyVar;
+   488→    }
+   489→
+   490→    public void setPaletteLayoutVisible(int i) {
+   491→        paletteWidget.setLayoutVisible(i);
+   492→    }
+   493→
+   494→    public void setScreenType(int i) {
+   495→        if (i == 1) {
+   496→            screenType = 0;
+   497→        } else {
+   498→            screenType = 1;
+   499→        }
+   500→    }
+   501→
+   502→    private void initialize(Context context) {
+   503→        wB.a(context, this, R.layout.view_editor);
+   504→
+   505→        paletteWidget = findViewById(R.id.palette_widget);
+   506→        paletteFavorite = findViewById(R.id.palette_favorite);
+   507→        dummyView = findViewById(R.id.dummy);
+   508→        deleteIcon = findViewById(R.id.icon_delete);
+   509→        deleteText = findViewById(R.id.text_delete);
+   510→        deleteView = findViewById(R.id.delete_view);
+   511→        FrameLayout shape = findViewById(R.id.shape);
+   512→        paletteGroup = findViewById(R.id.palette_group);
+   513→
+   514→        addPaletteGroupItems();
+   515→
+   516→        findViewById(R.id.btn_editproperties).setOnClickListener(this);
+   517→        findViewById(R.id.img_close).setOnClickListener(this);
+   518→
+   519→        dip = wB.a(context, 1.0f);
+   520→        defaultIconWidth = (int) (defaultIconWidth * dip);
+   521→        defaultIconHeight = (int) (defaultIconHeight * dip);
+   522→        displayWidth = getResources().getDisplayMetrics().widthPixels;
+   523→        displayHeight = getResources().getDisplayMetrics().heightPixels;
+   524→
+   525→        aa = new LinearLayout(context);
+   526→        aa.setOrientation(LinearLayout.VERTICAL);
+   527→        aa.setGravity(Gravity.CENTER);
+   528→        aa.setLayoutParams(new FrameLayout.LayoutParams(displayWidth, displayHeight));
+   529→        shape.addView(aa);
+   530→
+   531→        bgStatus = new LinearLayout(context);
+   532→        bgStatus.setBackgroundColor(0xff0084c2);
+   533→        bgStatus.setOrientation(LinearLayout.HORIZONTAL);
+   534→        bgStatus.setGravity(Gravity.CENTER_VERTICAL);
+   535→        bgStatus.setLayoutParams(new FrameLayout.LayoutParams(displayWidth, (int) (dip * 25f)));
+   536→
+   537→        fileName = new TextView(context);
+   538→        fileName.setTextColor(Color.WHITE);
+   539→        fileName.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
+   540→                ViewGroup.LayoutParams.WRAP_CONTENT));
+   541→        fileName.setPadding((int) (dip * 8f), 0, 0, 0);
+   542→        fileName.setGravity(Gravity.CENTER_VERTICAL);
+   543→        bgStatus.addView(fileName);
+   544→
+   545→        imgPhoneTopBg = new ImageView(context);
+   546→        imgPhoneTopBg.setImageResource(R.drawable.phone_bg_top);
+   547→        imgPhoneTopBg.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+   548→                ViewGroup.LayoutParams.MATCH_PARENT));
+   549→        imgPhoneTopBg.setScaleType(ImageView.ScaleType.FIT_END);
+   550→        bgStatus.addView(imgPhoneTopBg);
+   551→        shape.addView(bgStatus);
+   552→
+   553→        toolbar = new LinearLayout(context);
+   554→        toolbar.setBackgroundColor(0xff008dcd);
+   555→        toolbar.setOrientation(LinearLayout.HORIZONTAL);
+   556→        toolbar.setGravity(Gravity.CENTER_VERTICAL);
+   557→        toolbar.setLayoutParams(new FrameLayout.LayoutParams(displayWidth, (int) (dip * 48f)));
+   558→
+   559→        TextView tvToolbar = new TextView(context);
+   560→        tvToolbar.setTextColor(Color.WHITE);
+   561→        tvToolbar.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
+   562→                ViewGroup.LayoutParams.WRAP_CONTENT));
+   563→        tvToolbar.setPadding((int) (dip * 16f), 0, 0, 0);
+   564→        tvToolbar.setGravity(Gravity.CENTER_VERTICAL);
+   565→        tvToolbar.setTextSize(15f);
+   566→        tvToolbar.setText("Toolbar");
+   567→        tvToolbar.setTypeface(null, Typeface.BOLD);
+   568→        toolbar.addView(tvToolbar);
+   569→        shape.addView(toolbar);
+   570→
+   571→        viewPane = new ViewPane(getContext());
+   572→        viewPane.setLayoutParams(new FrameLayout.LayoutParams(displayWidth, displayHeight));
+   573→        viewPane.setOnTouchListener(this);
+   574→        shape.addView(viewPane);
+   575→
+   576→        vibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
+   577→        useVibrate = new DB(context, "P12").a("P12I0", true);
+   578→        minDist = ViewConfiguration.get(context).getScaledTouchSlop();
+   579→
+   580→        paletteWidget.cardView.setOnClickListener(view -> widgetsCreatorManager.showWidgetsCreatorDialog(-1));
+   581→
+   582→        colorSurfaceContainerHighest = ThemeUtils.getColor(deleteView, R.attr.colorSurfaceContainerHighest);
+   583→        colorCoolGreenContainer = ThemeUtils.getColor(deleteView, R.attr.colorCoolGreenContainer);
+   584→        colorCoolGreen = ThemeUtils.getColor(deleteView, R.attr.colorCoolGreen);
+   585→        colorErrorContainer = ThemeUtils.getColor(deleteView, R.attr.colorErrorContainer);
+   586→        colorError = ThemeUtils.getColor(deleteView, R.attr.colorOnErrorContainer);
+   587→
+   588→        initialDeleteViewUi();
+   589→    }
+   590→
+   591→    public void b(ArrayList<ViewBean> arrayList, boolean z) {
+   592→        if (z) {
+   593→            cC.c(a).b(projectFileBean.getXmlName(), arrayList);
+   594→            if (historyChangeListener != null) {
+   595→                historyChangeListener.a();
+   596→            }
+   597→        }
+   598→        int size = arrayList.size();
+   599→        while (true) {
+   600→            size--;
+   601→            if (size < 0) {
+   602→                return;
+   603→            }
+   604→            d(arrayList.get(size));
+   605→        }
+   606→    }
+   607→
+   608→    private void clearCollectionWidget() {
+   609→        paletteFavorite.removeAllWidgets();
+   610→    }
+   611→
+   612→    public void removeWidgetsAndLayouts() {
+   613→        paletteWidget.removeWidgetLayouts();
+   614→        paletteWidget.removeWidgets();
+   615→    }
+   616→
+   617→    public ItemView e(ViewBean viewBean) {
+   618→        ItemView g = viewPane.g(viewBean);
+   619→        widgetSelectedListener.a();
+   620→        widgetSelectedListener.a(viewBean.id);
+   621→        return g;
+   622→    }
+   623→
+   624→    public void d(ViewBean viewBean) {
+   625→        viewPane.removeView(viewBean);
+   626→    }
+   627→
+   628→    private void e() {
+   629→        if (currentTouchedView == null) return;
+   630→        if (isViewAnIconBase(currentTouchedView)) {
+   631→            boolean isAppCompatEnabled = jC.c(a).c().isEnabled();
+   632→            if (currentTouchedView instanceof uy collectionWidget) {
+   633→                var collectionData = collectionWidget.getData();
+   634→                boolean isAdViewUsed = false;
+   635→                for (ViewBean view : collectionData) {
+   636→                    if (view.type == ViewBean.VIEW_TYPE_WIDGET_ADVIEW) {
+   637→                        isAdViewUsed = true;
+   638→                        break;
+   639→                    }
+   640→                }
+   641→                if (isAdViewUsed && !draggingListener.isAdmobEnabled()) {
+   642→                    bB.b(getContext(), getString(R.string.design_library_guide_setup_first), bB.TOAST_NORMAL).show();
+   643→                    return;
+   644→                }
+   645→
+   646→                boolean isMapViewUsed = false;
+   647→                for (ViewBean view : collectionData) {
+   648→                    if (view.type == ViewBean.VIEW_TYPE_WIDGET_MAPVIEW) {
+   649→                        isMapViewUsed = true;
+   650→                        break;
+   651→                    }
+   652→                }
+   653→                if (isMapViewUsed && !draggingListener.isGoogleMapEnabled()) {
+   654→                    bB.b(getContext(), getString(R.string.design_library_guide_setup_first), bB.TOAST_NORMAL).show();
+   655→                    return;
+   656→                }
+   657→                boolean isAppCompatViewUsed = false;
+   658→                for (ViewBean view : collectionData) {
+   659→                    switch (view.type) {
+   660→                        case ViewBeans.VIEW_TYPE_WIDGET_MATERIALBUTTON,
+   661→                             ViewBeans.VIEW_TYPE_WIDGET_RECYCLERVIEW,
+   662→                             ViewBeans.VIEW_TYPE_LAYOUT_BOTTOMNAVIGATIONVIEW,
+   663→                             ViewBeans.VIEW_TYPE_LAYOUT_TABLAYOUT,
+   664→                             ViewBeans.VIEW_TYPE_LAYOUT_VIEWPAGER,
+   665→                             ViewBeans.VIEW_TYPE_LAYOUT_COLLAPSINGTOOLBARLAYOUT,
+   666→                             ViewBeans.VIEW_TYPE_LAYOUT_TEXTINPUTLAYOUT,
+   667→                             ViewBeans.VIEW_TYPE_LAYOUT_SWIPEREFRESHLAYOUT,
+   668→                             ViewBeans.VIEW_TYPE_LAYOUT_CARDVIEW -> isAppCompatViewUsed = true;
+   669→                    }
+   670→                    if (isAppCompatViewUsed) {
+   671→                        break;
+   672→                    }
+   673→                }
+   674→
+   675→                if (isAppCompatViewUsed && !isAppCompatEnabled) {
+   676→                    bB.b(getContext(), getString(R.string.design_library_guide_setup_first), bB.TOAST_NORMAL).show();
+   677→                    return;
+   678→                }
+   679→            } else if (currentTouchedView instanceof IconAdView && !draggingListener.isAdmobEnabled()) {
+   680→                bB.b(getContext(), getString(R.string.design_library_guide_setup_first), bB.TOAST_NORMAL).show();
+   681→                return;
+   682→            } else if (currentTouchedView instanceof IconMapView && !draggingListener.isGoogleMapEnabled()) {
+   683→                bB.b(getContext(), getString(R.string.design_library_guide_setup_first), bB.TOAST_NORMAL).show();
+   684→                return;
+   685→            } else if (currentTouchedView instanceof AndroidxOrMaterialView && !isAppCompatEnabled) {
+   686→                bB.b(getContext(), getString(R.string.design_library_guide_setup_first), bB.TOAST_NORMAL).show();
+   687→                return;
+   688→            }
+   689→        }
+   690→        paletteWidget.setScrollEnabled(false);
+   691→        paletteFavorite.setScrollEnabled(false);
+   692→        if (draggingListener != null) draggingListener.b();
+   693→        if (useVibrate) vibrator.vibrate(100L);
+   694→        isDragged = true;
+   695→        dummyView.b(currentTouchedView);
+   696→        dummyView.bringToFront();
+   697→        i();
+   698→        dummyView.a(currentTouchedView, posInitX, posInitY, posInitX, posInitY);
+   699→        dummyView.a(posDummy);
+   700→        if (isViewAnIconBase(currentTouchedView)) {
+   701→            if (currentTouchedView instanceof uy || currentTouchedView instanceof IconCustomWidget) {
+   702→                b(true, currentTouchedView instanceof IconCustomWidget);
+   703→                viewPane.addRootLayout(null);
+   704→            } else {
+   705→                b(false, false);
+   706→                viewPane.addRootLayout(null);
+   707→            }
+   708→        } else {
+   709→            currentTouchedView.setVisibility(View.GONE);
+   710→            b(true, currentTouchedView instanceof IconCustomWidget);
+   711→            viewPane.addRootLayout(((ItemView) currentTouchedView).getBean());
+   712→        }
+   713→        if (hitTestToPane(posInitX, posInitY)) {
+   714→            dummyView.setAllow(true);
+   715→            boolean isNotIcon = !isViewAnIconBase(currentTouchedView);
+   716→            int width = isNotIcon ? currentTouchedView.getWidth() : currentTouchedView instanceof IconLinearHorizontal ?
+   717→                    ViewGroup.LayoutParams.MATCH_PARENT : defaultIconWidth;
+   718→            int height = isNotIcon ? currentTouchedView.getHeight() : currentTouchedView instanceof IconLinearVertical ?
+   719→                    ViewGroup.LayoutParams.MATCH_PARENT : defaultIconHeight;
+   720→            viewPane.updateView((int) posInitX, (int) posInitY, width, height);
+   721→            return;
+   722→        }
+   723→        dummyView.setAllow(false);
+   724→        viewPane.resetView(true);
+   725→    }
+   726→
+   727→    public ItemView b(ViewBean viewBean, boolean z) {
+   728→        if (z) {
+   729→            cC.c(a).b(projectFileBean.getXmlName(), viewBean);
+   730→            if (historyChangeListener != null) {
+   731→                historyChangeListener.a();
+   732→            }
+   733→        }
+   734→        return viewPane.d(viewBean);
+   735→    }
+   736→
+   737→    public ItemView createAndAddView(ViewBean viewBean) {
+   738→        View itemView = viewPane.createItemView(viewBean);
+   739→        viewPane.addViewAndUpdateIndex(itemView);
+   740→        String generatedId = wq.b(viewBean.type);
+   741→        if (viewBean.id.indexOf(generatedId) == 0 && viewBean.id.length() > generatedId.length()) {
+   742→            try {
+   743→                int intValue = Integer.parseInt(viewBean.id.substring(generatedId.length()));
+   744→                if (countItems[viewBean.type] < intValue) {
+   745→                    countItems[viewBean.type] = intValue;
+   746→                }
+   747→            } catch (NumberFormatException ignored) {
+   748→            }
+   749→        }
+   750→        itemView.setOnTouchListener(this);
+   751→        return (ItemView) itemView;
+   752→    }
+   753→
+   754→    private boolean isInsideItemScrollView(View view) {
+   755→        for (ViewParent parent = view.getParent(); parent != null && parent != this; parent = parent.getParent()) {
+   756→            if (parent instanceof ItemVerticalScrollView || parent instanceof ItemHorizontalScrollView) {
+   757→                return true;
+   758→            }
+   759→        }
+   760→        return false;
+   761→    }
+   762→
+   763→    private boolean hitTestToPane(float x, float y) {
+   764→        int[] locationOnScreen = new int[2];
+   765→        viewPane.getLocationOnScreen(locationOnScreen);
+   766→        if (!(x > locationOnScreen[0])) return false;
+   767→        if (!(x < locationOnScreen[0] + viewPane.getWidth() * viewPane.getScaleX())) return false;
+   768→        if (!(y > locationOnScreen[1])) return false;
+   769→        return y < locationOnScreen[1] + viewPane.getHeight() * viewPane.getScaleY();
+   770→    }
+   771→
+   772→    private void deleteWidgetFromCollection(String str) {
+   773→        MaterialAlertDialogBuilder dialog = new MaterialAlertDialogBuilder(getContext());
+   774→        dialog.setTitle(getString(R.string.view_widget_favorites_delete_title));
+   775→        dialog.setIcon(R.drawable.ic_mtrl_delete);
+   776→        dialog.setMessage(getString(R.string.view_widget_favorites_delete_message));
+   777→        dialog.setPositiveButton(getString(R.string.common_word_delete), (v, which) -> {
+   778→            Rp.h().a(str, true);
+   779→            setFavoriteData(Rp.h().f());
+   780→            v.dismiss();
+   781→        });
+   782→        dialog.setNegativeButton(getString(R.string.common_word_cancel), null);
+   783→        dialog.show();
+   784→    }
+   785→
+   786→    private String getString(@StringRes int res) {
+   787→        return getContext().getString(res);
+   788→    }
+   789→
+   790→    private void cancelAnimation() {
+   791→        if (animatorTranslateY.isRunning()) animatorTranslateY.cancel();
+   792→        if (animatorTranslateX.isRunning()) animatorTranslateX.cancel();
+   793→    }
+   794→
+   795→    private void setPreviewColors(String str) {
+   796→        bgStatus.setBackgroundColor(ProjectFile.getColor(str, ProjectFile.COLOR_PRIMARY_DARK));
+   797→        imgPhoneTopBg.setBackgroundColor(ProjectFile.getColor(str, ProjectFile.COLOR_PRIMARY_DARK));
+   798→        toolbar.setBackgroundColor(ProjectFile.getColor(str, ProjectFile.COLOR_PRIMARY));
+   799→    }
+   800→
+   801→    private void b(boolean z, boolean isCustomWidget) {
+   802→        if (isCustomWidget) {
+   803→            deleteIcon.setImageDrawable(AppCompatResources.getDrawable(getContext(), R.drawable.ic_mtrl_edit));
+   804→            deleteText.setText("Drag here to see the Actions");
+   805→        } else if (z) {
+   806→            deleteIcon.setImageDrawable(AppCompatResources.getDrawable(getContext(), R.drawable.ic_mtrl_delete));
+   807→            deleteText.setText("Drag here to delete");
+   808→            setDeleteViewIconAndTextUi(false);
+   809→        }
+   810→        deleteView.bringToFront();
+   811→        if (!isAnimating) {
+   812→            animateUpDown();
+   813→        }
+   814→        if (C == z) return;
+   815→        C = z;
+   816→        cancelAnimation();
+   817→        if (z) {
+   818→            animatorTranslateY.start();
+   819→        } else {
+   820→            animatorTranslateX.start();
+   821→        }
+   822→    }
+   823→
+   824→    public void initialize(String str, ProjectFileBean projectFileBean) {
+   825→        a = str;
+   826→        setPreviewColors(str);
+   827→        if (viewPane != null) {
+   828→            viewPane.initialize(str, false);
+   829→        }
+   830→        this.projectFileBean = projectFileBean;
+   831→        b = projectFileBean.getXmlName();
+   832→        if (projectFileBean.fileType == ProjectFileBean.PROJECT_FILE_TYPE_DRAWER) {
+   833→            fileName.setText(projectFileBean.fileName.substring(1));
+   834→        } else {
+   835→            fileName.setText(projectFileBean.getXmlName());
+   836→        }
+   837→        removeFab();
+   838→        if (projectFileBean.fileType == ProjectFileBean.PROJECT_FILE_TYPE_ACTIVITY) {
+   839→            S = projectFileBean.hasActivityOption(ProjectFileBean.OPTION_ACTIVITY_TOOLBAR);
+   840→            T = projectFileBean.hasActivityOption(ProjectFileBean.OPTION_ACTIVITY_FULLSCREEN);
+   841→            if (projectFileBean.hasActivityOption(ProjectFileBean.OPTION_ACTIVITY_FAB)) {
+   842→                addFab(jC.a(str).h(projectFileBean.getXmlName()));
+   843→            }
+   844→        } else {
+   845→            S = false;
+   846→            T = false;
+   847→        }
+   848→        isLayoutChanged = true;
+   849→    }
+   850→
+   851→    public void updateSelection(String tag) {
+   852→        ItemView syVar;
+   853→        ItemView itemView = viewPane.findItemViewByTag(tag);
+   854→        if (itemView == null || (syVar = selectedItem) == itemView) {
+   855→            return;
+   856→        }
+   857→        if (syVar != null) {
+   858→            syVar.setSelection(false);
+   859→        }
+   860→        itemView.setSelection(true);
+   861→        selectedItem = itemView;
+   862→    }
+   863→
+   864→    private void a() {
+   865→        toolbar.setVisibility(S ? View.VISIBLE : View.GONE);
+   866→        bgStatus.setVisibility(T ? View.GONE : View.VISIBLE);
+   867→
+   868→        viewPane.setVisibility(View.VISIBLE);
+   869→        displayWidth = getResources().getDisplayMetrics().widthPixels;
+   870→        displayHeight = getResources().getDisplayMetrics().heightPixels;
+   871→        boolean isLandscapeMode = displayWidth > displayHeight;
+   872→        int var4 = (int) (dip * (!isLandscapeMode ? 12.0F : 24.0F));
+   873→        int var5 = (int) (dip * (!isLandscapeMode ? 20.0F : 10.0F));
+   874→        int statusBarHeight = GB.f(getContext());
+   875→        int toolBarHeight = GB.a(getContext());
+   876→        int var9 = displayWidth - (int) (120.0F * dip);
+   877→        int var8 = displayHeight - statusBarHeight - toolBarHeight - (int) (dip * 48.0F) - (int) (dip * 48.0F);
+   878→        if (screenType == 0 && da) {
+   879→            Log.d("ViewEditor", "hmmm");
+   880→            var8 -= (int) (dip * 56.0F);
+   881→        }
+   882→
+   883→        float var11 = Math.min((float) var9 / (float) displayWidth, (float) var8 / (float) displayHeight);
+   884→        float var3 = Math.min((float) (var9 - var4 * 2) / (float) displayWidth, (float) (var8 - var5 * 2) / (float) displayHeight);
+   885→
+   886→        aa.setLayoutParams(new FrameLayout.LayoutParams(displayWidth, displayHeight));
+   887→        aa.setScaleX(var11);
+   888→        aa.setScaleY(var11);
+   889→        aa.setX(-((int) ((displayWidth - displayWidth * var11) / 2.0F)));
+   890→        aa.setY(-((int) ((displayHeight - displayHeight * var11) / 2.0F)));
+   891→        int var10 = var4 - (int) ((displayWidth - displayWidth * var3) / 2.0F);
+   892→        int var13 = var5;
+   893→        if (bgStatus.getVisibility() == View.VISIBLE) {
+   894→            bgStatus.setLayoutParams(new FrameLayout.LayoutParams(displayWidth, statusBarHeight));
+   895→            bgStatus.setScaleX(var3);
+   896→            bgStatus.setScaleY(var3);
+   897→            var11 = statusBarHeight;
+   898→            float var12 = var11 * var3;
+   899→            bgStatus.setX(var10);
+   900→            bgStatus.setY(var5 - (int) ((var11 - var12) / 2.0F));
+   901→            var13 = var5 + (int) var12;
+   902→        }
+   903→
+   904→        var8 = var13;
+   905→        if (toolbar.getVisibility() == View.VISIBLE) {
+   906→            toolbar.setLayoutParams(new FrameLayout.LayoutParams(displayWidth, toolBarHeight));
+   907→            toolbar.setScaleX(var3);
+   908→            toolbar.setScaleY(var3);
+   909→            var11 = (float) toolBarHeight * var3;
+   910→            toolbar.setX(var10);
+   911→            toolbar.setY(var13 - (int) (((float) toolBarHeight - var11) / 2.0F));
+   912→            var8 = var13 + (int) var11;
+   913→        }
+   914→
+   915→        var13 = displayHeight;
+   916→        if (bgStatus.getVisibility() == View.VISIBLE) {
+   917→            var13 = displayHeight - statusBarHeight;
+   918→        }
+   919→
+   920→        var5 = var13;
+   921→        if (toolbar.getVisibility() == View.VISIBLE) {
+   922→            var5 = var13 - toolBarHeight;
+   923→        }
+   924→
+   925→        viewPane.setLayoutParams(new FrameLayout.LayoutParams(displayWidth, var5));
+   926→        viewPane.setScaleX(var3);
+   927→        viewPane.setScaleY(var3);
+   928→        var11 = var5;
+   929→        viewPane.setX(var10);
+   930→        viewPane.setY(var8 - (int) ((var11 - var3 * var11) / 2.0F));
+   931→        isLayoutChanged = false;
+   932→    }
+   933→
+   934→    public void addWidgetLayout(PaletteWidget.a aVar, String str) {
+   935→        View widget = paletteWidget.a(aVar, str);
+   936→        widget.setClickable(true);
+   937→        widget.setOnTouchListener(this);
+   938→    }
+   939→
+   940→    public void extraWidgetLayout(String str, String str2) {
+   941→        View extraWidgetLayout = paletteWidget.extraWidgetLayout(str, str2);
+   942→        extraWidgetLayout.setClickable(true);
+   943→        extraWidgetLayout.setOnTouchListener(this);
+   944→    }
+   945→
+   946→    public void addWidget(PaletteWidget.b bVar, String str, String str2, String str3) {
+   947→        View widget = paletteWidget.a(bVar, str, str2, str3);
+   948→        widget.setClickable(true);
+   949→        widget.setOnTouchListener(this);
+   950→    }
+   951→
+   952→    public void extraWidget(String str, String str2, String str3) {
+   953→        View extraWidget = paletteWidget.extraWidget(str, str2, str3);
+   954→        extraWidget.setClickable(true);
+   955→        extraWidget.setOnTouchListener(this);
+   956→    }
+   957→
+   958→    private boolean isViewAnIconBase(View view) {
+   959→        return view instanceof IconBase;
+   960→    }
+   961→
+   962→    private void addFavoriteViews(String str, ArrayList<ViewBean> arrayList) {
+   963→        View a2 = paletteFavorite.a(str, arrayList);
+   964→        a2.setClickable(true);
+   965→        a2.setOnTouchListener(this);
+   966→    }
+   967→
+   968→    private String generateWidgetId(ViewBean bean) {
+   969→        int type = bean.type;
+   970→        String b2 = !bean.isCustomWidget ? wq.b(type) : widgetsCreatorManager.generateCustomWidgetId(bean.convert);
+   971→        StringBuilder sb = new StringBuilder();
+   972→        sb.append(b2);
+   973→        int i2 = countItems[type] + 1;
+   974→        countItems[type] = i2;
+   975→        sb.append(i2);
+   976→        String sb2 = sb.toString();
+   977→        ArrayList<ViewBean> d = jC.a(a).d(b);
+   978→        while (true) {
+   979→            boolean isIdUsed = false;
+   980→            for (ViewBean view : d) {
+   981→                if (sb2.equals(view.id)) {
+   982→                    isIdUsed = true;
+   983→                    break;
+   984→                }
+   985→            }
+   986→            if (!isIdUsed) {
+   987→                return sb2;
+   988→            }
+   989→            StringBuilder sb3 = new StringBuilder();
+   990→            sb3.append(b2);
+   991→            int i3 = countItems[type] + 1;
+   992→            countItems[type] = i3;
+   993→            sb3.append(i3);
+   994→            sb2 = sb3.toString();
+   995→        }
+   996→    }
+   997→
+   998→    public ItemView a(ArrayList<ViewBean> arrayList, boolean z) {
+   999→        if (z) {
+  1000→            cC.c(a).a(projectFileBean.getXmlName(), arrayList);
+  1001→            if (historyChangeListener != null) {
+  1002→                historyChangeListener.a();
+  1003→            }
+  1004→        }
+  1005→        ItemView syVar = null;
+  1006→        for (ViewBean view : arrayList) {
+  1007→            if (arrayList.indexOf(view) == 0) {
+  1008→                syVar = createAndAddView(view);
+  1009→            } else {
+  1010→                createAndAddView(view);
+  1011→            }
+  1012→        }
+  1013→        return syVar;
+  1014→    }
+  1015→
+  1016→    public ItemView a(ViewBean viewBean, boolean isInHistory) {
+  1017→        if (isInHistory) {
+  1018→            cC.c(a).a(projectFileBean.getXmlName(), viewBean);
+  1019→            if (historyChangeListener != null) {
+  1020→                historyChangeListener.a();
+  1021→            }
+  1022→        }
+  1023→        return createAndAddView(viewBean);
+  1024→    }
+  1025→
+  1026→    public void a(ArrayList<ViewBean> arrayList) {
+  1027→        if (arrayList == null || arrayList.isEmpty()) {
+  1028→            return;
+  1029→        }
+  1030→        for (ViewBean view : arrayList) {
+  1031→            createAndAddView(view);
+  1032→        }
+  1033→    }
+  1034→
+  1035→    public void addFab(ViewBean viewBean) {
+  1036→        viewPane.addFab(viewBean).setOnTouchListener(this);
+  1037→    }
+  1038→
+  1039→    public void a(ItemView syVar, boolean z) {
+  1040→        if (selectedItem != null) {
+  1041→            selectedItem.setSelection(false);
+  1042→        }
+  1043→        selectedItem = syVar;
+  1044→        selectedItem.setSelection(true);
+  1045→        if (widgetSelectedListener != null) {
+  1046→            widgetSelectedListener.a(z, selectedItem.getBean().id);
+  1047→        }
+  1048→    }
+  1049→
+  1050→    private boolean hitTestIconDelete(float x, float y) {
+  1051→        int[] locationOnScreen = new int[2];
+  1052→        deleteView.getLocationOnScreen(locationOnScreen);
+  1053→        if (!(x > locationOnScreen[0])) return false;
+  1054→        if (!(x < locationOnScreen[0] + deleteView.getWidth())) return false;
+  1055→        if (!(y > locationOnScreen[1])) return false;
+  1056→        return y < locationOnScreen[1] + deleteView.getHeight();
+  1057→    }
+  1058→
+  1059→    private void updateDeleteIcon(boolean z, boolean isCustomWidget) {
+  1060→        if (D == z) return;
+  1061→        D = z;
+  1062→        if (D) {
+  1063→            setSelectedDeleteViewUi(isCustomWidget);
+  1064→            shakeView(deleteView);
+  1065→        } else {
+  1066→            initialDeleteViewUi();
+  1067→            setDeleteViewIconAndTextUi(isCustomWidget);
+  1068→        }
+  1069→        if (isCustomWidget) {
+  1070→            deleteIcon.setImageDrawable(AppCompatResources.getDrawable(getContext(), R.drawable.ic_mtrl_edit));
+  1071→            deleteText.setText(D ? "Release to see the actions" : "Drag here to see the Actions");
+  1072→        } else {
+  1073→            deleteIcon.setImageDrawable(AppCompatResources.getDrawable(getContext(), R.drawable.ic_mtrl_delete));
+  1074→            deleteText.setText(D ? "Release to delete" : "Drag here to delete");
+  1075→        }
+  1076→    }
+  1077→
+  1078→    private void initialDeleteViewUi() {
+  1079→        deleteView.setCardBackgroundColor(colorSurfaceContainerHighest);
+  1080→    }
+  1081→
+  1082→    private void setSelectedDeleteViewUi(boolean isCustomWidget) {
+  1083→        deleteView.setCardBackgroundColor(isCustomWidget ? colorCoolGreenContainer : colorErrorContainer);
+  1084→        setDeleteViewIconAndTextUi(isCustomWidget);
+  1085→    }
+  1086→
+  1087→    private void setDeleteViewIconAndTextUi(boolean isCustomWidget) {
+  1088→        if (isCustomWidget) {
+  1089→            deleteText.setTextColor(colorCoolGreen);
+  1090→            deleteIcon.setColorFilter(colorCoolGreen);
+  1091→        } else {
+  1092→            deleteText.setTextColor(colorError);
+  1093→            deleteIcon.setColorFilter(colorError);
+  1094→        }
+  1095→    }
+  1096→
+  1097→    public void createCustomWidget(HashMap<String, Object> map) {
+  1098→        View extraWidget = paletteWidget.customWidget(map);
+  1099→        extraWidget.setClickable(true);
+  1100→        Object position = map.get("position");
+  1101→        int tagValue = 0;
+  1102→        if (position instanceof Integer) {
+  1103→            tagValue = (Integer) position;
+  1104→        } else if (position instanceof Double) {
+  1105→            tagValue = ((Double) position).intValue();
+  1106→        }
+  1107→        extraWidget.setTag(tagValue);
+  1108→        extraWidget.setOnTouchListener(this);
+  1109→    }
+  1110→
+  1111→    enum PaletteGroup {
+  1112→        BASIC,
+  1113→        FAVORITE
+  1114→    }
+  1115→
+  1116→    static class PaletteGroupItem extends LinearLayout implements View.OnClickListener {
+  1117→        private final ImageView imgGroup;
+  1118→
+  1119→        public PaletteGroupItem(Context context) {
+  1120→            super(context);
+  1121→
+  1122→            wB.a(context, this, R.layout.palette_group_item);
+  1123→            imgGroup = findViewById(R.id.img_group);
+  1124→        }
+  1125→
+  1126→        @Override
+  1127→        public void onClick(View view) {
+  1128→        }
+  1129→
+  1130→        public void setPaletteGroup(PaletteGroup group) {
+  1131→            imgGroup.setImageResource(group == PaletteGroup.BASIC ?
+  1132→                    R.drawable.selector_palette_tab_ic_sketchware :
+  1133→                    R.drawable.selector_palette_tab_ic_bookmark);
+  1134→            setOnClickListener(this);
+  1135→        }
+  1136→    }
+  1137→}
+  1138→

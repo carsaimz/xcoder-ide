@@ -1,0 +1,845 @@
+     1→package pro.sketchware.utility;
+     2→
+     3→import android.content.ActivityNotFoundException;
+     4→import android.content.ContentResolver;
+     5→import android.content.ContentUris;
+     6→import android.content.Context;
+     7→import android.content.Intent;
+     8→import android.database.Cursor;
+     9→import android.graphics.Bitmap;
+    10→import android.graphics.BitmapFactory;
+    11→import android.graphics.Canvas;
+    12→import android.graphics.ColorMatrix;
+    13→import android.graphics.ColorMatrixColorFilter;
+    14→import android.graphics.LightingColorFilter;
+    15→import android.graphics.Matrix;
+    16→import android.graphics.Paint;
+    17→import android.graphics.PorterDuff;
+    18→import android.graphics.PorterDuffXfermode;
+    19→import android.graphics.Rect;
+    20→import android.graphics.RectF;
+    21→import android.media.ExifInterface;
+    22→import android.net.Uri;
+    23→import android.os.Build;
+    24→import android.os.Environment;
+    25→import android.provider.DocumentsContract;
+    26→import android.provider.MediaStore;
+    27→import android.provider.Settings;
+    28→import android.text.TextUtils;
+    29→import android.util.Log;
+    30→
+    31→import androidx.annotation.NonNull;
+    32→import androidx.annotation.Nullable;
+    33→
+    34→import java.io.BufferedOutputStream;
+    35→import java.io.ByteArrayOutputStream;
+    36→import java.io.File;
+    37→import java.io.FileInputStream;
+    38→import java.io.FileOutputStream;
+    39→import java.io.FileReader;
+    40→import java.io.FileWriter;
+    41→import java.io.IOException;
+    42→import java.io.InputStream;
+    43→import java.io.OutputStream;
+    44→import java.net.URLConnection;
+    45→import java.net.URLDecoder;
+    46→import java.nio.charset.StandardCharsets;
+    47→import java.text.SimpleDateFormat;
+    48→import java.util.ArrayList;
+    49→import java.util.Collections;
+    50→import java.util.Date;
+    51→import java.util.LinkedList;
+    52→import java.util.List;
+    53→import java.util.Locale;
+    54→import java.util.zip.ZipEntry;
+    55→import java.util.zip.ZipInputStream;
+    56→
+    57→@SuppressWarnings("unused")
+    58→public class FileUtil {
+    59→    public static long getFileSize(File file) {
+    60→        if (file == null || !file.exists()) {
+    61→            return 0;
+    62→        }
+    63→
+    64→        if (!file.isDirectory()) {
+    65→            return file.length();
+    66→        }
+    67→
+    68→        List<File> dirs = new LinkedList<>();
+    69→        dirs.add(file);
+    70→
+    71→        long result = 0;
+    72→        while (!dirs.isEmpty()) {
+    73→            File dir = dirs.remove(0);
+    74→            if (!dir.exists())
+    75→                continue;
+    76→            File[] listFiles = dir.listFiles();
+    77→            if (listFiles == null)
+    78→                continue;
+    79→            for (File child : listFiles) {
+    80→                if (child.isDirectory()) {
+    81→                    dirs.add(child);
+    82→                } else {
+    83→                    result += child.length();
+    84→                }
+    85→            }
+    86→        }
+    87→
+    88→        return result;
+    89→    }
+    90→
+    91→    public static String formatFileSize(long size) {
+    92→        return formatFileSize(size, false);
+    93→    }
+    94→
+    95→    public static String formatFileSize(long size, boolean removeZero) {
+    96→        String[] units = {"B", "KiB", "MiB", "GiB"};
+    97→        float value = size;
+    98→        int unitIndex = 0;
+    99→
+   100→        while (value >= 1024 && unitIndex < units.length - 1) {
+   101→            value /= 1024;
+   102→            unitIndex++;
+   103→        }
+   104→
+   105→        if (removeZero && (value - (int) value) * 10 == 0) {
+   106→            return String.format("%d %s", (int) value, units[unitIndex]);
+   107→        } else {
+   108→            return String.format("%.1f %s", value, units[unitIndex]);
+   109→        }
+   110→    }
+   111→
+   112→    public static boolean renameFile(String str, String str2) {
+   113→        return new File(str).renameTo(new File(str2));
+   114→    }
+   115→
+   116→    /**
+   117→     * @return A filename without its extension,
+   118→     * e.g. "FileUtil" for "FileUtil.java", or "FileUtil" for "/sdcard/Documents/FileUtil.java"
+   119→     */
+   120→    public static String getFileNameNoExtension(String filePath) {
+   121→        if (filePath.trim().isEmpty()) return "";
+   122→
+   123→        int lastPos = filePath.lastIndexOf('.');
+   124→        int lastSep = filePath.lastIndexOf(File.separator);
+   125→
+   126→        if (lastSep == -1) {
+   127→            return (lastPos == -1 ? filePath : filePath.substring(0, lastPos));
+   128→        } else if (lastPos == -1 || lastSep > lastPos) {
+   129→            return filePath.substring(lastSep + 1);
+   130→        }
+   131→        return filePath.substring(lastSep + 1, lastPos);
+   132→    }
+   133→
+   134→    /**
+   135→     * @return A file's filename extension,
+   136→     * e.g. "java" for "/sdcard/Documents/FileUtil.java", but "" for "/sdcard/Documents/fileWithoutExtension"
+   137→     */
+   138→    public static String getFileExtension(String filePath) {
+   139→        if (filePath.isEmpty()) return "";
+   140→
+   141→        int last = filePath.lastIndexOf('.');
+   142→        int lastSep = filePath.lastIndexOf(File.separator);
+   143→
+   144→        if (last == -1 || lastSep >= last) return "";
+   145→        return filePath.substring(last + 1);
+   146→    }
+   147→
+   148→    public static void createNewFileIfNotPresent(String path) {
+   149→        int lastSep = path.lastIndexOf(File.separator);
+   150→        if (lastSep > 0) {
+   151→            String dirPath = path.substring(0, lastSep);
+   152→            makeDir(dirPath);
+   153→        }
+   154→
+   155→        File file = new File(path);
+   156→
+   157→        try {
+   158→            if (!file.exists()) file.createNewFile();
+   159→        } catch (IOException e) {
+   160→            e.printStackTrace();
+   161→        }
+   162→    }
+   163→
+   164→    public static String readFile(String path) {
+   165→        createNewFileIfNotPresent(path);
+   166→
+   167→        StringBuilder sb = new StringBuilder();
+   168→        try (FileReader fr = new FileReader(path)) {
+   169→            char[] buff = new char[1024];
+   170→            int length;
+   171→
+   172→            while ((length = fr.read(buff)) > 0) {
+   173→                sb.append(new String(buff, 0, length));
+   174→            }
+   175→        } catch (IOException e) {
+   176→            e.printStackTrace();
+   177→        }
+   178→
+   179→        return sb.toString();
+   180→    }
+   181→
+   182→    public static String readFileIfExist(String path) {
+   183→        StringBuilder sb = new StringBuilder();
+   184→        try (FileReader fr = new FileReader(path)) {
+   185→            char[] buff = new char[1024];
+   186→            int length;
+   187→
+   188→            while ((length = fr.read(buff)) > 0) {
+   189→                sb.append(new String(buff, 0, length));
+   190→            }
+   191→        } catch (IOException e) {
+   192→            e.printStackTrace();
+   193→        }
+   194→
+   195→        return sb.toString();
+   196→    }
+   197→
+   198→    public static void writeFile(String path, String str) {
+   199→        createNewFileIfNotPresent(path);
+   200→
+   201→        try (FileWriter fileWriter = new FileWriter(path, false)) {
+   202→            fileWriter.write(str);
+   203→            fileWriter.flush();
+   204→        } catch (IOException e) {
+   205→            e.printStackTrace();
+   206→        }
+   207→    }
+   208→
+   209→    public static void copyFile(String sourcePath, String destPath) {
+   210→        if (!isExistFile(sourcePath)) return;
+   211→        createNewFileIfNotPresent(destPath);
+   212→
+   213→        try (FileInputStream fis = new FileInputStream(sourcePath);
+   214→             FileOutputStream fos = new FileOutputStream(destPath, false)) {
+   215→            byte[] buffer = new byte[1024];
+   216→            int length;
+   217→
+   218→            while ((length = fis.read(buffer)) > 0) {
+   219→                fos.write(buffer, 0, length);
+   220→            }
+   221→        } catch (IOException e) {
+   222→            e.printStackTrace();
+   223→        }
+   224→    }
+   225→
+   226→    /**
+   227→     * Copies an entire directory, recursively.
+   228→     *
+   229→     * @param source   The directory whose contents to copy.
+   230→     * @param copyInto The directory to copy files into.
+   231→     * @throws IOException Thrown when something goes wrong while copying.
+   232→     */
+   233→    public static void copyDirectory(File source, File copyInto) throws IOException {
+   234→        if (!source.isDirectory()) {
+   235→            File parentFile = copyInto.getParentFile();
+   236→            if (parentFile == null || parentFile.exists() || parentFile.mkdirs()) {
+   237→                try (FileInputStream fileInputStream = new FileInputStream(source);
+   238→                     FileOutputStream fileOutputStream = new FileOutputStream(copyInto)) {
+   239→                    byte[] bArr = new byte[2048];
+   240→                    while (true) {
+   241→                        int read = fileInputStream.read(bArr);
+   242→                        if (read <= 0) {
+   243→                            return;
+   244→                        }
+   245→                        fileOutputStream.write(bArr, 0, read);
+   246→                    }
+   247→                } catch (IOException e) {
+   248→                    Log.e("FileUtil", "Error copying file " + source.getAbsolutePath() + " to " + copyInto.getAbsolutePath(), e);
+   249→                    throw e;
+   250→                }
+   251→            } else {
+   252→                throw new IOException("Cannot create dir " + parentFile.getAbsolutePath());
+   253→            }
+   254→        } else if (copyInto.exists() || copyInto.mkdirs()) {
+   255→            String[] list = source.list();
+   256→            if (list != null) {
+   257→                for (String s : list) {
+   258→                    copyDirectory(new File(source, s), new File(copyInto, s));
+   259→                }
+   260→            }
+   261→        } else {
+   262→            throw new IOException("Cannot create dir " + copyInto.getAbsolutePath());
+   263→        }
+   264→    }
+   265→
+   266→    public static void extractFileFromZip(InputStream inputStream, File file) throws IOException {
+   267→        try (OutputStream outputStream = new FileOutputStream(file)) {
+   268→            byte[] bArr = new byte[1024];
+   269→            while (true) {
+   270→                int read = inputStream.read(bArr);
+   271→                if (read > 0) {
+   272→                    outputStream.write(bArr, 0, read);
+   273→                } else {
+   274→                    return;
+   275→                }
+   276→            }
+   277→        }
+   278→    }
+   279→
+   280→    public static void moveFile(String sourcePath, String destPath) {
+   281→        copyFile(sourcePath, destPath);
+   282→        deleteFile(sourcePath);
+   283→    }
+   284→
+   285→    public static void deleteFile(String path) {
+   286→        File file = new File(path);
+   287→
+   288→        if (!file.exists()) return;
+   289→
+   290→        if (file.isFile()) {
+   291→            if (!file.delete()) {
+   292→                Log.e("FileUtil", "Failed to delete file: " + file.getAbsolutePath());
+   293→            }
+   294→            return;
+   295→        }
+   296→
+   297→        File[] fileArr = file.listFiles();
+   298→
+   299→        if (fileArr != null) {
+   300→            for (File subFile : fileArr) {
+   301→                if (subFile.isDirectory()) {
+   302→                    deleteFile(subFile.getAbsolutePath());
+   303→                }
+   304→
+   305→                if (subFile.isFile()) {
+   306→                    subFile.delete();
+   307→                }
+   308→            }
+   309→        }
+   310→
+   311→        if (!file.delete()) {
+   312→            Log.e("FileUtil", "Failed to delete directory: " + file.getAbsolutePath());
+   313→        }
+   314→    }
+   315→
+   316→    public static boolean isExistFile(String path) {
+   317→        return new File(path).exists();
+   318→    }
+   319→
+   320→    public static void makeDir(String path) {
+   321→        if (!isExistFile(path)) {
+   322→            try {
+   323→                new File(path).mkdirs();
+   324→            } catch (SecurityException e) {
+   325→                Log.e("FileUtil", "Error creating directory: " + path, e);
+   326→            }
+   327→        }
+   328→    }
+   329→
+   330→    public static void listDir(String path, ArrayList<String> list) {
+   331→        File[] listFiles;
+   332→        File dir = new File(path);
+   333→        if (dir.exists() && !dir.isFile() && (listFiles = dir.listFiles()) != null && listFiles.length > 0 && list != null) {
+   334→            list.clear();
+   335→            for (File file : listFiles) {
+   336→                list.add(file.getAbsolutePath());
+   337→            }
+   338→        }
+   339→    }
+   340→
+   341→    public static void listDirAsFile(String path, ArrayList<File> list) {
+   342→        File[] listFiles;
+   343→        File dir = new File(path);
+   344→        if (dir.exists() && !dir.isFile() && (listFiles = dir.listFiles()) != null && listFiles.length > 0 && list != null) {
+   345→            list.clear();
+   346→            Collections.addAll(list, listFiles);
+   347→        }
+   348→    }
+   349→
+   350→    /**
+   351→     * @return List of files that have the filename extension {@code extension}.
+   352→     */
+   353→    public static ArrayList<String> listFiles(String dir, String extension) {
+   354→        ArrayList<String> list = new ArrayList<>();
+   355→        ArrayList<String> files = new ArrayList<>();
+   356→        listDir(dir, files);
+   357→        for (String str : files) {
+   358→            if (str.endsWith(extension) && isFile(str)) {
+   359→                list.add(str);
+   360→            }
+   361→        }
+   362→        return list;
+   363→    }
+   364→
+   365→    @NonNull
+   366→    public static List<File> listFilesRecursively(@NonNull File directory, @Nullable String optionalFilenameExtension) {
+   367→        List<File> files = new LinkedList<>();
+   368→
+   369→        File[] directoryFiles = directory.listFiles();
+   370→        if (directoryFiles != null) {
+   371→            for (File file : directoryFiles) {
+   372→                if (file.isFile()) {
+   373→                    if (optionalFilenameExtension != null && file.getName().endsWith(optionalFilenameExtension)) {
+   374→                        files.add(file);
+   375→                    }
+   376→                } else {
+   377→                    files.addAll(listFilesRecursively(file, optionalFilenameExtension));
+   378→                }
+   379→            }
+   380→        }
+   381→
+   382→        return files;
+   383→    }
+   384→
+   385→    public static boolean isDirectory(String path) {
+   386→        if (!isExistFile(path)) {
+   387→            return false;
+   388→        }
+   389→        return new File(path).isDirectory();
+   390→    }
+   391→
+   392→    public static boolean isFile(String path) {
+   393→        if (!isExistFile(path)) {
+   394→            return false;
+   395→        }
+   396→        return new File(path).isFile();
+   397→    }
+   398→
+   399→    public static long getFileLength(String path) {
+   400→        if (!isExistFile(path)) {
+   401→            return 0;
+   402→        }
+   403→        return new File(path).length();
+   404→    }
+   405→
+   406→    public static String getExternalStorageDir() {
+   407→        return Environment.getExternalStorageDirectory().getAbsolutePath();
+   408→    }
+   409→
+   410→    public static String getPackageDataDir(Context context) {
+   411→        return context.getExternalFilesDir(null).getAbsolutePath();
+   412→    }
+   413→
+   414→    public static String getPublicDir(String type) {
+   415→        return Environment.getExternalStoragePublicDirectory(type).getAbsolutePath();
+   416→    }
+   417→
+   418→    public static String convertUriToFilePath(Context context, Uri uri) {
+   419→        String path = null;
+   420→        if (DocumentsContract.isDocumentUri(context, uri)) {
+   421→            if (isExternalStorageDocument(uri)) {
+   422→                String docId = DocumentsContract.getDocumentId(uri);
+   423→                String[] split = docId.split(":");
+   424→                String type = split[0];
+   425→
+   426→                if ("primary".equalsIgnoreCase(type)) {
+   427→                    path = Environment.getExternalStorageDirectory() + "/" + split[1];
+   428→                }
+   429→            } else if (isDownloadsDocument(uri)) {
+   430→                String id = DocumentsContract.getDocumentId(uri);
+   431→
+   432→                if (!TextUtils.isEmpty(id)) {
+   433→                    if (id.startsWith("raw:")) {
+   434→                        return id.replaceFirst("raw:", "");
+   435→                    }
+   436→                }
+   437→
+   438→                Uri contentUri = ContentUris
+   439→                        .withAppendedId(Uri.parse("content://downloads/public_downloads"), Long.parseLong(id));
+   440→
+   441→                path = getDataColumn(context, contentUri, null, null);
+   442→            } else if (isMediaDocument(uri)) {
+   443→                String docId = DocumentsContract.getDocumentId(uri);
+   444→                String[] split = docId.split(":");
+   445→                String type = split[0];
+   446→
+   447→                Uri contentUri = null;
+   448→                if ("image".equals(type)) {
+   449→                    contentUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+   450→                } else if ("video".equals(type)) {
+   451→                    contentUri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI;
+   452→                } else if ("audio".equals(type)) {
+   453→                    contentUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
+   454→                }
+   455→
+   456→                final String selection = "_id=?";
+   457→                String[] selectionArgs = {
+   458→                        split[1]
+   459→                };
+   460→
+   461→                path = getDataColumn(context, contentUri, selection, selectionArgs);
+   462→            }
+   463→        } else if (ContentResolver.SCHEME_CONTENT.equalsIgnoreCase(uri.getScheme())) {
+   464→            path = getDataColumn(context, uri, null, null);
+   465→        } else if (ContentResolver.SCHEME_FILE.equalsIgnoreCase(uri.getScheme())) {
+   466→            path = uri.getPath();
+   467→        }
+   468→
+   469→        if (path != null) {
+   470→            try {
+   471→                return URLDecoder.decode(path, StandardCharsets.UTF_8);
+   472→            } catch (Exception e) {
+   473→                return null;
+   474→            }
+   475→        }
+   476→        return null;
+   477→    }
+   478→
+   479→    private static String getDataColumn(Context context, Uri uri, String selection, String[] selectionArgs) {
+   480→        Cursor cursor = null;
+   481→
+   482→        final String column = MediaStore.Images.Media.DATA;
+   483→        String[] projection = {
+   484→                column
+   485→        };
+   486→
+   487→        try {
+   488→            cursor = context.getContentResolver().query(uri, projection, selection, selectionArgs, null);
+   489→            if (cursor != null && cursor.moveToFirst()) {
+   490→                int column_index = cursor.getColumnIndexOrThrow(column);
+   491→                return cursor.getString(column_index);
+   492→            }
+   493→        } catch (Exception ignored) {
+   494→
+   495→        } finally {
+   496→            if (cursor != null) {
+   497→                cursor.close();
+   498→            }
+   499→        }
+   500→        return null;
+   501→    }
+   502→
+   503→    private static boolean isExternalStorageDocument(Uri uri) {
+   504→        return "com.android.externalstorage.documents".equals(uri.getAuthority());
+   505→    }
+   506→
+   507→    private static boolean isDownloadsDocument(Uri uri) {
+   508→        return "com.android.providers.downloads.documents".equals(uri.getAuthority());
+   509→    }
+   510→
+   511→    private static boolean isMediaDocument(Uri uri) {
+   512→        return "com.android.providers.media.documents".equals(uri.getAuthority());
+   513→    }
+   514→
+   515→    private static void saveBitmap(Bitmap bitmap, String destPath) {
+   516→        FileUtil.createNewFileIfNotPresent(destPath);
+   517→
+   518→        try (FileOutputStream out = new FileOutputStream(destPath)) {
+   519→            bitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
+   520→        } catch (IOException e) {
+   521→            e.printStackTrace();
+   522→        }
+   523→    }
+   524→
+   525→    public static Bitmap getScaledBitmap(String str, int i) {
+   526→        int i2;
+   527→        Bitmap decodeFile = BitmapFactory.decodeFile(str);
+   528→        int width = decodeFile.getWidth();
+   529→        int height = decodeFile.getHeight();
+   530→        if (width > height) {
+   531→            int i3 = i / width * height;
+   532→            i2 = i;
+   533→            i = i3;
+   534→        } else {
+   535→            i2 = width * i / height;
+   536→        }
+   537→        return Bitmap.createScaledBitmap(decodeFile, i2, i, true);
+   538→    }
+   539→
+   540→    public static int calculateInSampleSize(BitmapFactory.Options options, int reqWidth, int reqHeight) {
+   541→        int width = options.outWidth;
+   542→        int height = options.outHeight;
+   543→        int inSampleSize = 1;
+   544→
+   545→        if (height > reqHeight || width > reqWidth) {
+   546→            int halfHeight = height / 2;
+   547→            int halfWidth = width / 2;
+   548→
+   549→            while ((halfHeight / inSampleSize) >= reqHeight && (halfWidth / inSampleSize) >= reqWidth) {
+   550→                inSampleSize *= 2;
+   551→            }
+   552→        }
+   553→
+   554→        return inSampleSize;
+   555→    }
+   556→
+   557→    public static Bitmap decodeSampleBitmapFromPath(String path, int reqWidth, int reqHeight) {
+   558→        BitmapFactory.Options options = new BitmapFactory.Options();
+   559→        options.inJustDecodeBounds = true;
+   560→        BitmapFactory.decodeFile(path, options);
+   561→        options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight);
+   562→        options.inJustDecodeBounds = false;
+   563→        return BitmapFactory.decodeFile(path, options);
+   564→    }
+   565→
+   566→    public static void resizeBitmapFileRetainRatio(String fromPath, String destPath, int max) {
+   567→        if (isExistFile(fromPath)) {
+   568→            saveBitmap(getScaledBitmap(fromPath, max), destPath);
+   569→        }
+   570→    }
+   571→
+   572→    public static void resizeBitmapFileToSquare(String fromPath, String destPath, int max) {
+   573→        if (isExistFile(fromPath)) {
+   574→            saveBitmap(Bitmap.createScaledBitmap(BitmapFactory.decodeFile(fromPath), max, max, true), destPath);
+   575→        }
+   576→    }
+   577→
+   578→    public static void resizeBitmapFileToCircle(String fromPath, String destPath) {
+   579→        if (!isExistFile(fromPath)) return;
+   580→
+   581→        Bitmap decodeFile = BitmapFactory.decodeFile(fromPath);
+   582→        Bitmap createBitmap = Bitmap.createBitmap(decodeFile.getWidth(), decodeFile.getHeight(), Bitmap.Config.ARGB_8888);
+   583→        Canvas canvas = new Canvas(createBitmap);
+   584→        Paint paint = new Paint();
+   585→        Rect rect = new Rect(0, 0, decodeFile.getWidth(), decodeFile.getHeight());
+   586→        paint.setAntiAlias(true);
+   587→        canvas.drawARGB(0, 0, 0, 0);
+   588→        paint.setColor(-12434878);
+   589→        canvas.drawCircle((float) (decodeFile.getWidth() / 2), (float) (decodeFile.getHeight() / 2), (float) (decodeFile.getWidth() / 2), paint);
+   590→        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
+   591→        canvas.drawBitmap(decodeFile, rect, rect, paint);
+   592→        saveBitmap(createBitmap, destPath);
+   593→    }
+   594→
+   595→    public static void resizeBitmapFileWithRoundedBorder(String fromPath, String destPath, int pixels) {
+   596→        if (!isExistFile(fromPath)) return;
+   597→
+   598→        Bitmap decodeFile = BitmapFactory.decodeFile(fromPath);
+   599→        Bitmap createBitmap = Bitmap.createBitmap(decodeFile.getWidth(), decodeFile.getHeight(), Bitmap.Config.ARGB_8888);
+   600→        Canvas canvas = new Canvas(createBitmap);
+   601→        Paint paint = new Paint();
+   602→        Rect rect = new Rect(0, 0, decodeFile.getWidth(), decodeFile.getHeight());
+   603→        RectF rectF = new RectF(rect);
+   604→        float f = (float) pixels;
+   605→        paint.setAntiAlias(true);
+   606→        canvas.drawARGB(0, 0, 0, 0);
+   607→        paint.setColor(-12434878);
+   608→        canvas.drawRoundRect(rectF, f, f, paint);
+   609→        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
+   610→        canvas.drawBitmap(decodeFile, rect, rect, paint);
+   611→        saveBitmap(createBitmap, destPath);
+   612→    }
+   613→
+   614→    public static void cropBitmapFileFromCenter(String fromPath, String destPath, int w, int h) {
+   615→        if (!isExistFile(fromPath)) return;
+   616→        Bitmap src = BitmapFactory.decodeFile(fromPath);
+   617→
+   618→        int width = src.getWidth();
+   619→        int height = src.getHeight();
+   620→
+   621→        if (width < w && height < h)
+   622→            return;
+   623→
+   624→        int x = 0;
+   625→        int y = 0;
+   626→
+   627→        if (width > w)
+   628→            x = (width - w) / 2;
+   629→
+   630→        if (height > h)
+   631→            y = (height - h) / 2;
+   632→
+   633→        int cw = w;
+   634→        int ch = h;
+   635→
+   636→        if (w > width)
+   637→            cw = width;
+   638→
+   639→        if (h > height)
+   640→            ch = height;
+   641→
+   642→        Bitmap bitmap = Bitmap.createBitmap(src, x, y, cw, ch);
+   643→        saveBitmap(bitmap, destPath);
+   644→    }
+   645→
+   646→    public static void rotateBitmapFile(String fromPath, String destPath, float angle) {
+   647→        if (!isExistFile(fromPath)) return;
+   648→
+   649→        Bitmap decodeFile = BitmapFactory.decodeFile(fromPath);
+   650→        Matrix matrix = new Matrix();
+   651→        matrix.postRotate(angle);
+   652→        saveBitmap(Bitmap.createBitmap(decodeFile, 0, 0, decodeFile.getWidth(), decodeFile.getHeight(), matrix, true), destPath);
+   653→    }
+   654→
+   655→    public static void scaleBitmapFile(String fromPath, String destPath, float x, float y) {
+   656→        if (!isExistFile(fromPath)) return;
+   657→
+   658→        Bitmap decodeFile = BitmapFactory.decodeFile(fromPath);
+   659→        Matrix matrix = new Matrix();
+   660→        matrix.postScale(x, y);
+   661→        saveBitmap(Bitmap.createBitmap(decodeFile, 0, 0, decodeFile.getWidth(), decodeFile.getHeight(), matrix, true), destPath);
+   662→    }
+   663→
+   664→    public static void skewBitmapFile(String fromPath, String destPath, float x, float y) {
+   665→        if (!isExistFile(fromPath)) return;
+   666→
+   667→        Bitmap decodeFile = BitmapFactory.decodeFile(fromPath);
+   668→        Matrix matrix = new Matrix();
+   669→        matrix.postSkew(x, y);
+   670→        saveBitmap(Bitmap.createBitmap(decodeFile, 0, 0, decodeFile.getWidth(), decodeFile.getHeight(), matrix, true), destPath);
+   671→    }
+   672→
+   673→    public static void setBitmapFileColorFilter(String fromPath, String destPath, int color) {
+   674→        if (!isExistFile(fromPath)) return;
+   675→
+   676→        Bitmap decodeFile = BitmapFactory.decodeFile(fromPath);
+   677→        Bitmap createBitmap = Bitmap.createBitmap(decodeFile, 0, 0, decodeFile.getWidth() - 1, decodeFile.getHeight() - 1);
+   678→        Paint paint = new Paint();
+   679→        paint.setColorFilter(new LightingColorFilter(color, 1));
+   680→        new Canvas(createBitmap).drawBitmap(createBitmap, 0.0f, 0.0f, paint);
+   681→        saveBitmap(createBitmap, destPath);
+   682→    }
+   683→
+   684→    public static void setBitmapFileBrightness(String fromPath, String destPath, float brightness) {
+   685→        if (!isExistFile(fromPath)) return;
+   686→
+   687→        Bitmap src = BitmapFactory.decodeFile(fromPath);
+   688→        ColorMatrix cm = new ColorMatrix(new float[]
+   689→                {
+   690→                        1, 0, 0, 0, brightness,
+   691→                        0, 1, 0, 0, brightness,
+   692→                        0, 0, 1, 0, brightness,
+   693→                        0, 0, 0, 1, 0
+   694→                });
+   695→
+   696→        Bitmap bitmap = Bitmap.createBitmap(src.getWidth(), src.getHeight(), src.getConfig());
+   697→        Canvas canvas = new Canvas(bitmap);
+   698→        Paint paint = new Paint();
+   699→        paint.setColorFilter(new ColorMatrixColorFilter(cm));
+   700→        canvas.drawBitmap(src, 0, 0, paint);
+   701→        saveBitmap(bitmap, destPath);
+   702→    }
+   703→
+   704→    public static void setBitmapFileContrast(String fromPath, String destPath, float contrast) {
+   705→        if (!isExistFile(fromPath)) return;
+   706→
+   707→        Bitmap src = BitmapFactory.decodeFile(fromPath);
+   708→        ColorMatrix cm = new ColorMatrix(new float[]
+   709→                {
+   710→                        contrast, 0, 0, 0, 0,
+   711→                        0, contrast, 0, 0, 0,
+   712→                        0, 0, contrast, 0, 0,
+   713→                        0, 0, 0, 1, 0
+   714→                });
+   715→
+   716→        Bitmap bitmap = Bitmap.createBitmap(src.getWidth(), src.getHeight(), src.getConfig());
+   717→        Canvas canvas = new Canvas(bitmap);
+   718→        Paint paint = new Paint();
+   719→        paint.setColorFilter(new ColorMatrixColorFilter(cm));
+   720→        canvas.drawBitmap(src, 0, 0, paint);
+   721→
+   722→        saveBitmap(bitmap, destPath);
+   723→    }
+   724→
+   725→    public static int getJpegRotate(String filePath) {
+   726→        int rotate = 0;
+   727→        try {
+   728→            ExifInterface exif = new ExifInterface(filePath);
+   729→            int iOrientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, -1);
+   730→
+   731→            rotate = switch (iOrientation) {
+   732→                case ExifInterface.ORIENTATION_ROTATE_90 -> 90;
+   733→                case ExifInterface.ORIENTATION_ROTATE_180 -> 180;
+   734→                case ExifInterface.ORIENTATION_ROTATE_270 -> 270;
+   735→                default -> rotate;
+   736→            };
+   737→        } catch (IOException e) {
+   738→            return 0;
+   739→        }
+   740→
+   741→        return rotate;
+   742→    }
+   743→
+   744→    public static File createNewPictureFile(Context context) {
+   745→        return new File(context.getExternalFilesDir(Environment.DIRECTORY_DCIM).getAbsolutePath() + File.separator + new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.ENGLISH).format(new Date()) + ".jpg");
+   746→    }
+   747→
+   748→    public static byte[] readFromInputStream(InputStream stream) {
+   749→        int available;
+   750→
+   751→        try {
+   752→            available = stream.available();
+   753→        } catch (IOException e) {
+   754→            available = 0;
+   755→        }
+   756→
+   757→        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+   758→        byte[] buffer = new byte[available];
+   759→
+   760→        try {
+   761→            for (int len = stream.read(buffer); len != -1; len = stream.read(buffer)) {
+   762→                outputStream.write(buffer, 0, len);
+   763→            }
+   764→        } catch (IOException e) {
+   765→            return new byte[0];
+   766→        }
+   767→
+   768→        return outputStream.toByteArray();
+   769→    }
+   770→
+   771→    /**
+   772→     * Write bytes to a file.
+   773→     *
+   774→     * @param target The file to write the data to. Note that it'll get created, even parent directories
+   775→     * @param data   The data in bytes to write to. {@link FileUtil#readFromInputStream(InputStream)}
+   776→     *               for example, reads bytes
+   777→     * @throws IOException Thrown when any exception occurs while operating
+   778→     */
+   779→    public static void writeBytes(File target, byte[] data) throws IOException {
+   780→        if (!target.exists()) {
+   781→            target.getParentFile().mkdirs();
+   782→        }
+   783→        BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(target));
+   784→        outputStream.write(data);
+   785→        outputStream.flush();
+   786→        outputStream.close();
+   787→    }
+   788→
+   789→    public static void extractZipTo(ZipInputStream input, String outPath) throws IOException {
+   790→        File outDir = new File(outPath);
+   791→        if (!outDir.exists()) {
+   792→            outDir.mkdirs();
+   793→        }
+   794→
+   795→        ZipEntry entry = input.getNextEntry();
+   796→        while (entry != null) {
+   797→            String entryPathExtracted = new File(outPath, entry.getName()).getAbsolutePath();
+   798→
+   799→            if (entry.isDirectory()) {
+   800→                new File(entryPathExtracted).mkdirs();
+   801→            } else {
+   802→                new File(entryPathExtracted).getParentFile().mkdirs();
+   803→                writeBytes(new File(entryPathExtracted), readFromInputStream(input));
+   804→            }
+   805→            input.closeEntry();
+   806→            entry = input.getNextEntry();
+   807→        }
+   808→        input.close();
+   809→    }
+   810→
+   811→    /**
+   812→     * Asks the user to grant the current app {@link android.Manifest.permission#MANAGE_EXTERNAL_STORAGE}.
+   813→     * Will silently ignore cases where a screen to manage that permission doesn't exist, except on
+   814→     * devices with an API level of 29 or lower.
+   815→     *
+   816→     * @throws AssertionError Thrown if the device's API level is 29 or lower
+   817→     */
+   818→    public static void requestAllFilesAccessPermission(Context context) {
+   819→        if (Build.VERSION.SDK_INT > 29) {
+   820→            if (!Environment.isExternalStorageManager()) {
+   821→                Intent intent = new Intent();
+   822→                intent.setAction(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
+   823→                intent.setData(Uri.parse("package:" + context.getPackageName()));
+   824→                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+   825→                try {
+   826→                    context.startActivity(intent);
+   827→                } catch (ActivityNotFoundException e) {
+   828→                    Log.e("FileUtil", "Activity to manage apps' all files access permission not found!");
+   829→                }
+   830→            }
+   831→        } else {
+   832→            throw new AssertionError("Not on an API level 30 or higher device!");
+   833→        }
+   834→    }
+   835→
+   836→    /**
+   837→     * Checks if a provided file is image or not. I don't know if it throws any exceptions
+   838→     * TODO: Find a better solution if available
+   839→     */
+   840→    public static boolean isImageFile(String path) {
+   841→        String mimeType = URLConnection.guessContentTypeFromName(path);
+   842→        return mimeType != null && mimeType.startsWith("image");
+   843→    }
+   844→}
+   845→

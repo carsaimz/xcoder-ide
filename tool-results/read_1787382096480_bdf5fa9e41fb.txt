@@ -1,0 +1,1054 @@
+     1→package com.besome.sketch.editor.property;
+     2→
+     3→import android.app.Activity;
+     4→import android.content.Context;
+     5→import android.content.Intent;
+     6→import android.util.Pair;
+     7→import android.util.TypedValue;
+     8→import android.view.Gravity;
+     9→import android.view.View;
+    10→import android.view.ViewGroup;
+    11→import android.widget.LinearLayout;
+    12→import android.widget.TextView;
+    13→
+    14→import com.besome.sketch.beans.BlockBean;
+    15→import com.besome.sketch.beans.EventBean;
+    16→import com.besome.sketch.beans.LayoutBean;
+    17→import com.besome.sketch.beans.ProjectFileBean;
+    18→import com.besome.sketch.beans.ViewBean;
+    19→import com.besome.sketch.editor.manage.image.ManageImageActivity;
+    20→
+    21→import java.util.ArrayList;
+    22→import java.util.HashMap;
+    23→import java.util.Iterator;
+    24→import java.util.List;
+    25→import java.util.Map.Entry;
+    26→import java.util.Locale;
+    27→
+    28→import a.a.a.Cx;
+    29→import a.a.a.Gx;
+    30→import a.a.a.Kw;
+    31→import a.a.a.Lw;
+    32→import a.a.a.cC;
+    33→import a.a.a.jC;
+    34→import a.a.a.mB;
+    35→import a.a.a.oq;
+    36→import a.a.a.wq;
+    37→import mod.hey.studios.project.ProjectSettings;
+    38→import mod.pranav.viewbinding.ViewBindingBuilder;
+    39→import pro.sketchware.R;
+    40→import pro.sketchware.activities.resourceseditor.components.utils.StringsEditorManager;
+    41→import pro.sketchware.utility.FileUtil;
+    42→import pro.sketchware.utility.XmlUtil;
+    43→import pro.sketchware.utility.TranslationFunction;
+    44→
+    45→public class ViewPropertyItems extends LinearLayout implements Kw, View.OnClickListener {
+    46→    private final boolean b = false;
+    47→    private final HashMap<String, View> f = new HashMap<>();
+    48→    private String sc_id;
+    49→    private ViewBean c;
+    50→    private Lw d;
+    51→    private ProjectFileBean e;
+    52→    private ProjectSettings settings;
+    53→
+    54→    public ViewPropertyItems(Context var1) {
+    55→        super(var1);
+    56→        Cx.a().a(var1);
+    57→    }
+    58→
+    59→    private void setupViews() {
+    60→        LayoutParams params = new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+    61→                ViewGroup.LayoutParams.MATCH_PARENT);
+    62→        params.gravity = Gravity.CENTER;
+    63→        setLayoutParams(params);
+    64→        setGravity(Gravity.CENTER);
+    65→        TextView label = new TextView(getContext());
+    66→        label.setGravity(Gravity.CENTER);
+    67→        label.setPadding(8, 8, 8, 8);
+    68→        label.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+    69→        label.setText(R.string.design_property_recent_message_nodata);
+    70→        addView(label);
+    71→    }
+    72→
+    73→    private void a(ViewBean bean) {
+    74→        if (getOrientation() == LinearLayout.VERTICAL) {
+    75→            a(getContext().getString(R.string.property_header_layout));
+    76→        }
+    77→
+    78→        a(bean, "property_margin");
+    79→        a(bean, "property_layout_gravity");
+    80→    }
+    81→
+    82→    private void a(ViewBean bean, String property) {
+    83→        boolean isNotAdview = !bean.getClassInfo().a("AdView");
+    84→        boolean isGeneratedId = bean.id.charAt(0) == '_';
+    85→
+    86→        switch (property) {
+    87→            case "property_id" -> {
+    88→                String id = isGeneratedId ? bean.id.substring(1) : bean.id;
+    89→                a(property, id, isGeneratedId, null);
+    90→            }
+    91→            case "property_layout_width" -> a(property, bean.layout.width, isNotAdview);
+    92→            case "property_layout_height" -> a(property, bean.layout.height, isNotAdview);
+    93→            case "property_parent_attr" -> setupAttributes(property, bean.parentAttributes);
+    94→            case "property_margin" -> {
+    95→                LayoutBean layoutBean = bean.layout;
+    96→                a(property, layoutBean.marginLeft, layoutBean.marginTop, layoutBean.marginRight, layoutBean.marginBottom);
+    97→            }
+    98→            case "property_padding" -> {
+    99→                LayoutBean layoutBean = bean.layout;
+   100→                a("property_padding", layoutBean.paddingLeft, layoutBean.paddingTop, layoutBean.paddingRight, layoutBean.paddingBottom);
+   101→            }
+   102→            case "property_orientation" -> c(property, bean.layout.orientation);
+   103→            case "property_weight_sum" -> b(property, String.valueOf(bean.layout.weightSum));
+   104→            case "property_gravity" -> b(property, bean.layout.gravity);
+   105→            case "property_layout_gravity" -> b(property, bean.layout.layoutGravity);
+   106→            case "property_weight" -> b(property, String.valueOf(bean.layout.weight));
+   107→            case "property_text" -> b(property, bean.text.text);
+   108→            case "property_text_size" -> b(property, String.valueOf(bean.text.textSize));
+   109→            case "property_text_style" -> c(property, bean.text.textType);
+   110→            case "property_text_color" -> r(property, bean.text.resTextColor, bean.text.textColor);
+   111→            case "property_hint" -> b(property, bean.text.hint);
+   112→            case "property_hint_color" -> r(property, bean.text.resHintColor, bean.text.hintColor);
+   113→            case "property_single_line" -> e(property, bean.text.singleLine);
+   114→            case "property_lines" -> b(property, String.valueOf(bean.text.line));
+   115→            case "property_input_type" -> c(property, bean.text.inputType);
+   116→            case "property_ime_option" -> c(property, bean.text.imeOption);
+   117→            case "property_image" -> b(property, bean.image.resName, true);
+   118→            case "property_scale_type" -> d(property, bean.image.scaleType);
+   119→            case "property_background_resource" ->
+   120→                    b(property, bean.layout.backgroundResource, false);
+   121→            case "property_background_color" ->
+   122→                    r(property, bean.layout.backgroundResColor, bean.layout.backgroundColor);
+   123→            case "property_enabled" -> e(property, bean.enabled);
+   124→            case "property_rotate" -> b(property, String.valueOf(bean.image.rotate));
+   125→            case "property_alpha" -> b(property, String.valueOf(bean.alpha));
+   126→            case "property_translation_x" -> b(property, String.valueOf(bean.translationX));
+   127→            case "property_translation_y" -> b(property, String.valueOf(bean.translationY));
+   128→            case "property_scale_x" -> b(property, String.valueOf(bean.scaleX));
+   129→            case "property_scale_y" -> b(property, String.valueOf(bean.scaleY));
+   130→            case "property_spinner_mode" -> c(property, bean.spinnerMode);
+   131→            case "property_divider_height" -> d(property, bean.dividerHeight);
+   132→            case "property_custom_view_listview" -> a(property, bean.customView);
+   133→            case "property_checked" -> e(property, bean.checked);
+   134→            case "property_max" -> b(property, String.valueOf(bean.max));
+   135→            case "property_progress" -> b(property, String.valueOf(bean.progress));
+   136→            case "property_first_day_of_week" -> c(property, bean.firstDayOfWeek);
+   137→            case "property_ad_size" -> d(property, bean.adSize);
+   138→            case "property_progressbar_style" -> c(property, bean.progressStyle);
+   139→            case "property_indeterminate" -> d(property, bean.indeterminate);
+   140→            case "property_inject" -> b(property, bean.inject);
+   141→            case "property_convert" -> b(property, bean.convert, String.valueOf(bean.type));
+   142→        }
+   143→    }
+   144→
+   145→    private void a(String header) {
+   146→        var sub = new PropertySubheader(getContext());
+   147→        sub.setHeaderName(header);
+   148→        addView(sub);
+   149→    }
+   150→
+   151→    private void a(String name, int value) {
+   152→        PropertyColorItem colorItem = (PropertyColorItem) f.get(name);
+   153→        if (colorItem == null) {
+   154→            colorItem = new PropertyColorItem(getContext(), !b);
+   155→            colorItem.setOrientationItem(getOrientation());
+   156→            colorItem.setKey(name);
+   157→            colorItem.setValue(value);
+   158→            colorItem.setTag(name);
+   159→            colorItem.setOnPropertyValueChangeListener(this);
+   160→            f.put(name, colorItem);
+   161→        } else {
+   162→            colorItem.setValue(value);
+   163→        }
+   164→
+   165→        addView(colorItem);
+   166→    }
+   167→
+   168→    private void a(String key, int left, int top, int right, int bottom) {
+   169→        PropertyIndentItem indentItem = (PropertyIndentItem) f.get(key);
+   170→        if (indentItem == null) {
+   171→            indentItem = new PropertyIndentItem(getContext(), !b);
+   172→            indentItem.setOrientationItem(getOrientation());
+   173→            indentItem.setKey(key);
+   174→            indentItem.a(left, top, right, bottom);
+   175→            indentItem.setTag(key);
+   176→            indentItem.setOnPropertyValueChangeListener(this);
+   177→            f.put(key, indentItem);
+   178→        } else {
+   179→            indentItem.a(left, top, right, bottom);
+   180→        }
+   181→
+   182→        addView(indentItem);
+   183→    }
+   184→
+   185→    private void r(String name, String value, int value2) {
+   186→        PropertyColorItem colorItem = (PropertyColorItem) f.get(name);
+   187→        if (colorItem == null) {
+   188→            colorItem = new PropertyColorItem(getContext(), !b, sc_id);
+   189→            colorItem.setOrientationItem(getOrientation());
+   190→            colorItem.setKey(name);
+   191→            colorItem.setValue(value2, value);
+   192→            colorItem.setTag(name);
+   193→            colorItem.setOnPropertyValueChangeListener(this);
+   194→            f.put(name, colorItem);
+   195→        } else {
+   196→            colorItem.setValue(value2, value);
+   197→        }
+   198→        addView(colorItem);
+   199→    }
+   200→
+   201→    private void a(String key, int value, boolean isEnable) {
+   202→        PropertyMeasureItem measureItem = (PropertyMeasureItem) f.get(key);
+   203→        int isEnabled;
+   204→        if (isEnable) {
+   205→            isEnabled = 7;
+   206→        } else {
+   207→            isEnabled = 3;
+   208→        }
+   209→
+   210→        if (measureItem == null) {
+   211→            measureItem = new PropertyMeasureItem(getContext(), !b);
+   212→            measureItem.setOrientationItem(getOrientation());
+   213→            measureItem.setItemEnabled(isEnabled);
+   214→            measureItem.setKey(key);
+   215→            measureItem.setValue(value);
+   216→            measureItem.setTag(key);
+   217→            measureItem.setOnPropertyValueChangeListener(this);
+   218→            f.put(key, measureItem);
+   219→        } else {
+   220→            measureItem.setItemEnabled(isEnabled);
+   221→            measureItem.setValue(value);
+   222→        }
+   223→
+   224→        addView(measureItem);
+   225→    }
+   226→
+   227→    private void a(String header, OnClickListener listener) {
+   228→        PropertySubheader propertySubheader = new PropertySubheader(getContext());
+   229→        propertySubheader.setHeaderName(header);
+   230→        propertySubheader.setOnClickListener(listener);
+   231→        addView(propertySubheader);
+   232→    }
+   233→
+   234→    public void a(String scId, ViewBean bean) {
+   235→        sc_id = scId;
+   236→        c = bean;
+   237→        Cx.a().b(c.getClassInfo().getClassName());
+   238→        removeAllViews();
+   239→        f.clear();
+   240→        if (bean.id.equals("_fab")) {
+   241→            b(bean);
+   242→        } else {
+   243→            if (getOrientation() == LinearLayout.VERTICAL) {
+   244→                b("property_id", bean.id);
+   245→            }
+   246→
+   247→            f(bean);
+   248→            d(bean);
+   249→            g(bean);
+   250→            h(bean);
+   251→            if (getOrientation() == LinearLayout.HORIZONTAL) {
+   252→                b("property_id", bean.id);
+   253→            }
+   254→        }
+   255→    }
+   256→
+   257→    @Override
+   258→    public void a(String var1, Object var2) {
+   259→        Cx.a().a(c.getClassInfo().getClassName(), var1);
+   260→        if (d != null) {
+   261→            ViewBean cloned = c.clone();
+   262→            i(c);
+   263→            if (!b) {
+   264→                cC.c(sc_id).a(e.getXmlName(), cloned, c.clone());
+   265→                d.a(c);
+   266→            }
+   267→        }
+   268→    }
+   269→
+   270→    private void a(String key, String value) {
+   271→        PropertyCustomViewItem propertyCustomViewItem = (PropertyCustomViewItem) f.get(key);
+   272→        if (propertyCustomViewItem == null) {
+   273→            propertyCustomViewItem = new PropertyCustomViewItem(getContext(), !b);
+   274→            propertyCustomViewItem.setOrientationItem(getOrientation());
+   275→            propertyCustomViewItem.setKey(key);
+   276→            propertyCustomViewItem.setTag(key);
+   277→            propertyCustomViewItem.setOnPropertyValueChangeListener(this);
+   278→            f.put(key, propertyCustomViewItem);
+   279→        }
+   280→
+   281→        propertyCustomViewItem.setCustomView(jC.b(sc_id).c());
+   282→        propertyCustomViewItem.setValue(value);
+   283→        addView(propertyCustomViewItem);
+   284→    }
+   285→
+   286→    private void a(String key, String value, boolean z, String typeView) {
+   287→        PropertyInputItem inputItem = (PropertyInputItem) f.get(key);
+   288→        if (inputItem == null) {
+   289→            inputItem = new PropertyInputItem(getContext(), !z);
+   290→            inputItem.setOrientationItem(getOrientation());
+   291→            inputItem.setTypeView(typeView);
+   292→            inputItem.a(sc_id, e);
+   293→            inputItem.setKey(key);
+   294→            inputItem.setValue(value);
+   295→            inputItem.setTag(key);
+   296→            inputItem.setOnPropertyValueChangeListener(this);
+   297→            f.put(key, inputItem);
+   298→        } else {
+   299→            inputItem.setTypeView(typeView);
+   300→            inputItem.a(sc_id, e);
+   301→            inputItem.setValue(value);
+   302→        }
+   303→        inputItem.setBean(c);
+   304→
+   305→        addView(inputItem);
+   306→    }
+   307→
+   308→    public void save() {
+   309→        Cx.a().b();
+   310→    }
+   311→
+   312→    private void b(ViewBean bean) {
+   313→        if (getOrientation() == LinearLayout.VERTICAL) {
+   314→            a(bean, "property_id");
+   315→        }
+   316→
+   317→        a(bean);
+   318→        c(bean);
+   319→        if (getOrientation() == LinearLayout.HORIZONTAL) {
+   320→            a(bean, "property_id");
+   321→        }
+   322→    }
+   323→
+   324→    private void b(String key, int value) {
+   325→        PropertyGravityItem gravityItem = (PropertyGravityItem) f.get(key);
+   326→        if (gravityItem == null) {
+   327→            gravityItem = new PropertyGravityItem(getContext(), !b);
+   328→            gravityItem.setOrientationItem(getOrientation());
+   329→            gravityItem.setKey(key);
+   330→            gravityItem.setValue(value);
+   331→            gravityItem.setTag(key);
+   332→            gravityItem.setOnPropertyValueChangeListener(this);
+   333→            f.put(key, gravityItem);
+   334→        } else {
+   335→            gravityItem.setValue(value);
+   336→        }
+   337→
+   338→        addView(gravityItem);
+   339→    }
+   340→
+   341→    private void b(String key, String value) {
+   342→        a(key, value, b, null);
+   343→    }
+   344→
+   345→    private void b(String key, String value, String viewType) {
+   346→        a(key, value, b, viewType);
+   347→    }
+   348→
+   349→    private void b(String key, String value, boolean z) {
+   350→        PropertyResourceItem drawableItem = (PropertyResourceItem) f.get(key);
+   351→        if (drawableItem == null) {
+   352→            drawableItem = new PropertyResourceItem(getContext(), !b, sc_id, z);
+   353→            drawableItem.setOrientationItem(getOrientation());
+   354→            drawableItem.setKey(key);
+   355→            drawableItem.setValue(value);
+   356→            drawableItem.setTag(key);
+   357→            drawableItem.setOnPropertyValueChangeListener(this);
+   358→            f.put(key, drawableItem);
+   359→        } else {
+   360→            drawableItem.setValue(value);
+   361→        }
+   362→        addView(drawableItem);
+   363→    }
+   364→
+   365→    private void c(ViewBean bean) {
+   366→        if (getOrientation() == LinearLayout.VERTICAL) {
+   367→            a(getContext().getString(R.string.property_header_image), this);
+   368→        }
+   369→
+   370→        a(bean, "property_image");
+   371→        a(bean, "property_rotate");
+   372→        a(bean, "property_alpha");
+   373→        a(bean, "property_translation_x");
+   374→        a(bean, "property_translation_y");
+   375→        a(bean, "property_scale_x");
+   376→        a(bean, "property_scale_y");
+   377→    }
+   378→
+   379→    private void c(String key, int value) {
+   380→        PropertySelectorItem selectorItem = (PropertySelectorItem) f.get(key);
+   381→        if (selectorItem == null) {
+   382→            selectorItem = new PropertySelectorItem(getContext(), !b);
+   383→            selectorItem.setOrientationItem(getOrientation());
+   384→            selectorItem.setKey(key);
+   385→            selectorItem.setValue(value);
+   386→            selectorItem.setTag(key);
+   387→            selectorItem.setOnPropertyValueChangeListener(this);
+   388→            f.put(key, selectorItem);
+   389→        } else {
+   390→            selectorItem.setValue(value);
+   391→        }
+   392→
+   393→        addView(selectorItem);
+   394→    }
+   395→
+   396→    private void c(String key, String value) {
+   397→        PropertyStringPairSelectorItem pairSelectorItem = (PropertyStringPairSelectorItem) f.get(key);
+   398→        if (pairSelectorItem == null) {
+   399→            pairSelectorItem = new PropertyStringPairSelectorItem(getContext(), !b);
+   400→            pairSelectorItem.setOrientationItem(getOrientation());
+   401→            pairSelectorItem.setKey(key);
+   402→            pairSelectorItem.setValue(value);
+   403→            pairSelectorItem.setTag(key);
+   404→            pairSelectorItem.setOnPropertyValueChangeListener(this);
+   405→            f.put(key, pairSelectorItem);
+   406→        } else {
+   407→            pairSelectorItem.setValue(value);
+   408→        }
+   409→
+   410→        addView(pairSelectorItem);
+   411→    }
+   412→
+   413→    public void d(ViewBean bean) {
+   414→        if (getOrientation() == LinearLayout.VERTICAL) {
+   415→            a(getContext().getString(R.string.property_header_layout));
+   416→        }
+   417→
+   418→        Gx classInfo = bean.getClassInfo();
+   419→        Gx parentClassInfo = bean.getParentClassInfo();
+   420→        a(bean, "property_layout_width");
+   421→        a(bean, "property_layout_height");
+   422→        if (bean.parentType == ViewBean.VIEW_TYPE_LAYOUT_RELATIVE) {
+   423→            a(bean, "property_parent_attr");
+   424→        }
+   425→        a(bean, "property_padding");
+   426→        a(bean, "property_margin");
+   427→        if (classInfo.a("LinearLayout")) {
+   428→            a(bean, "property_orientation");
+   429→            a(bean, "property_weight_sum");
+   430→            a(bean, "property_gravity");
+   431→        }
+   432→
+   433→        if (classInfo.a("TextView")) {
+   434→            a(bean, "property_gravity");
+   435→        }
+   436→
+   437→        if (parentClassInfo != null) {
+   438→            if (parentClassInfo.a("LinearLayout")) {
+   439→                a(bean, "property_layout_gravity");
+   440→                a(bean, "property_weight");
+   441→            }
+   442→
+   443→            if (parentClassInfo.a("ScrollView") || parentClassInfo.a("HorizontalScrollView")) {
+   444→                a(bean, "property_layout_gravity");
+   445→            }
+   446→        }
+   447→    }
+   448→
+   449→    private void d(String key, int value) {
+   450→        PropertySizeItem propertySizeItem = (PropertySizeItem) f.get(key);
+   451→        if (propertySizeItem == null) {
+   452→            propertySizeItem = new PropertySizeItem(getContext(), !b);
+   453→            propertySizeItem.setOrientationItem(getOrientation());
+   454→            propertySizeItem.setKey(key);
+   455→            propertySizeItem.setValue(value);
+   456→            propertySizeItem.setTag(key);
+   457→            propertySizeItem.setOnPropertyValueChangeListener(this);
+   458→            f.put(key, propertySizeItem);
+   459→        } else {
+   460→            propertySizeItem.setValue(value);
+   461→        }
+   462→
+   463→        addView(propertySizeItem);
+   464→    }
+   465→
+   466→    private void d(String key, String value) {
+   467→        PropertyStringSelectorItem stringSelectorItem = (PropertyStringSelectorItem) f.get(key);
+   468→        if (stringSelectorItem == null) {
+   469→            stringSelectorItem = new PropertyStringSelectorItem(getContext(), !b);
+   470→            stringSelectorItem.setOrientationItem(getOrientation());
+   471→            stringSelectorItem.setKey(key);
+   472→            stringSelectorItem.setValue(value);
+   473→            stringSelectorItem.setTag(key);
+   474→            stringSelectorItem.setOnPropertyValueChangeListener(this);
+   475→            f.put(key, stringSelectorItem);
+   476→        } else {
+   477→            stringSelectorItem.setValue(value);
+   478→        }
+   479→
+   480→        addView(stringSelectorItem);
+   481→    }
+   482→
+   483→    public void e(ViewBean bean) {
+   484→        c = bean;
+   485→        removeAllViews();
+   486→        f.clear();
+   487→        LayoutParams params = new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+   488→                ViewGroup.LayoutParams.MATCH_PARENT);
+   489→        params.gravity = Gravity.LEFT;
+   490→        setLayoutParams(params);
+   491→        setGravity(Gravity.LEFT);
+   492→        ArrayList<String> items = Cx.a().a(bean.getClassInfo().getClassName());
+   493→        if (items == null) {
+   494→            setupViews();
+   495→        } else {
+   496→            for (String s : items) {
+   497→                a(bean, s);
+   498→            }
+   499→        }
+   500→    }
+   501→
+   502→    private void e(String key, int value) {
+   503→        PropertySwitchSingleLineItem switchSingleLineItem = (PropertySwitchSingleLineItem) f.get(key);
+   504→        boolean isEnabled = false;
+   505→        if (switchSingleLineItem == null) {
+   506→            switchSingleLineItem = new PropertySwitchSingleLineItem(getContext(), !b);
+   507→            switchSingleLineItem.setOrientationItem(getOrientation());
+   508→            switchSingleLineItem.setKey(key);
+   509→            if (value == 1) {
+   510→                isEnabled = true;
+   511→            }
+   512→
+   513→            switchSingleLineItem.setValue(isEnabled);
+   514→            switchSingleLineItem.setTag(key);
+   515→            switchSingleLineItem.setOnPropertyValueChangeListener(this);
+   516→            f.put(key, switchSingleLineItem);
+   517→        } else {
+   518→            if (value == 1) {
+   519→                isEnabled = true;
+   520→            }
+   521→
+   522→            switchSingleLineItem.setValue(isEnabled);
+   523→        }
+   524→
+   525→        addView(switchSingleLineItem);
+   526→    }
+   527→
+   528→    private void setupAttributes(String key, HashMap<String, String> value) {
+   529→        ArrayList<ViewBean> viewBeans = jC.a(sc_id).d(e.getXmlName());
+   530→        List<String> ids = new ArrayList<>();
+   531→        for (ViewBean bean : viewBeans) {
+   532→            if (!bean.id.equals(c.id) && bean.parent.equals(c.parent)) {
+   533→                ids.add(bean.id);
+   534→            }
+   535→        }
+   536→        PropertyAttributesItem item = (PropertyAttributesItem) f.get(key);
+   537→        if (item == null) {
+   538→            item = new PropertyAttributesItem(getContext(), !b);
+   539→            item.setOrientationItem(getOrientation());
+   540→            item.setKey(key);
+   541→            item.setValue(value);
+   542→            item.setTag(key);
+   543→            item.setOnPropertyValueChangeListener(this);
+   544→            f.put(key, item);
+   545→        } else {
+   546→            item.setValue(value);
+   547→        }
+   548→        item.setBean(c);
+   549→        item.setBeans(viewBeans);
+   550→        item.setAvailableIds(ids);
+   551→
+   552→        addView(item);
+   553→    }
+   554→
+   555→    public void f(ViewBean bean) {
+   556→        if (!bean.id.equals("_fab")) {
+   557→            Gx classInfo = bean.getClassInfo();
+   558→            a(bean, "property_inject");
+   559→            a(bean, "property_convert");
+   560→            if (classInfo.b("Spinner")) {
+   561→                a(bean, "property_spinner_mode");
+   562→            }
+   563→
+   564→            if (classInfo.b("ListView")) {
+   565→                a(bean, "property_divider_height");
+   566→                a(bean, "property_custom_view_listview");
+   567→            }
+   568→
+   569→            if (classInfo.b("GridView")) {
+   570→                a(bean, "property_custom_view_listview");
+   571→            }
+   572→
+   573→            if (classInfo.b("RecyclerView")) {
+   574→                a(bean, "property_custom_view_listview");
+   575→            }
+   576→
+   577→            if (classInfo.b("ViewPager")) {
+   578→                a(bean, "property_custom_view_listview");
+   579→            }
+   580→
+   581→            if (classInfo.b("Spinner")) {
+   582→                a(bean, "property_custom_view_listview");
+   583→            }
+   584→
+   585→            if (classInfo.b("AutoCompleteTextView")) {
+   586→                a(bean, "property_hint");
+   587→                a(bean, "property_hint_color");
+   588→            }
+   589→
+   590→            if (classInfo.b("MultiAutoCompleteTextView")) {
+   591→                a(bean, "property_hint");
+   592→                a(bean, "property_hint_color");
+   593→            }
+   594→
+   595→            if (classInfo.b("WaveSideBar")) {
+   596→                b("property_text_size", String.valueOf(bean.text.textSize));
+   597→                a(bean, "property_text_color");
+   598→            }
+   599→
+   600→            if (classInfo.a("CompoundButton") && getOrientation() == LinearLayout.VERTICAL) {
+   601→                a(bean, "property_checked");
+   602→            }
+   603→
+   604→            if (classInfo.b("SeekBar")) {
+   605→                a(bean, "property_max");
+   606→                a(bean, "property_progress");
+   607→            }
+   608→
+   609→            if (classInfo.b("CalendarView")) {
+   610→                a(bean, "property_first_day_of_week");
+   611→            }
+   612→
+   613→            if (classInfo.b("AdView")) {
+   614→                a(bean, "property_ad_size");
+   615→            }
+   616→
+   617→            if (classInfo.b("ProgressBar")) {
+   618→                a(bean, "property_max");
+   619→                a(bean, "property_progress");
+   620→                a(bean, "property_progressbar_style");
+   621→                a(bean, "property_indeterminate");
+   622→            }
+   623→        }
+   624→    }
+   625→
+   626→    public void g(ViewBean bean) {
+   627→        Gx classInfo = bean.getClassInfo();
+   628→        if (classInfo.a("TextView")) {
+   629→            if (getOrientation() == LinearLayout.VERTICAL) {
+   630→                a(getContext().getString(R.string.property_header_text));
+   631→            }
+   632→
+   633→            a(bean, "property_text");
+   634→            b("property_text_size", String.valueOf(bean.text.textSize));
+   635→            a(bean, "property_text_style");
+   636→            a(bean, "property_text_color");
+   637→            if (classInfo.b("EditText")) {
+   638→                a(bean, "property_hint");
+   639→                a(bean, "property_hint_color");
+   640→                if (getOrientation() == LinearLayout.VERTICAL) {
+   641→                    a(bean, "property_single_line");
+   642→                }
+   643→
+   644→                a(bean, "property_lines");
+   645→                a(bean, "property_input_type");
+   646→                a(bean, "property_ime_option");
+   647→            }
+   648→
+   649→            if (classInfo.b("TextView")) {
+   650→                if (getOrientation() == LinearLayout.VERTICAL) {
+   651→                    a(bean, "property_single_line");
+   652→                }
+   653→
+   654→                a(bean, "property_lines");
+   655→            }
+   656→        }
+   657→    }
+   658→
+   659→    public void h(ViewBean bean) {
+   660→        Gx classInfo = bean.getClassInfo();
+   661→        if (getOrientation() == LinearLayout.VERTICAL) {
+   662→            if (classInfo.a("ImageView")) {
+   663→                a(getContext().getString(R.string.property_header_image), this);
+   664→                a(bean, "property_image");
+   665→                a(bean, "property_scale_type");
+   666→            } else {
+   667→                a(getContext().getString(R.string.property_header_image));
+   668→            }
+   669→        } else if (classInfo.a("ImageView")) {
+   670→            a(bean, "property_image");
+   671→            a(bean, "property_scale_type");
+   672→        }
+   673→
+   674→        if (bean.type != ViewBean.VIEW_TYPE_WIDGET_MAPVIEW) {
+   675→            a(bean, "property_background_resource");
+   676→            a(bean, "property_background_color");
+   677→        }
+   678→
+   679→        if (getOrientation() == LinearLayout.VERTICAL
+   680→                && !classInfo.b("LinearLayout")
+   681→                && !classInfo.b("ScrollView")
+   682→                && !classInfo.b("HorizontalScrollView")
+   683→                && !classInfo.b("ListView")
+   684→                && !classInfo.b("FloatingActionButton")) {
+   685→            a(bean, "property_enabled");
+   686→        }
+   687→
+   688→        a(bean, "property_rotate");
+   689→        a(bean, "property_alpha");
+   690→        a(bean, "property_translation_x");
+   691→        a(bean, "property_translation_y");
+   692→        a(bean, "property_scale_x");
+   693→        a(bean, "property_scale_y");
+   694→    }
+   695→
+   696→    public void i(ViewBean bean) {
+   697→        int childCount = getChildCount();
+   698→
+   699→        for (int i = 0; i < childCount; ++i) {
+   700→            View view = getChildAt(i);
+   701→            if (view instanceof PropertyInputItem inputItem) {
+   702→                switch (inputItem.getKey()) {
+   703→                    case "property_id" -> {
+   704→                        String var5 = bean.id;
+   705→                        bean.preId = var5;
+   706→                        if (var5.charAt(0) != '_') {
+   707→                            bean.id = inputItem.getValue();
+   708→                        }
+   709→                    }
+   710→                    case "property_convert" -> bean.convert = inputItem.getValue();
+   711→                    case "property_inject" -> bean.inject = inputItem.getValue();
+   712→                    case "property_text" -> bean.text.text = autoCreateOrReferenceString(inputItem.getValue());
+   713→                    case "property_hint" -> bean.text.hint = autoCreateOrReferenceString(inputItem.getValue());
+   714→                    case "property_text_size" -> bean.text.textSize = Integer.parseInt(inputItem.getValue());
+   715→                    case "property_weight" ->
+   716→                            bean.layout.weight = Integer.parseInt(inputItem.getValue());
+   717→                    case "property_weight_sum" ->
+   718→                            bean.layout.weightSum = Integer.parseInt(inputItem.getValue());
+   719→                    case "property_rotate" ->
+   720→                            bean.image.rotate = Integer.parseInt(inputItem.getValue());
+   721→                    case "property_alpha" -> bean.alpha = Float.parseFloat(inputItem.getValue());
+   722→                    case "property_translation_x" ->
+   723→                            bean.translationX = Float.parseFloat(inputItem.getValue());
+   724→                    case "property_translation_y" ->
+   725→                            bean.translationY = Float.parseFloat(inputItem.getValue());
+   726→                    case "property_scale_x" -> bean.scaleX = Float.parseFloat(inputItem.getValue());
+   727→                    case "property_scale_y" -> bean.scaleY = Float.parseFloat(inputItem.getValue());
+   728→                    case "property_lines" ->
+   729→                            bean.text.line = Integer.parseInt(inputItem.getValue());
+   730→                    case "property_max" -> bean.max = Integer.parseInt(inputItem.getValue());
+   731→                    case "property_progress" ->
+   732→                            bean.progress = Integer.parseInt(inputItem.getValue());
+   733→                }
+   734→            } else if (view instanceof PropertyMeasureItem measureItem) {
+   735→                if (measureItem.getKey().equals("property_layout_width")) {
+   736→                    bean.layout.width = measureItem.getValue();
+   737→                } else if (measureItem.getKey().equals("property_layout_height")) {
+   738→                    bean.layout.height = measureItem.getValue();
+   739→                }
+   740→            } else if (view instanceof PropertySelectorItem selectorItem) {
+   741→                switch (selectorItem.getKey()) {
+   742→                    case "property_orientation" ->
+   743→                            bean.layout.orientation = selectorItem.getValue();
+   744→                    case "property_text_style" -> bean.text.textType = selectorItem.getValue();
+   745→                    case "property_input_type" -> bean.text.inputType = selectorItem.getValue();
+   746→                    case "property_ime_option" -> bean.text.imeOption = selectorItem.getValue();
+   747→                    case "property_spinner_mode" -> bean.spinnerMode = selectorItem.getValue();
+   748→                    case "property_first_day_of_week" ->
+   749→                            bean.firstDayOfWeek = selectorItem.getValue();
+   750→                }
+   751→            } else if (view instanceof PropertyStringSelectorItem stringSelectorItem) {
+   752→                switch (stringSelectorItem.getKey()) {
+   753→                    case "property_scale_type" ->
+   754→                            bean.image.scaleType = stringSelectorItem.getValue();
+   755→                    case "property_ad_size" -> bean.adSize = stringSelectorItem.getValue();
+   756→                    case "property_indeterminate" ->
+   757→                            bean.indeterminate = stringSelectorItem.getValue();
+   758→                }
+   759→            } else if (view instanceof PropertyStringPairSelectorItem stringPairSelectorItem) {
+   760→                if (stringPairSelectorItem.getKey().equals("property_progressbar_style")) {
+   761→                    bean.progressStyle = stringPairSelectorItem.getValue();
+   762→                }
+   763→            } else if (view instanceof PropertyCustomViewItem listview_item) {
+   764→                if (listview_item.getKey().equals("property_custom_view_listview")) {
+   765→                    bean.customView = listview_item.getValue();
+   766→                }
+   767→            } else if (view instanceof PropertySwitchSingleLineItem switchSingleLineItem) {
+   768→                switch (switchSingleLineItem.getKey()) {
+   769→                    case "property_single_line" ->
+   770→                            bean.text.singleLine = switchSingleLineItem.getValue() ? 1 : 0;
+   771→                    case "property_enabled" ->
+   772→                            bean.enabled = switchSingleLineItem.getValue() ? 1 : 0;
+   773→                    case "property_clickable" ->
+   774→                            bean.clickable = switchSingleLineItem.getValue() ? 1 : 0;
+   775→                    case "property_checked" ->
+   776→                            bean.checked = switchSingleLineItem.getValue() ? 1 : 0;
+   777→                }
+   778→            } else if (view instanceof PropertyColorItem colorItem) {
+   779→                switch (colorItem.getKey()) {
+   780→                    case "property_text_color" -> {
+   781→                        bean.text.textColor = colorItem.getValue();
+   782→                        bean.text.resTextColor = colorItem.getResValue();
+   783→                    }
+   784→                    case "property_hint_color" -> {
+   785→                        bean.text.hintColor = colorItem.getValue();
+   786→                        bean.text.resHintColor = colorItem.getResValue();
+   787→                    }
+   788→                    case "property_background_color" -> {
+   789→                        bean.layout.backgroundResColor = colorItem.getResValue();
+   790→                        bean.layout.backgroundColor = colorItem.getValue();
+   791→                    }
+   792→                }
+   793→            } else if (view instanceof PropertyIndentItem indentItem) {
+   794→                if (indentItem.getKey().equals("property_margin")) {
+   795→                    LayoutBean layout = bean.layout;
+   796→                    layout.marginLeft = indentItem.j;
+   797→                    layout.marginTop = indentItem.k;
+   798→                    layout.marginRight = indentItem.l;
+   799→                    layout.marginBottom = indentItem.m;
+   800→                } else if (indentItem.getKey().equals("property_padding")) {
+   801→                    LayoutBean layout = bean.layout;
+   802→                    layout.paddingLeft = indentItem.j;
+   803→                    layout.paddingTop = indentItem.k;
+   804→                    layout.paddingRight = indentItem.l;
+   805→                    layout.paddingBottom = indentItem.m;
+   806→                }
+   807→            } else if (view instanceof PropertyGravityItem gravityItem) {
+   808→                if (gravityItem.getKey().equals("property_gravity")) {
+   809→                    bean.layout.gravity = gravityItem.getValue();
+   810→                } else if (gravityItem.getKey().equals("property_layout_gravity")) {
+   811→                    bean.layout.layoutGravity = gravityItem.getValue();
+   812→                }
+   813→            } else if (view instanceof PropertyResourceItem image_item) {
+   814→                if (image_item.getKey().equals("property_image")) {
+   815→                    bean.image.resName = image_item.getValue();
+   816→                } else if (image_item.getKey().equals("property_background_resource")) {
+   817→                    bean.layout.backgroundResource = image_item.getValue();
+   818→                }
+   819→            } else if (view instanceof PropertySizeItem sizeItem) {
+   820→                if (sizeItem.getKey().equals("property_divider_height")) {
+   821→                    bean.dividerHeight = sizeItem.getValue();
+   822→                }
+   823→            } else if (view instanceof PropertyAttributesItem item) {
+   824→                if (item.getKey().equals("property_parent_attr")) {
+   825→                    bean.parentAttributes = item.getValue();
+   826→                }
+   827→            }
+   828→        }
+   829→
+   830→        if (!bean.id.equals(bean.preId)) {
+   831→            boolean viewBinding = settings.getValue(ProjectSettings.SETTING_ENABLE_VIEWBINDING, "false").equals("true");
+   832→            for (ViewBean viewBean : jC.a(sc_id).d(e.getXmlName())) {
+   833→                if (viewBean.parent.equals(bean.preId)) {
+   834→                    viewBean.parent = bean.id;
+   835→                }
+   836→            }
+   837→
+   838→            if (e.fileType == ProjectFileBean.PROJECT_FILE_TYPE_ACTIVITY) {
+   839→                for (EventBean eventBean : jC.a(sc_id).g(e.getJavaName())) {
+   840→                    if (eventBean.targetId.equals(bean.preId)) {
+   841→                        eventBean.targetId = bean.id;
+   842→                    }
+   843→                }
+   844→
+   845→                HashMap<String, ArrayList<BlockBean>> beanMap = jC.a(sc_id).b(e.getJavaName());
+   846→
+   847→                for (String events : oq.getEventsForClass(bean.getClassInfo())) {
+   848→                    StringBuilder eventBodyBuilder = new StringBuilder();
+   849→                    eventBodyBuilder.append(bean.preId);
+   850→                    eventBodyBuilder.append("_");
+   851→                    eventBodyBuilder.append(events);
+   852→                    String body = eventBodyBuilder.toString();
+   853→                    if (beanMap.containsKey(body)) {
+   854→                        eventBodyBuilder = new StringBuilder();
+   855→                        eventBodyBuilder.append(bean.id);
+   856→                        eventBodyBuilder.append("_");
+   857→                        eventBodyBuilder.append(events);
+   858→                        beanMap.put(eventBodyBuilder.toString(), beanMap.get(body));
+   859→                        beanMap.remove(body);
+   860→                    }
+   861→                }
+   862→
+   863→                ArrayList<String> events = new ArrayList<>();
+   864→                if (beanMap.containsKey("onCreate_initializeLogic")) {
+   865→                    events.add("onCreate_initializeLogic");
+   866→                }
+   867→
+   868→                for (Pair<String, String> moreblocks : jC.a(sc_id).i(e.getJavaName())) {
+   869→                    String key = moreblocks.first +
+   870→                            "_" +
+   871→                            "moreBlock";
+   872→                    if (beanMap.containsKey(key)) {
+   873→                        events.add(key);
+   874→                    }
+   875→                }
+   876→
+   877→                for (EventBean eventBean : jC.a(sc_id).g(e.getJavaName())) {
+   878→                    if (!eventBean.eventName.equals("onBindCustomView")) {
+   879→                        String eventKey = eventBean.getEventKey();
+   880→                        if (beanMap.containsKey(eventKey)) {
+   881→                            events.add(eventKey);
+   882→                        }
+   883→                    }
+   884→                }
+   885→
+   886→                for (String event : events) {
+   887→                    ArrayList<BlockBean> blockBeans = beanMap.get(event);
+   888→                    if (blockBeans != null) {
+   889→                        for (BlockBean blockBean : blockBeans) {
+   890→                            Gx classInfo = blockBean.getClassInfo();
+   891→
+   892→                            if (classInfo != null && classInfo.d() && blockBean.spec.equals(viewBinding ? "binding." + ViewBindingBuilder.generateParameterFromId(bean.preId) : bean.preId)) {
+   893→                                blockBean.spec = viewBinding ? "binding." + ViewBindingBuilder.generateParameterFromId(bean.id) : bean.id;
+   894→                            } else {
+   895→                                ArrayList<Gx> paramClassInfo = blockBean.getParamClassInfo();
+   896→                                if (paramClassInfo != null && !paramClassInfo.isEmpty()) {
+   897→                                    for (int i = 0; i < paramClassInfo.size(); ++i) {
+   898→                                        if (paramClassInfo.get(i).d() && blockBean.parameters.get(i).equals(viewBinding ? "binding." + ViewBindingBuilder.generateParameterFromId(bean.preId) : bean.preId)) {
+   899→                                            blockBean.parameters.set(i, viewBinding ? "binding." + ViewBindingBuilder.generateParameterFromId(bean.id) : bean.id);
+   900→                                        }
+   901→                                    }
+   902→                                }
+   903→                            }
+   904→                        }
+   905→                    }
+   906→                }
+   907→            } else {
+   908→                ArrayList<Pair<String, String>> viewBeanItems = new ArrayList<>();
+   909→
+   910→                for (ProjectFileBean projectFileBean : jC.b(sc_id).b()) {
+   911→                    for (ViewBean viewBean : jC.a(sc_id).f(projectFileBean.getXmlName())) {
+   912→                        if (viewBean.customView.equals(e.fileName)) {
+   913→                            String javaName = projectFileBean.getJavaName();
+   914→                            String key = viewBean.id +
+   915→                                    "_" +
+   916→                                    "onBindCustomView";
+   917→                            viewBeanItems.add(new Pair<>(javaName, key));
+   918→                        }
+   919→                    }
+   920→                }
+   921→
+   922→                for (Pair<String, String> viewBean : viewBeanItems) {
+   923→                    ArrayList<BlockBean> blockBeans = jC.a(sc_id).b(viewBean.first).get(viewBean.second);
+   924→                    if (blockBeans != null) {
+   925→                        for (BlockBean blockBean : blockBeans) {
+   926→                            Gx classInfo = blockBean.getClassInfo();
+   927→
+   928→                            if (classInfo != null && classInfo.d() && blockBean.spec.equals(viewBinding ? "binding." + ViewBindingBuilder.generateParameterFromId(bean.preId) : bean.preId)) {
+   929→                                blockBean.spec = viewBinding ? "binding." + ViewBindingBuilder.generateParameterFromId(bean.id) : bean.id;
+   930→                            } else {
+   931→                                ArrayList<Gx> paramClassInfo = blockBean.getParamClassInfo();
+   932→                                if (paramClassInfo != null && !paramClassInfo.isEmpty()) {
+   933→                                    for (int i = 0; i < paramClassInfo.size(); ++i) {
+   934→                                        if (paramClassInfo.get(i).d() && blockBean.parameters.get(i).equals(viewBinding ? "binding." + ViewBindingBuilder.generateParameterFromId(bean.preId) : bean.preId)) {
+   935→                                            blockBean.parameters.set(i, viewBinding ? "binding." + ViewBindingBuilder.generateParameterFromId(bean.id) : bean.id);
+   936→                                        }
+   937→                                    }
+   938→                                }
+   939→                            }
+   940→                        }
+   941→                    }
+   942→                }
+   943→            }
+   944→        }
+   945→
+   946→        if (bean.type == ViewBean.VIEW_TYPE_WIDGET_LISTVIEW) {
+   947→            ViewBean viewBean = jC.a(sc_id).c(e.getXmlName(), bean.preId);
+   948→            String custom = bean.customView;
+   949→            if (custom != null && viewBean != null) {
+   950→                String customView = viewBean.customView;
+   951→                if (customView != null && !customView.equals(custom)) {
+   952→                    ArrayList<EventBean> eventBeans = jC.a(sc_id).g(e.getJavaName());
+   953→                    int size = eventBeans.size();
+   954→
+   955→                    while (true) {
+   956→                        childCount = size - 1;
+   957→                        if (childCount < 0) {
+   958→                            if (bean.customView.isEmpty() || bean.customView.equals("none")) {
+   959→                                Iterator<Entry<String, ArrayList<BlockBean>>> blocks = jC.a(sc_id).b(e.getJavaName()).entrySet().iterator();
+   960→
+   961→                                while (blocks.hasNext()) {
+   962→                                    for (BlockBean blockBean : blocks.next().getValue()) {
+   963→                                        if ("listSetCustomViewData".equals(blockBean.opCode) && bean.id.equals(blockBean.parameters.get(0))) {
+   964→                                            blockBean.parameters.set(0, "");
+   965→                                        }
+   966→                                    }
+   967→                                }
+   968→                            }
+   969→                            break;
+   970→                        }
+   971→
+   972→                        EventBean eventBean = eventBeans.get(childCount);
+   973→                        size = childCount;
+   974→                        if (eventBean.targetId.equals(bean.id)) {
+   975→                            if (eventBean.eventName.equals("onBindCustomView")) {
+   976→                                eventBeans.remove(eventBean);
+   977→                                HashMap<String, ArrayList<BlockBean>> blocks = jC.a(sc_id).b(e.getJavaName());
+   978→                                blocks.remove(eventBean.getEventKey());
+   979→                            }
+   980→                        }
+   981→                    }
+   982→                }
+   983→            }
+   984→        }
+   985→    }
+   986→
+   987→
+   988→    public void setProjectSettings(ProjectSettings settings) {
+   989→        this.settings = settings;
+   990→    }
+   991→
+   992→    public void setOnPropertyValueChangedListener(Lw listener) {
+   993→        d = listener;
+   994→    }
+   995→
+   996→    public void setProjectFileBean(ProjectFileBean fileBean) {
+   997→        e = fileBean;
+   998→    }
+   999→
+  1000→    @Override
+  1001→    public void onClick(View v) {
+  1002→        if (!mB.a() && !b) {
+  1003→            Intent intent = new Intent(getContext(), ManageImageActivity.class);
+  1004→            intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+  1005→            intent.putExtra("sc_id", sc_id);
+  1006→            ((Activity) getContext()).startActivityForResult(intent, 209);
+  1007→        }
+  1008→    }
+  1009→
+  1010→    private String autoCreateOrReferenceString(String input) {
+  1011→        if (input == null) return null;
+  1012→        String value = input.trim();
+  1013→        if (value.isEmpty()) return input;
+  1014→        if (value.startsWith("@string/")) return value;
+  1015→
+  1016→        String stringsPath = wq.b(sc_id) + "/files/resource/values/strings.xml";
+  1017→        StringsEditorManager sem = new StringsEditorManager();
+  1018→        sem.sc_id = sc_id;
+  1019→        ArrayList<HashMap<String, Object>> listMap = new ArrayList<>();
+  1020→        String xml = FileUtil.readFileIfExist(stringsPath);
+  1021→        sem.convertXmlStringsToListMap(xml, listMap);
+  1022→
+  1023→        for (HashMap<String, Object> map : listMap) {
+  1024→            Object textObj = map.get("text");
+  1025→            if (textObj != null && value.equals(String.valueOf(textObj))) {
+  1026→                Object keyObj = map.get("key");
+  1027→                if (keyObj != null) {
+  1028→                    return "@string/" + String.valueOf(keyObj);
+  1029→                }
+  1030→            }
+  1031→        }
+  1032→
+  1033→        String base = value.toLowerCase(Locale.ROOT)
+  1034→                .replaceAll("[^a-z0-9]+", "_")
+  1035→                .replaceAll("^_+|_+$", "");
+  1036→        if (base.isEmpty()) base = "string_value";
+  1037→        if (Character.isDigit(base.charAt(0))) base = "s_" + base;
+  1038→
+  1039→        String key = base;
+  1040→        int suffix = 1;
+  1041→        while (sem.isXmlStringsExist(listMap, key)) {
+  1042→            key = base + "_" + suffix++;
+  1043→        }
+  1044→
+  1045→        HashMap<String, Object> newMap = new HashMap<>();
+  1046→        newMap.put("key", key);
+  1047→        newMap.put("text", value);
+  1048→        listMap.add(newMap);
+  1049→
+  1050→        XmlUtil.saveXml(stringsPath, sem.convertListMapToXmlStrings(listMap, sem.notesMap));
+  1051→        return "@string/" + key;
+  1052→    }
+  1053→}
+  1054→

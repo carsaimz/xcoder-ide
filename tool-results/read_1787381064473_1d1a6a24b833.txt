@@ -1,0 +1,809 @@
+     1→/*
+     2→ *  This file is part of AndroidIDE.
+     3→ *
+     4→ *  AndroidIDE is free software: you can redistribute it and/or modify
+     5→ *  it under the terms of the GNU General Public License as published by
+     6→ *  the Free Software Foundation, either version 3 of the License, or
+     7→ *  (at your option) any later version.
+     8→ *
+     9→ *  AndroidIDE is distributed in the hope that it will be useful,
+    10→ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+    11→ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    12→ *  GNU General Public License for more details.
+    13→ *
+    14→ *  You should have received a copy of the GNU General Public License
+    15→ *   along with AndroidIDE.  If not, see <https://www.gnu.org/licenses/>.
+    16→ */
+    17→
+    18→package com.itsaky.androidide.activities.editor
+    19→
+    20→import android.content.Intent
+    21→import android.content.pm.PackageInstaller.SessionCallback
+    22→import android.graphics.Color
+    23→import android.graphics.drawable.GradientDrawable
+    24→import android.os.Bundle
+    25→import android.os.Process
+    26→import android.text.SpannableStringBuilder
+    27→import android.text.Spanned
+    28→import android.text.TextUtils
+    29→import android.text.method.LinkMovementMethod
+    30→import android.text.style.ClickableSpan
+    31→import android.view.View
+    32→import android.view.ViewGroup
+    33→import android.view.ViewTreeObserver.OnGlobalLayoutListener
+    34→import androidx.activity.OnBackPressedCallback
+    35→import androidx.activity.result.ActivityResult
+    36→import androidx.activity.result.ActivityResultLauncher
+    37→import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
+    38→import androidx.activity.viewModels
+    39→import androidx.annotation.GravityInt
+    40→import androidx.annotation.StringRes
+    41→import androidx.appcompat.app.ActionBarDrawerToggle
+    42→import androidx.collection.MutableIntIntMap
+    43→import androidx.core.graphics.Insets
+    44→import androidx.core.view.GravityCompat
+    45→import androidx.core.view.WindowInsetsCompat
+    46→import androidx.core.view.updateLayoutParams
+    47→import androidx.core.view.updatePadding
+    48→import androidx.core.view.updatePaddingRelative
+    49→import com.blankj.utilcode.constant.MemoryConstants
+    50→import com.blankj.utilcode.util.ConvertUtils.byte2MemorySize
+    51→import com.blankj.utilcode.util.FileUtils
+    52→import com.blankj.utilcode.util.ThreadUtils
+    53→import com.github.mikephil.charting.components.AxisBase
+    54→import com.github.mikephil.charting.data.Entry
+    55→import com.github.mikephil.charting.data.LineData
+    56→import com.github.mikephil.charting.data.LineDataSet
+    57→import com.github.mikephil.charting.formatter.IAxisValueFormatter
+    58→import com.google.android.material.bottomsheet.BottomSheetBehavior
+    59→import com.google.android.material.bottomsheet.BottomSheetBehavior.BottomSheetCallback
+    60→import com.google.android.material.snackbar.Snackbar
+    61→import com.google.android.material.tabs.TabLayout
+    62→import com.google.android.material.tabs.TabLayout.Tab
+    63→import com.itsaky.androidide.R
+    64→import com.itsaky.androidide.R.string
+    65→import com.itsaky.androidide.actions.ActionItem.Location.EDITOR_FILE_TABS
+    66→import com.itsaky.androidide.adapters.DiagnosticsAdapter
+    67→import com.itsaky.androidide.adapters.SearchListAdapter
+    68→import com.itsaky.androidide.app.EdgeToEdgeIDEActivity
+    69→import com.itsaky.androidide.databinding.ActivityEditorBinding
+    70→import com.itsaky.androidide.databinding.ContentEditorBinding
+    71→import com.itsaky.androidide.databinding.LayoutDiagnosticInfoBinding
+    72→import com.itsaky.androidide.events.InstallationResultEvent
+    73→import com.itsaky.androidide.fragments.SearchResultFragment
+    74→import com.itsaky.androidide.fragments.sidebar.EditorSidebarFragment
+    75→import com.itsaky.androidide.fragments.sidebar.FileTreeFragment
+    76→import com.itsaky.androidide.handlers.EditorActivityLifecyclerObserver
+    77→import com.itsaky.androidide.handlers.LspHandler.registerLanguageServers
+    78→import com.itsaky.androidide.interfaces.DiagnosticClickListener
+    79→import com.itsaky.androidide.lookup.Lookup
+    80→import com.itsaky.androidide.lsp.models.DiagnosticItem
+    81→import com.itsaky.androidide.models.DiagnosticGroup
+    82→import com.itsaky.androidide.models.OpenedFile
+    83→import com.itsaky.androidide.models.Range
+    84→import com.itsaky.androidide.models.SearchResult
+    85→import com.itsaky.androidide.preferences.internal.BuildPreferences
+    86→import com.itsaky.androidide.projects.IProjectManager
+    87→import com.itsaky.androidide.tasks.cancelIfActive
+    88→import com.itsaky.androidide.ui.CodeEditorView
+    89→import com.itsaky.androidide.ui.ContentTranslatingDrawerLayout
+    90→import com.itsaky.androidide.ui.SwipeRevealLayout
+    91→import com.itsaky.androidide.uidesigner.UIDesignerActivity
+    92→import com.itsaky.androidide.utils.ActionMenuUtils.createMenu
+    93→import com.itsaky.androidide.utils.ApkInstallationSessionCallback
+    94→import com.itsaky.androidide.utils.DialogUtils.newMaterialDialogBuilder
+    95→import com.itsaky.androidide.utils.InstallationResultHandler.onResult
+    96→import com.itsaky.androidide.utils.IntentUtils
+    97→import com.itsaky.androidide.utils.MemoryUsageWatcher
+    98→import com.itsaky.androidide.utils.flashError
+    99→import com.itsaky.androidide.utils.resolveAttr
+   100→import com.itsaky.androidide.viewmodel.EditorViewModel
+   101→import com.itsaky.androidide.xml.resources.ResourceTableRegistry
+   102→import com.itsaky.androidide.xml.versions.ApiVersionsRegistry
+   103→import com.itsaky.androidide.xml.widgets.WidgetTableRegistry
+   104→import kotlinx.coroutines.CoroutineScope
+   105→import kotlinx.coroutines.Dispatchers
+   106→import org.greenrobot.eventbus.Subscribe
+   107→import org.greenrobot.eventbus.ThreadMode.MAIN
+   108→import org.slf4j.Logger
+   109→import org.slf4j.LoggerFactory
+   110→import java.io.File
+   111→import kotlin.math.roundToInt
+   112→import kotlin.math.roundToLong
+   113→
+   114→/**
+   115→ * Base class for EditorActivity which handles most of the view related things.
+   116→ *
+   117→ * @author Akash Yadav
+   118→ */
+   119→@Suppress("MemberVisibilityCanBePrivate")
+   120→abstract class BaseEditorActivity : EdgeToEdgeIDEActivity(), TabLayout.OnTabSelectedListener,
+   121→  DiagnosticClickListener {
+   122→
+   123→  protected val mLifecycleObserver = EditorActivityLifecyclerObserver()
+   124→  protected var diagnosticInfoBinding: LayoutDiagnosticInfoBinding? = null
+   125→  protected var filesTreeFragment: FileTreeFragment? = null
+   126→  protected var editorBottomSheet: BottomSheetBehavior<out View?>? = null
+   127→  protected val memoryUsageWatcher = MemoryUsageWatcher()
+   128→  protected val pidToDatasetIdxMap = MutableIntIntMap(initialCapacity = 3)
+   129→
+   130→  var isDestroying = false
+   131→    protected set
+   132→
+   133→  /**
+   134→   * Editor activity's [CoroutineScope] for executing tasks in the background.
+   135→   */
+   136→  protected val editorActivityScope = CoroutineScope(Dispatchers.Default)
+   137→
+   138→  internal var installationCallback: ApkInstallationSessionCallback? = null
+   139→
+   140→  var uiDesignerResultLauncher: ActivityResultLauncher<Intent>? = null
+   141→  val editorViewModel by viewModels<EditorViewModel>()
+   142→
+   143→  internal var _binding: ActivityEditorBinding? = null
+   144→  val binding: ActivityEditorBinding
+   145→    get() = checkNotNull(_binding) { "Activity has been destroyed" }
+   146→  val content: ContentEditorBinding
+   147→    get() = binding.content
+   148→
+   149→  override val subscribeToEvents: Boolean
+   150→    get() = true
+   151→
+   152→  private val onBackPressedCallback: OnBackPressedCallback = object : OnBackPressedCallback(true) {
+   153→    override fun handleOnBackPressed() {
+   154→      if (binding.root.isDrawerOpen(GravityCompat.START)) {
+   155→        binding.root.closeDrawer(GravityCompat.START)
+   156→      } else if (editorBottomSheet?.state != BottomSheetBehavior.STATE_COLLAPSED) {
+   157→        editorBottomSheet?.setState(BottomSheetBehavior.STATE_COLLAPSED)
+   158→      } else if (binding.swipeReveal.isOpen) {
+   159→        binding.swipeReveal.close()
+   160→      } else {
+   161→        doConfirmProjectClose()
+   162→      }
+   163→    }
+   164→  }
+   165→
+   166→  private val memoryUsageListener = MemoryUsageWatcher.MemoryUsageListener { memoryUsage ->
+   167→    memoryUsage.forEachValue { proc ->
+   168→      _binding?.memUsageView?.chart?.apply {
+   169→        val dataset = (data.getDataSetByIndex(pidToDatasetIdxMap[proc.pid]) as LineDataSet?)
+   170→          ?: run {
+   171→            log.error("No dataset found for process: {}: {}", proc.pid, proc.pname)
+   172→            return@forEachValue
+   173→          }
+   174→
+   175→        dataset.entries.mapIndexed { index, entry ->
+   176→          entry.y = byte2MemorySize(proc.usageHistory[index], MemoryConstants.MB).toFloat()
+   177→        }
+   178→
+   179→        dataset.label = "%s - %.2fMB".format(proc.pname, dataset.entries.last().y)
+   180→        dataset.notifyDataSetChanged()
+   181→        data.notifyDataChanged()
+   182→        notifyDataSetChanged()
+   183→        invalidate()
+   184→      }
+   185→    }
+   186→  }
+   187→
+   188→  private var isImeVisible = false
+   189→  private var contentCardRealHeight: Int? = null
+   190→  private val editorSurfaceContainerBackground by lazy {
+   191→    resolveAttr(R.attr.colorSurfaceDim)
+   192→  }
+   193→  private val editorLayoutCorners by lazy {
+   194→    resources.getDimensionPixelSize(R.dimen.editor_container_corners).toFloat()
+   195→  }
+   196→
+   197→  private var optionsMenuInvalidator: Runnable? = null
+   198→
+   199→  companion object {
+   200→
+   201→    @JvmStatic
+   202→    protected val PROC_IDE = "IDE"
+   203→
+   204→    @JvmStatic
+   205→    protected val PROC_GRADLE_TOOLING = "Gradle Tooling"
+   206→
+   207→    @JvmStatic
+   208→    protected val PROC_GRADLE_DAEMON = "Gradle Daemon"
+   209→
+   210→    @JvmStatic
+   211→    protected val log: Logger = LoggerFactory.getLogger(BaseEditorActivity::class.java)
+   212→
+   213→    private const val OPTIONS_MENU_INVALIDATION_DELAY = 150L
+   214→
+   215→    const val EDITOR_CONTAINER_SCALE_FACTOR = 0.87f
+   216→    const val KEY_BOTTOM_SHEET_SHOWN = "editor_bottomSheetShown"
+   217→    const val KEY_PROJECT_PATH = "saved_projectPath"
+   218→  }
+   219→
+   220→  protected abstract fun provideCurrentEditor(): CodeEditorView?
+   221→
+   222→  protected abstract fun provideEditorAt(index: Int): CodeEditorView?
+   223→
+   224→  protected abstract fun doOpenFile(file: File, selection: Range?)
+   225→
+   226→  protected abstract fun doDismissSearchProgress()
+   227→
+   228→  protected abstract fun getOpenedFiles(): List<OpenedFile>
+   229→
+   230→  internal abstract fun doConfirmProjectClose()
+   231→
+   232→  protected open fun preDestroy() {
+   233→    _binding = null
+   234→
+   235→    optionsMenuInvalidator?.also {
+   236→      ThreadUtils.getMainHandler().removeCallbacks(it)
+   237→    }
+   238→
+   239→    optionsMenuInvalidator = null
+   240→
+   241→    installationCallback?.destroy()
+   242→    installationCallback = null
+   243→
+   244→    if (isDestroying) {
+   245→      memoryUsageWatcher.stopWatching(true)
+   246→      memoryUsageWatcher.listener = null
+   247→      editorActivityScope.cancelIfActive("Activity is being destroyed")
+   248→    }
+   249→  }
+   250→
+   251→  protected open fun postDestroy() {
+   252→    if (isDestroying) {
+   253→      Lookup.getDefault().unregisterAll()
+   254→      ApiVersionsRegistry.getInstance().clear()
+   255→      ResourceTableRegistry.getInstance().clear()
+   256→      WidgetTableRegistry.getInstance().clear()
+   257→    }
+   258→  }
+   259→
+   260→  override fun bindLayout(): View {
+   261→    this._binding = ActivityEditorBinding.inflate(layoutInflater)
+   262→    this.diagnosticInfoBinding = this.content.diagnosticInfo
+   263→    return this.binding.root
+   264→  }
+   265→
+   266→  override fun onApplyWindowInsets(insets: WindowInsetsCompat) {
+   267→    super.onApplyWindowInsets(insets)
+   268→    val height = contentCardRealHeight ?: return
+   269→    val imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime())
+   270→
+   271→    _binding?.content?.bottomSheet?.setImeVisible(imeInsets.bottom > 0)
+   272→    _binding?.contentCard?.updateLayoutParams<ViewGroup.LayoutParams> {
+   273→      this.height = height - imeInsets.bottom
+   274→    }
+   275→
+   276→    val isImeVisible = imeInsets.bottom > 0
+   277→    if (this.isImeVisible != isImeVisible) {
+   278→      this.isImeVisible = isImeVisible
+   279→      onSoftInputChanged()
+   280→    }
+   281→  }
+   282→
+   283→  override fun onApplySystemBarInsets(insets: Insets) {
+   284→    super.onApplySystemBarInsets(insets)
+   285→    this._binding?.apply {
+   286→      drawerSidebar.getFragment<EditorSidebarFragment>()
+   287→        .onApplyWindowInsets(insets)
+   288→
+   289→      content.apply {
+   290→        editorAppBarLayout.updatePadding(
+   291→          top = insets.top
+   292→        )
+   293→        editorToolbar.updatePaddingRelative(
+   294→          start = editorToolbar.paddingStart + insets.left,
+   295→          end = editorToolbar.paddingEnd + insets.right
+   296→        )
+   297→      }
+   298→    }
+   299→  }
+   300→
+   301→  @Subscribe(threadMode = MAIN)
+   302→  open fun onInstallationResult(event: InstallationResultEvent) {
+   303→    val intent = event.intent
+   304→    if (isDestroying) {
+   305→      return
+   306→    }
+   307→
+   308→    val packageName = onResult(this, intent) ?: return
+   309→
+   310→    if (BuildPreferences.launchAppAfterInstall) {
+   311→      IntentUtils.launchApp(this, packageName)
+   312→      return
+   313→    }
+   314→
+   315→    Snackbar.make(content.realContainer, string.msg_action_open_application, Snackbar.LENGTH_LONG)
+   316→      .setAction(string.yes) { IntentUtils.launchApp(this, packageName) }.show()
+   317→  }
+   318→
+   319→  override fun onCreate(savedInstanceState: Bundle?) {
+   320→    super.onCreate(savedInstanceState)
+   321→
+   322→    this.optionsMenuInvalidator = Runnable { super.invalidateOptionsMenu() }
+   323→
+   324→    registerLanguageServers()
+   325→
+   326→    if (savedInstanceState != null && savedInstanceState.containsKey(KEY_PROJECT_PATH)) {
+   327→      IProjectManager.getInstance()
+   328→        .openProject(savedInstanceState.getString(KEY_PROJECT_PATH)!!)
+   329→    }
+   330→
+   331→    onBackPressedDispatcher.addCallback(this, onBackPressedCallback)
+   332→    lifecycle.addObserver(mLifecycleObserver)
+   333→
+   334→    setSupportActionBar(content.editorToolbar)
+   335→
+   336→    setupDrawers()
+   337→    content.tabs.addOnTabSelectedListener(this)
+   338→
+   339→    setupViews()
+   340→
+   341→    setupContainers()
+   342→    setupDiagnosticInfo()
+   343→
+   344→    uiDesignerResultLauncher = registerForActivityResult(
+   345→      StartActivityForResult(),
+   346→      this::handleUiDesignerResult
+   347→    )
+   348→
+   349→    setupMemUsageChart()
+   350→    watchMemory()
+   351→  }
+   352→
+   353→  private fun onSwipeRevealDragProgress(progress: Float) {
+   354→    _binding?.apply {
+   355→      contentCard.progress = progress
+   356→      val insetsTop = systemBarInsets?.top ?: 0
+   357→      content.editorAppBarLayout.updatePadding(
+   358→        top = (insetsTop * (1f - progress)).roundToInt()
+   359→      )
+   360→      memUsageView.chart.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+   361→        topMargin = (insetsTop * progress).roundToInt()
+   362→      }
+   363→    }
+   364→  }
+   365→
+   366→  private fun setupMemUsageChart() {
+   367→    binding.memUsageView.chart.apply {
+   368→      val colorAccent = resolveAttr(R.attr.colorAccent)
+   369→
+   370→      isDragEnabled = false
+   371→      description.isEnabled = false
+   372→      xAxis.axisLineColor = colorAccent
+   373→      axisRight.axisLineColor = colorAccent
+   374→
+   375→      setPinchZoom(false)
+   376→      setBackgroundColor(editorSurfaceContainerBackground)
+   377→      setDrawGridBackground(true)
+   378→      setScaleEnabled(true)
+   379→
+   380→      axisLeft.isEnabled = false
+   381→      axisRight.valueFormatter = object :
+   382→        IAxisValueFormatter {
+   383→        override fun getFormattedValue(value: Float, axis: AxisBase?): String {
+   384→          return "%dMB".format(value.roundToLong())
+   385→        }
+   386→      }
+   387→    }
+   388→  }
+   389→
+   390→  private fun watchMemory() {
+   391→    memoryUsageWatcher.listener = memoryUsageListener
+   392→    memoryUsageWatcher.watchProcess(Process.myPid(), PROC_IDE)
+   393→    resetMemUsageChart()
+   394→  }
+   395→
+   396→  protected fun resetMemUsageChart() {
+   397→    val processes = memoryUsageWatcher.getMemoryUsages()
+   398→    val datasets = Array(processes.size) { index ->
+   399→      LineDataSet(
+   400→        List(MemoryUsageWatcher.MAX_USAGE_ENTRIES) { Entry(it.toFloat(), 0f) },
+   401→        processes[index].pname
+   402→      )
+   403→    }
+   404→
+   405→    val bgColor = editorSurfaceContainerBackground
+   406→    val textColor = resolveAttr(R.attr.colorOnSurface)
+   407→
+   408→    for ((index, proc) in processes.withIndex()) {
+   409→      val dataset = datasets[index]
+   410→      dataset.color = getMemUsageLineColorFor(proc)
+   411→      dataset.setDrawIcons(false)
+   412→      dataset.setDrawCircles(false)
+   413→      dataset.setDrawCircleHole(false)
+   414→      dataset.setDrawValues(false)
+   415→      dataset.formLineWidth = 1f
+   416→      dataset.formSize = 15f
+   417→      dataset.isHighlightEnabled = false
+   418→      pidToDatasetIdxMap[proc.pid] = index
+   419→    }
+   420→
+   421→    binding.memUsageView.chart.setBackgroundColor(bgColor)
+   422→
+   423→    binding.memUsageView.chart.apply {
+   424→      data = LineData(*datasets)
+   425→      axisRight.textColor = textColor
+   426→      axisLeft.textColor = textColor
+   427→      legend.textColor = textColor
+   428→
+   429→      data.setValueTextColor(textColor)
+   430→      setBackgroundColor(bgColor)
+   431→      setGridBackgroundColor(bgColor)
+   432→      notifyDataSetChanged()
+   433→      invalidate()
+   434→    }
+   435→  }
+   436→
+   437→  private fun getMemUsageLineColorFor(proc: MemoryUsageWatcher.ProcessMemoryInfo): Int {
+   438→    return when (proc.pname) {
+   439→      PROC_IDE -> Color.BLUE
+   440→      PROC_GRADLE_TOOLING -> Color.RED
+   441→      PROC_GRADLE_DAEMON -> Color.GREEN
+   442→      else -> throw IllegalArgumentException("Unknown process: $proc")
+   443→    }
+   444→  }
+   445→
+   446→  override fun onPause() {
+   447→    super.onPause()
+   448→    memoryUsageWatcher.listener = null
+   449→    memoryUsageWatcher.stopWatching(false)
+   450→
+   451→    this.isDestroying = isFinishing
+   452→    getFileTreeFragment()?.saveTreeState()
+   453→  }
+   454→
+   455→  override fun onResume() {
+   456→    super.onResume()
+   457→    invalidateOptionsMenu()
+   458→
+   459→    memoryUsageWatcher.listener = memoryUsageListener
+   460→    memoryUsageWatcher.startWatching()
+   461→
+   462→    try {
+   463→      getFileTreeFragment()?.listProjectFiles()
+   464→    } catch (th: Throwable) {
+   465→      log.error("Failed to update files list", th)
+   466→      flashError(string.msg_failed_list_files)
+   467→    }
+   468→  }
+   469→
+   470→  override fun onStop() {
+   471→    super.onStop()
+   472→    checkIsDestroying()
+   473→  }
+   474→
+   475→  override fun onDestroy() {
+   476→    checkIsDestroying()
+   477→    preDestroy()
+   478→    super.onDestroy()
+   479→    postDestroy()
+   480→  }
+   481→
+   482→  override fun onSaveInstanceState(outState: Bundle) {
+   483→    outState.putString(KEY_PROJECT_PATH, IProjectManager.getInstance().projectDirPath)
+   484→    super.onSaveInstanceState(outState)
+   485→  }
+   486→
+   487→  override fun invalidateOptionsMenu() {
+   488→    val mainHandler = ThreadUtils.getMainHandler()
+   489→    optionsMenuInvalidator?.also {
+   490→      mainHandler.removeCallbacks(it)
+   491→      mainHandler.postDelayed(it, OPTIONS_MENU_INVALIDATION_DELAY)
+   492→    }
+   493→  }
+   494→
+   495→  override fun onTabSelected(tab: Tab) {
+   496→    val position = tab.position
+   497→    editorViewModel.displayedFileIndex = position
+   498→
+   499→    val editorView = provideEditorAt(position)!!
+   500→    editorView.onEditorSelected()
+   501→
+   502→    editorViewModel.setCurrentFile(position, editorView.file)
+   503→    refreshSymbolInput(editorView)
+   504→    invalidateOptionsMenu()
+   505→  }
+   506→
+   507→  override fun onTabUnselected(tab: Tab) {}
+   508→
+   509→  override fun onTabReselected(tab: Tab) {
+   510→    createMenu(this, tab.view, EDITOR_FILE_TABS, true).show()
+   511→  }
+   512→
+   513→  override fun onGroupClick(group: DiagnosticGroup?) {
+   514→    if (group?.file?.exists() == true && FileUtils.isUtf8(group.file)) {
+   515→      doOpenFile(group.file, null)
+   516→      hideBottomSheet()
+   517→    }
+   518→  }
+   519→
+   520→  override fun onDiagnosticClick(file: File, diagnostic: DiagnosticItem) {
+   521→    doOpenFile(file, diagnostic.range)
+   522→    hideBottomSheet()
+   523→  }
+   524→
+   525→  open fun handleSearchResults(map: Map<File, List<SearchResult>>?) {
+   526→    val results = map ?: emptyMap()
+   527→    setSearchResultAdapter(SearchListAdapter(results, { file ->
+   528→      doOpenFile(file, null)
+   529→      hideBottomSheet()
+   530→    }) { match ->
+   531→      doOpenFile(match.file, match)
+   532→      hideBottomSheet()
+   533→    })
+   534→
+   535→    showSearchResults()
+   536→    doDismissSearchProgress()
+   537→  }
+   538→
+   539→  open fun setSearchResultAdapter(adapter: SearchListAdapter) {
+   540→    content.bottomSheet.setSearchResultAdapter(adapter)
+   541→  }
+   542→
+   543→  open fun setDiagnosticsAdapter(adapter: DiagnosticsAdapter) {
+   544→    content.bottomSheet.setDiagnosticsAdapter(adapter)
+   545→  }
+   546→
+   547→  open fun hideBottomSheet() {
+   548→    if (editorBottomSheet?.state != BottomSheetBehavior.STATE_COLLAPSED) {
+   549→      editorBottomSheet?.state = BottomSheetBehavior.STATE_COLLAPSED
+   550→    }
+   551→  }
+   552→
+   553→  open fun showSearchResults() {
+   554→    if (editorBottomSheet?.state != BottomSheetBehavior.STATE_EXPANDED) {
+   555→      editorBottomSheet?.state = BottomSheetBehavior.STATE_EXPANDED
+   556→    }
+   557→
+   558→    val index = content.bottomSheet.pagerAdapter.findIndexOfFragmentByClass(
+   559→      SearchResultFragment::class.java
+   560→    )
+   561→
+   562→    if (index >= 0 && index < content.bottomSheet.binding.tabs.tabCount) {
+   563→      content.bottomSheet.binding.tabs.getTabAt(index)?.select()
+   564→    }
+   565→  }
+   566→
+   567→  open fun handleDiagnosticsResultVisibility(errorVisible: Boolean) {
+   568→    content.bottomSheet.handleDiagnosticsResultVisibility(errorVisible)
+   569→  }
+   570→
+   571→  open fun handleSearchResultVisibility(errorVisible: Boolean) {
+   572→    content.bottomSheet.handleSearchResultVisibility(errorVisible)
+   573→  }
+   574→
+   575→  open fun showFirstBuildNotice() {
+   576→    newMaterialDialogBuilder(this).setPositiveButton(android.R.string.ok, null)
+   577→      .setTitle(string.title_first_build).setMessage(string.msg_first_build).setCancelable(false)
+   578→      .create().show()
+   579→  }
+   580→
+   581→  open fun getFileTreeFragment(): FileTreeFragment? {
+   582→    if (filesTreeFragment == null) {
+   583→      filesTreeFragment = supportFragmentManager.findFragmentByTag(
+   584→        FileTreeFragment.TAG
+   585→      ) as FileTreeFragment?
+   586→    }
+   587→    return filesTreeFragment
+   588→  }
+   589→
+   590→  fun doSetStatus(text: CharSequence, @GravityInt gravity: Int) {
+   591→    editorViewModel.statusText = text
+   592→    editorViewModel.statusGravity = gravity
+   593→  }
+   594→
+   595→  fun refreshSymbolInput() {
+   596→    provideCurrentEditor()?.also { refreshSymbolInput(it) }
+   597→  }
+   598→
+   599→  fun refreshSymbolInput(editor: CodeEditorView) {
+   600→    content.bottomSheet.refreshSymbolInput(editor)
+   601→  }
+   602→
+   603→  private fun checkIsDestroying() {
+   604→    if (!isDestroying && isFinishing) {
+   605→      isDestroying = true
+   606→    }
+   607→  }
+   608→
+   609→  private fun handleUiDesignerResult(result: ActivityResult) {
+   610→    if (result.resultCode != RESULT_OK || result.data == null) {
+   611→      log.warn(
+   612→        "UI Designer returned invalid result: resultCode={}, data={}", result.resultCode,
+   613→        result.data
+   614→      )
+   615→      return
+   616→    }
+   617→    val generated = result.data!!.getStringExtra(UIDesignerActivity.RESULT_GENERATED_XML)
+   618→    if (TextUtils.isEmpty(generated)) {
+   619→      log.warn("UI Designer returned blank generated XML code")
+   620→      return
+   621→    }
+   622→    val view = provideCurrentEditor()
+   623→    val text = view?.editor?.text ?: run {
+   624→      log.warn("No file opened to append UI designer result")
+   625→      return
+   626→    }
+   627→    val endLine = text.lineCount - 1
+   628→    text.replace(0, 0, endLine, text.getColumnCount(endLine), generated)
+   629→  }
+   630→
+   631→  private fun setupDrawers() {
+   632→    val toggle = ActionBarDrawerToggle(
+   633→      this, binding.editorDrawerLayout, content.editorToolbar,
+   634→      string.app_name, string.app_name
+   635→    )
+   636→
+   637→    binding.editorDrawerLayout.addDrawerListener(toggle)
+   638→    toggle.syncState()
+   639→    binding.apply {
+   640→      editorDrawerLayout.apply {
+   641→        childId = contentCard.id
+   642→        translationBehaviorStart = ContentTranslatingDrawerLayout.TranslationBehavior.FULL
+   643→        translationBehaviorEnd = ContentTranslatingDrawerLayout.TranslationBehavior.FULL
+   644→        setScrimColor(Color.TRANSPARENT)
+   645→      }
+   646→    }
+   647→  }
+   648→
+   649→  private fun onBuildStatusChanged() {
+   650→    log.debug(
+   651→      "onBuildStatusChanged: isInitializing: ${editorViewModel.isInitializing}, isBuildInProgress: ${editorViewModel.isBuildInProgress}"
+   652→    )
+   653→    val visible = editorViewModel.isBuildInProgress || editorViewModel.isInitializing
+   654→    content.progressIndicator.visibility = if (visible) View.VISIBLE else View.GONE
+   655→    invalidateOptionsMenu()
+   656→  }
+   657→
+   658→  private fun setupViews() {
+   659→    editorViewModel._isBuildInProgress.observe(this) { onBuildStatusChanged() }
+   660→    editorViewModel._isInitializing.observe(this) { onBuildStatusChanged() }
+   661→    editorViewModel._statusText.observe(this) { content.bottomSheet.setStatus(it.first, it.second) }
+   662→
+   663→    editorViewModel.observeFiles(this) { files ->
+   664→      content.apply {
+   665→        if (files.isNullOrEmpty()) {
+   666→          tabs.visibility = View.GONE
+   667→          viewContainer.displayedChild = 1
+   668→        } else {
+   669→          tabs.visibility = View.VISIBLE
+   670→          viewContainer.displayedChild = 0
+   671→        }
+   672→      }
+   673→
+   674→      invalidateOptionsMenu()
+   675→    }
+   676→
+   677→    setupNoEditorView()
+   678→    setupBottomSheet()
+   679→
+   680→    if (!app.prefManager.getBoolean(
+   681→        KEY_BOTTOM_SHEET_SHOWN
+   682→      ) && editorBottomSheet?.state != BottomSheetBehavior.STATE_EXPANDED
+   683→    ) {
+   684→      editorBottomSheet?.state = BottomSheetBehavior.STATE_EXPANDED
+   685→      ThreadUtils.runOnUiThreadDelayed({
+   686→        editorBottomSheet?.state = BottomSheetBehavior.STATE_COLLAPSED
+   687→        app.prefManager.putBoolean(KEY_BOTTOM_SHEET_SHOWN, true)
+   688→      }, 1500)
+   689→    }
+   690→
+   691→    binding.contentCard.progress = 0f
+   692→    binding.swipeReveal.dragListener = object : SwipeRevealLayout.OnDragListener {
+   693→      override fun onDragStateChanged(swipeRevealLayout: SwipeRevealLayout, state: Int) {}
+   694→      override fun onDragProgress(swipeRevealLayout: SwipeRevealLayout, progress: Float) {
+   695→        onSwipeRevealDragProgress(progress)
+   696→      }
+   697→    }
+   698→  }
+   699→
+   700→  private fun setupNoEditorView() {
+   701→    content.noEditorSummary.movementMethod = LinkMovementMethod()
+   702→    val filesSpan: ClickableSpan = object : ClickableSpan() {
+   703→      override fun onClick(widget: View) {
+   704→        binding.root.openDrawer(GravityCompat.START)
+   705→      }
+   706→    }
+   707→    val bottomSheetSpan: ClickableSpan = object : ClickableSpan() {
+   708→      override fun onClick(widget: View) {
+   709→        editorBottomSheet?.state = BottomSheetBehavior.STATE_EXPANDED
+   710→      }
+   711→    }
+   712→    val sb = SpannableStringBuilder()
+   713→    appendClickableSpan(sb, string.msg_drawer_for_files, filesSpan)
+   714→    appendClickableSpan(sb, string.msg_swipe_for_output, bottomSheetSpan)
+   715→    content.noEditorSummary.text = sb
+   716→  }
+   717→
+   718→  private fun appendClickableSpan(
+   719→    sb: SpannableStringBuilder,
+   720→    @StringRes textRes: Int,
+   721→    span: ClickableSpan,
+   722→  ) {
+   723→    val str = getString(textRes)
+   724→    val split = str.split("@@", limit = 3)
+   725→    if (split.size != 3) {
+   726→      // Not a valid format
+   727→      sb.append(str)
+   728→      sb.append('\n')
+   729→      return
+   730→    }
+   731→    sb.append(split[0])
+   732→    sb.append(split[1], span, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+   733→    sb.append(split[2])
+   734→    sb.append('\n')
+   735→  }
+   736→
+   737→  private fun setupBottomSheet() {
+   738→    editorBottomSheet = BottomSheetBehavior.from<View>(content.bottomSheet)
+   739→    editorBottomSheet?.addBottomSheetCallback(object : BottomSheetCallback() {
+   740→      override fun onStateChanged(bottomSheet: View, newState: Int) {
+   741→        if (newState == BottomSheetBehavior.STATE_EXPANDED) {
+   742→          val editor = provideCurrentEditor()
+   743→          editor?.editor?.ensureWindowsDismissed()
+   744→        }
+   745→      }
+   746→
+   747→      override fun onSlide(bottomSheet: View, slideOffset: Float) {
+   748→        content.apply {
+   749→          val editorScale = 1 - slideOffset * (1 - EDITOR_CONTAINER_SCALE_FACTOR)
+   750→          this.bottomSheet.onSlide(slideOffset)
+   751→          this.viewContainer.scaleX = editorScale
+   752→          this.viewContainer.scaleY = editorScale
+   753→        }
+   754→      }
+   755→    })
+   756→
+   757→    val observer: OnGlobalLayoutListener = object : OnGlobalLayoutListener {
+   758→      override fun onGlobalLayout() {
+   759→        contentCardRealHeight = binding.contentCard.height
+   760→        content.also {
+   761→          it.realContainer.pivotX = it.realContainer.width.toFloat() / 2f
+   762→          it.realContainer.pivotY =
+   763→            (it.realContainer.height.toFloat() / 2f) + (systemBarInsets?.run { bottom - top }
+   764→              ?: 0)
+   765→          it.viewContainer.viewTreeObserver.removeOnGlobalLayoutListener(this)
+   766→        }
+   767→      }
+   768→    }
+   769→
+   770→    content.apply {
+   771→      viewContainer.viewTreeObserver.addOnGlobalLayoutListener(observer)
+   772→      bottomSheet.setOffsetAnchor(editorAppBarLayout)
+   773→    }
+   774→  }
+   775→
+   776→  private fun setupDiagnosticInfo() {
+   777→    val gd = GradientDrawable()
+   778→    gd.shape = GradientDrawable.RECTANGLE
+   779→    gd.setColor(-0xdededf)
+   780→    gd.setStroke(1, -0x1)
+   781→    gd.cornerRadius = 8f
+   782→    diagnosticInfoBinding?.root?.background = gd
+   783→    diagnosticInfoBinding?.root?.visibility = View.GONE
+   784→  }
+   785→
+   786→  private fun setupContainers() {
+   787→    handleDiagnosticsResultVisibility(true)
+   788→    handleSearchResultVisibility(true)
+   789→  }
+   790→
+   791→  private fun onSoftInputChanged() {
+   792→    if (!isDestroying) {
+   793→      invalidateOptionsMenu()
+   794→      content.bottomSheet.onSoftInputChanged()
+   795→    }
+   796→  }
+   797→
+   798→  private fun showNeedHelpDialog() {
+   799→    val builder = newMaterialDialogBuilder(this)
+   800→    builder.setTitle(string.need_help)
+   801→    builder.setMessage(string.msg_need_help)
+   802→    builder.setPositiveButton(android.R.string.ok, null)
+   803→    builder.create().show()
+   804→  }
+   805→
+   806→  open fun installationSessionCallback(): SessionCallback {
+   807→    return ApkInstallationSessionCallback(this).also { installationCallback = it }
+   808→  }
+   809→}

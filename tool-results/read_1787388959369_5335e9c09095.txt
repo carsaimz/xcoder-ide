@@ -1,0 +1,784 @@
+     1→package com.xcoder.ide.theme
+     2→
+     3→import androidx.compose.ui.graphics.Color
+     4→
+     5→// ============================================================================
+     6→//  XCoder IDE Compose Color Tokens
+     7→//
+     8→//  Naming mirrors the XML palette (xcoder_*, studio_*, editor_*, etc.) so that
+     9→//  XML-view and Compose-view always reference the same semantic slot.
+    10→//
+    11→//  Light tokens are defined directly; dark tokens live in [XCoderDarkColors].
+    12→//  Use [ideColors] composition-local to read the active palette.
+    13→// ============================================================================
+    14→
+    15→// ---------------------------------------------------------------------------
+    16→//  Brand — XCoder Purple (Kelivo)
+    17→// ---------------------------------------------------------------------------
+    18→/** Primary brand purple. */
+    19→val PurplePrimary = Color(0xFF6B5CE7)
+    20→/** Lighter tint — hover states, badges. */
+    21→val PurplePrimaryLight = Color(0xFF8B84FF)
+    22→/** Darker shade — pressed states, deep accents. */
+    23→val PurplePrimaryDark = Color(0xFF4A3FBF)
+    24→
+    25→// ---------------------------------------------------------------------------
+    26→//  File Type Colors (shared light/dark — high-contrast on both backgrounds)
+    27→// ---------------------------------------------------------------------------
+    28→object FileColors {
+    29→    val Kotlin = Color(0xFFB56DFF)
+    30→    val Java = Color(0xFFF18A54)
+    31→    val Xml = Color(0xFF6ACB8F)
+    32→    val Json = Color(0xFFE5C84F)
+    33→    val Gradle = Color(0xFF6DD4A0)
+    34→    val KotlinScript = Color(0xFFB56DFF)
+    35→    val C = Color(0xFF4FC1FF)
+    36→    val Cpp = Color(0xFF4FC1FF)
+    37→    val CHeader = Color(0xFF4FC1FF)
+    38→    val Python = Color(0xFF4B8BBE)
+    39→    val JavaScript = Color(0xFFF7DF1E)
+    40→    val JavaScriptDark = Color(0xFFFFF176) // brighter for dark bg
+    41→    val TypeScript = Color(0xFF3178C6)
+    42→    val Html = Color(0xFFE44D26)
+    43→    val Css = Color(0xFF264DE4)
+    44→    val Scss = Color(0xFFCC6699)
+    45→    val Shell = Color(0xFF89E051)
+    46→    val Markdown = Color(0xFF519ABA)
+    47→    val Yaml = Color(0xFFCB171E)
+    48→    val Toml = Color(0xFF9C4121)
+    49→    val Sql = Color(0xFFE38C00)
+    50→    val Dart = Color(0xFF00B4AB)
+    51→    val Rust = Color(0xFFCE422B)
+    52→    val Go = Color(0xFF00ADD8)
+    53→    val Swift = Color(0xFFFA7343)
+    54→    val Image = Color(0xFF9B59B6)
+    55→    val Font = Color(0xFFB0B0C4)
+    56→    val Archive = Color(0xFFF18A54)
+    57→    val Pdf = Color(0xFFE44D26)
+    58→    val Properties = Color(0xFF8B8BA0)
+    59→    val Proguard = Color(0xFFE44D26)
+    60→    val Manifest = Color(0xFF6ACB8F)
+    61→    val Generic = Color(0xFF8B8BA0)
+    62→    val Folder = Color(0xFF6B5CE7)
+    63→    val FolderClosed = Color(0xFF8B84FF)
+    64→}
+    65→
+    66→// ---------------------------------------------------------------------------
+    67→//  Git Semantic Colors (shared light/dark)
+    68→// ---------------------------------------------------------------------------
+    69→object GitColors {
+    70→    val Added = Color(0xFF00C48C)
+    71→    val Modified = Color(0xFF5CA0FF)
+    72→    val Deleted = Color(0xFFFF6B6B)
+    73→    val Renamed = Color(0xFFB56DFF)
+    74→    val Untracked = Color(0xFF8B8BA0)
+    75→    val Conflict = Color(0xFFFFB547)
+    76→    val Ignored = Color(0xFFBDBDCD)
+    77→    val Branch = Color(0xFFB56DFF)
+    78→    val Tag = Color(0xFF6ACB8F)
+    79→    val Remote = Color(0xFF5CA0FF)
+    80→
+    81→    // Dark-specific overrides (slightly more vibrant)
+    82→    object Dark {
+    83→        val Added = Color(0xFFA6E3A1)
+    84→        val Modified = Color(0xFF89B4FA)
+    85→        val Deleted = Color(0xFFF38BA8)
+    86→        val Renamed = Color(0xFFC792EA)
+    87→        val Untracked = Color(0xFF6E6E86)
+    88→        val Conflict = Color(0xFFF9E2AF)
+    89→        val Ignored = Color(0xFF484860)
+    90→        val Branch = Color(0xFFC792EA)
+    91→        val Tag = Color(0xFFA6E3A1)
+    92→        val Remote = Color(0xFF89B4FA)
+    93→    }
+    94→}
+    95→
+    96→// ---------------------------------------------------------------------------
+    97→//  IDE Color Palette — data class for each theme variant
+    98→// ---------------------------------------------------------------------------
+    99→
+   100→/**
+   101→ * Full set of IDE-specific color tokens.
+   102→ * Each field is a semantic slot that changes between light and dark themes.
+   103→ */
+   104→data class IdeColors(
+   105→    // ---- Brand ----
+   106→    val primary: Color,
+   107→    val primaryLight: Color,
+   108→    val primaryDark: Color,
+   109→    val onPrimary: Color,
+   110→    val primaryContainer: Color,
+   111→    val onPrimaryContainer: Color,
+   112→    val primaryHover: Color,
+   113→    val primaryPressed: Color,
+   114→
+   115→    // ---- Background & Surface ----
+   116→    val background: Color,
+   117→    val onBackground: Color,
+   118→    val surface: Color,
+   119→    val onSurface: Color,
+   120→    val surfaceVariant: Color,
+   121→    val onSurfaceVariant: Color,
+   122→    val surfaceElevated: Color,
+   123→    val surfaceContainer: Color,
+   124→    val surfaceContainerHigh: Color,
+   125→    val surfaceContainerHighest: Color,
+   126→    val outline: Color,
+   127→    val outlineVariant: Color,
+   128→    val inverseSurface: Color,
+   129→    val inverseOnSurface: Color,
+   130→    val inversePrimary: Color,
+   131→    val scrollbarThumb: Color,
+   132→    val scrollbarTrack: Color,
+   133→
+   134→    // ---- Text ----
+   135→    val textPrimary: Color,
+   136→    val textSecondary: Color,
+   137→    val textTertiary: Color,
+   138→    val textDisabled: Color,
+   139→    val textPlaceholder: Color,
+   140→    val textLink: Color,
+   141→
+   142→    // ---- Studio Panels ----
+   143→    val studioBackground: Color,
+   144→    val studioSurface: Color,
+   145→    val studioSurfaceElevated: Color,
+   146→    val studioSurfaceDim: Color,
+   147→
+   148→    // Toolbar
+   149→    val toolbarBackground: Color,
+   150→    val toolbarDivider: Color,
+   151→    val toolbarTitle: Color,
+   152→
+   153→    // Tab Bar
+   154→    val tabBarBackground: Color,
+   155→    val tabActiveBackground: Color,
+   156→    val tabInactiveBackground: Color,
+   157→    val tabActiveIndicator: Color,
+   158→    val tabActiveText: Color,
+   159→    val tabInactiveText: Color,
+   160→    val tabCloseIcon: Color,
+   161→    val tabModifiedIndicator: Color,
+   162→
+   163→    // Sidebar
+   164→    val sidebarBackground: Color,
+   165→    val sidebarHeaderBackground: Color,
+   166→    val sidebarItemHover: Color,
+   167→    val sidebarItemSelected: Color,
+   168→    val sidebarItemSelectedText: Color,
+   169→    val sidebarIcon: Color,
+   170→    val sidebarIconActive: Color,
+   171→    val sidebarDivider: Color,
+   172→    val sidebarSectionHeader: Color,
+   173→
+   174→    // Status Bar
+   175→    val statusBarBackground: Color,
+   176→    val statusBarText: Color,
+   177→    val statusBarIcon: Color,
+   178→    val statusBarError: Color,
+   179→    val statusBarWarning: Color,
+   180→    val statusBarSuccess: Color,
+   181→
+   182→    // Breadcrumb
+   183→    val breadcrumbBackground: Color,
+   184→    val breadcrumbText: Color,
+   185→    val breadcrumbSeparator: Color,
+   186→    val breadcrumbActive: Color,
+   187→
+   188→    // Minimap
+   189→    val minimapBackground: Color,
+   190→    val minimapSlider: Color,
+   191→    val minimapViewport: Color,
+   192→
+   193→    // ---- Editor ----
+   194→    val editorBackground: Color,
+   195→    val editorGutterBackground: Color,
+   196→    val editorLineNumber: Color,
+   197→    val editorLineNumberActive: Color,
+   198→    val editorCurrentLineHighlight: Color,
+   199→    val editorSelectionBackground: Color,
+   200→    val editorSelectionForeground: Color,
+   201→    val editorCaret: Color,
+   202→    val editorFindMatchBackground: Color,
+   203→    val editorFindMatchBorder: Color,
+   204→    val editorFindMatchCurrentBackground: Color,
+   205→    val editorFindRangeBackground: Color,
+   206→    val editorWordHighlightBackground: Color,
+   207→    val editorIndentGuide: Color,
+   208→    val editorIndentGuideActive: Color,
+   209→    val editorBracketMatching: Color,
+   210→    val editorFoldingIcon: Color,
+   211→    val editorFoldingHover: Color,
+   212→    val editorWhitespace: Color,
+   213→    val editorLink: Color,
+   214→
+   215→    // ---- Editor Syntax (Light) ----
+   216→    val syntaxKeyword: Color,
+   217→    val syntaxString: Color,
+   218→    val syntaxNumber: Color,
+   219→    val syntaxComment: Color,
+   220→    val syntaxCommentDoc: Color,
+   221→    val syntaxFunction: Color,
+   222→    val syntaxVariable: Color,
+   223→    val syntaxType: Color,
+   224→    val syntaxOperator: Color,
+   225→    val syntaxAnnotation: Color,
+   226→    val syntaxConstant: Color,
+   227→    val syntaxTag: Color,
+   228→    val syntaxAttributeName: Color,
+   229→    val syntaxAttributeValue: Color,
+   230→    val syntaxDelimiter: Color,
+   231→    val syntaxIdentifier: Color,
+   232→
+   233→    // ---- Search ----
+   234→    val searchPanelBackground: Color,
+   235→    val searchPanelBorder: Color,
+   236→    val searchInputBackground: Color,
+   237→    val searchInputFocusedBorder: Color,
+   238→    val searchResultHighlight: Color,
+   239→    val searchResultSelected: Color,
+   240→    val searchResultTextMatch: Color,
+   241→    val searchResultFileHeader: Color,
+   242→    val searchResultLineNumber: Color,
+   243→
+   244→    // ---- Terminal ----
+   245→    val terminalBackground: Color,
+   246→    val terminalForeground: Color,
+   247→    val terminalCursor: Color,
+   248→    val terminalBlack: Color,
+   249→    val terminalRed: Color,
+   250→    val terminalGreen: Color,
+   251→    val terminalYellow: Color,
+   252→    val terminalBlue: Color,
+   253→    val terminalMagenta: Color,
+   254→    val terminalCyan: Color,
+   255→    val terminalWhite: Color,
+   256→    val terminalBrightBlack: Color,
+   257→    val terminalBrightRed: Color,
+   258→    val terminalBrightGreen: Color,
+   259→    val terminalBrightYellow: Color,
+   260→    val terminalBrightBlue: Color,
+   261→    val terminalBrightMagenta: Color,
+   262→    val terminalBrightCyan: Color,
+   263→    val terminalBrightWhite: Color,
+   264→
+   265→    // ---- Diff ----
+   266→    val diffAddedBackground: Color,
+   267→    val diffAddedText: Color,
+   268→    val diffAddedBorder: Color,
+   269→    val diffAddedGutter: Color,
+   270→    val diffRemovedBackground: Color,
+   271→    val diffRemovedText: Color,
+   272→    val diffRemovedBorder: Color,
+   273→    val diffRemovedGutter: Color,
+   274→    val diffModifiedBackground: Color,
+   275→    val diffModifiedText: Color,
+   276→    val diffModifiedBorder: Color,
+   277→    val diffHeaderBackground: Color,
+   278→    val diffHeaderText: Color,
+   279→    val diffWordAdded: Color,
+   280→    val diffWordRemoved: Color,
+   281→
+   282→    // ---- Semantic / Status ----
+   283→    val success: Color,
+   284→    val successBackground: Color,
+   285→    val successBorder: Color,
+   286→    val warning: Color,
+   287→    val warningBackground: Color,
+   288→    val warningBorder: Color,
+   289→    val error: Color,
+   290→    val errorBackground: Color,
+   291→    val errorBorder: Color,
+   292→    val info: Color,
+   293→    val infoBackground: Color,
+   294→    val infoBorder: Color,
+   295→
+   296→    // ---- Chat / AI ----
+   297→    val chatUserBubble: Color,
+   298→    val chatUserText: Color,
+   299→    val chatAiBubble: Color,
+   300→    val chatAiText: Color,
+   301→    val chatInputBackground: Color,
+   302→    val chatInputBorder: Color,
+   303→    val chatInputFocusedBorder: Color,
+   304→    val chatCodeBlockBackground: Color,
+   305→    val chatCodeBlockBorder: Color,
+   306→    val chatTimestamp: Color,
+   307→    val chatDivider: Color,
+   308→
+   309→    // ---- Dialog / Bottom Sheet ----
+   310→    val dialogBackground: Color,
+   311→    val dialogScrim: Color,
+   312→    val bottomSheetBackground: Color,
+   313→    val bottomSheetHandle: Color,
+   314→
+   315→    // ---- Notification ----
+   316→    val notificationBackground: Color,
+   317→    val notificationText: Color,
+   318→    val notificationIcon: Color,
+   319→
+   320→    // ---- Progress ----
+   321→    val progressTrack: Color,
+   322→    val progressIndeterminate: Color,
+   323→
+   324→    // ---- File Colors ----
+   325→    val fileFolder: Color,
+   326→    val fileFolderClosed: Color,
+   327→)
+   328→
+   329→// ---------------------------------------------------------------------------
+   330→//  Light Palette
+   331→// ---------------------------------------------------------------------------
+   332→val XCoderLightColors = IdeColors(
+   333→    // Brand
+   334→    primary = Color(0xFF6B5CE7),
+   335→    primaryLight = Color(0xFF8B84FF),
+   336→    primaryDark = Color(0xFF4A3FBF),
+   337→    onPrimary = Color(0xFFFFFFFF),
+   338→    primaryContainer = Color(0xFFE8E4FF),
+   339→    onPrimaryContainer = Color(0xFF4A3FBF),
+   340→    primaryHover = Color(0xFF5B4CD4),
+   341→    primaryPressed = Color(0xFF3D35A3),
+   342→
+   343→    // Background & Surface
+   344→    background = Color(0xFFF7F8FC),
+   345→    onBackground = Color(0xFF1B1B2F),
+   346→    surface = Color(0xFFFFFFFF),
+   347→    onSurface = Color(0xFF1B1B2F),
+   348→    surfaceVariant = Color(0xFFECEEF5),
+   349→    onSurfaceVariant = Color(0xFF5C5C72),
+   350→    surfaceElevated = Color(0xFFF0F1F7),
+   351→    surfaceContainer = Color(0xFFF2F3F9),
+   352→    surfaceContainerHigh = Color(0xFFE8EAF0),
+   353→    surfaceContainerHighest = Color(0xFFDEE0E8),
+   354→    outline = Color(0xFFC4C5D0),
+   355→    outlineVariant = Color(0xFFE4E5ED),
+   356→    inverseSurface = Color(0xFF303044),
+   357→    inverseOnSurface = Color(0xFFF0F0FA),
+   358→    inversePrimary = Color(0xFFA9A0FF),
+   359→    scrollbarThumb = Color(0xFFC0C0D0),
+   360→    scrollbarTrack = Color(0xFFE8E8F0),
+   361→
+   362→    // Text
+   363→    textPrimary = Color(0xFF1B1B2F),
+   364→    textSecondary = Color(0xFF5C5C72),
+   365→    textTertiary = Color(0xFF8B8BA0),
+   366→    textDisabled = Color(0xFFBDBDCD),
+   367→    textPlaceholder = Color(0xFFA0A0B4),
+   368→    textLink = Color(0xFF5A7AE6),
+   369→
+   370→    // Studio Panels
+   371→    studioBackground = Color(0xFFF7F8FC),
+   372→    studioSurface = Color(0xFFFFFFFF),
+   373→    studioSurfaceElevated = Color(0xFFF0F1F7),
+   374→    studioSurfaceDim = Color(0xFFECEEF5),
+   375→
+   376→    // Toolbar
+   377→    toolbarBackground = Color(0xFFFFFFFF),
+   378→    toolbarDivider = Color(0xFFE4E5ED),
+   379→    toolbarTitle = Color(0xFF1B1B2F),
+   380→
+   381→    // Tab Bar
+   382→    tabBarBackground = Color(0xFFF0F1F7),
+   383→    tabActiveBackground = Color(0xFFFFFFFF),
+   384→    tabInactiveBackground = Color(0xFFF0F1F7),
+   385→    tabActiveIndicator = Color(0xFF6B5CE7),
+   386→    tabActiveText = Color(0xFF6B5CE7),
+   387→    tabInactiveText = Color(0xFF8B8BA0),
+   388→    tabCloseIcon = Color(0xFF8B8BA0),
+   389→    tabModifiedIndicator = Color(0xFF6B5CE7),
+   390→
+   391→    // Sidebar
+   392→    sidebarBackground = Color(0xFFF0F1F7),
+   393→    sidebarHeaderBackground = Color(0xFFE8EAF0),
+   394→    sidebarItemHover = Color(0xFFE4E5ED),
+   395→    sidebarItemSelected = Color(0xFFE0DEFF),
+   396→    sidebarItemSelectedText = Color(0xFF4A3FBF),
+   397→    sidebarIcon = Color(0xFF8B8BA0),
+   398→    sidebarIconActive = Color(0xFF6B5CE7),
+   399→    sidebarDivider = Color(0xFFE4E5ED),
+   400→    sidebarSectionHeader = Color(0xFF5C5C72),
+   401→
+   402→    // Status Bar
+   403→    statusBarBackground = Color(0xFFFFFFFF),
+   404→    statusBarText = Color(0xFF5C5C72),
+   405→    statusBarIcon = Color(0xFF8B8BA0),
+   406→    statusBarError = Color(0xFFFF6B6B),
+   407→    statusBarWarning = Color(0xFFFFB547),
+   408→    statusBarSuccess = Color(0xFF00C48C),
+   409→
+   410→    // Breadcrumb
+   411→    breadcrumbBackground = Color(0xFFFFFFFF),
+   412→    breadcrumbText = Color(0xFF5C5C72),
+   413→    breadcrumbSeparator = Color(0xFFBDBDCD),
+   414→    breadcrumbActive = Color(0xFF6B5CE7),
+   415→
+   416→    // Minimap
+   417→    minimapBackground = Color(0xFFF7F8FC),
+   418→    minimapSlider = Color(0x336B5CE7),
+   419→    minimapViewport = Color(0x1F6B5CE7),
+   420→
+   421→    // Editor
+   422→    editorBackground = Color(0xFFFFFFFF),
+   423→    editorGutterBackground = Color(0xFFFAFBFE),
+   424→    editorLineNumber = Color(0xFFB0B0C4),
+   425→    editorLineNumberActive = Color(0xFF6B5CE7),
+   426→    editorCurrentLineHighlight = Color(0xFFF4F2FF),
+   427→    editorSelectionBackground = Color(0xFFC5BEF6),
+   428→    editorSelectionForeground = Color(0xFF1B1B2F),
+   429→    editorCaret = Color(0xFF6B5CE7),
+   430→    editorFindMatchBackground = Color(0xFFFFF3BF),
+   431→    editorFindMatchBorder = Color(0xFFE5C84F),
+   432→    editorFindMatchCurrentBackground = Color(0xFFFFD666),
+   433→    editorFindRangeBackground = Color(0xFFFFF8E1),
+   434→    editorWordHighlightBackground = Color(0xFFECE8FF),
+   435→    editorIndentGuide = Color(0xFFE4E5ED),
+   436→    editorIndentGuideActive = Color(0xFFC5BEF6),
+   437→    editorBracketMatching = Color(0xFFC5BEF6),
+   438→    editorFoldingIcon = Color(0xFFB0B0C4),
+   439→    editorFoldingHover = Color(0xFF8B8BA0),
+   440→    editorWhitespace = Color(0xFFD8D8E8),
+   441→    editorLink = Color(0xFF5A7AE6),
+   442→
+   443→    // Syntax (Light)
+   444→    syntaxKeyword = Color(0xFF7C4DFF),
+   445→    syntaxString = Color(0xFF2E7D32),
+   446→    syntaxNumber = Color(0xFFE65100),
+   447→    syntaxComment = Color(0xFF8B8BA0),
+   448→    syntaxCommentDoc = Color(0xFF6D8F3E),
+   449→    syntaxFunction = Color(0xFF6B5CE7),
+   450→    syntaxVariable = Color(0xFF1B1B2F),
+   451→    syntaxType = Color(0xFF00838F),
+   452→    syntaxOperator = Color(0xFF7C4DFF),
+   453→    syntaxAnnotation = Color(0xFF7C4DFF),
+   454→    syntaxConstant = Color(0xFFC62828),
+   455→    syntaxTag = Color(0xFFE65100),
+   456→    syntaxAttributeName = Color(0xFF00838F),
+   457→    syntaxAttributeValue = Color(0xFF2E7D32),
+   458→    syntaxDelimiter = Color(0xFF5C5C72),
+   459→    syntaxIdentifier = Color(0xFF1B1B2F),
+   460→
+   461→    // Search
+   462→    searchPanelBackground = Color(0xFFFFFFFF),
+   463→    searchPanelBorder = Color(0xFFE4E5ED),
+   464→    searchInputBackground = Color(0xFFF0F1F7),
+   465→    searchInputFocusedBorder = Color(0xFF6B5CE7),
+   466→    searchResultHighlight = Color(0xFFFFF3BF),
+   467→    searchResultSelected = Color(0xFFE0DEFF),
+   468→    searchResultTextMatch = Color(0xFFE65100),
+   469→    searchResultFileHeader = Color(0xFFF7F8FC),
+   470→    searchResultLineNumber = Color(0xFF8B8BA0),
+   471→
+   472→    // Terminal (Catppuccin Mocha — always dark)
+   473→    terminalBackground = Color(0xFF1E1E2E),
+   474→    terminalForeground = Color(0xFFCDD6F4),
+   475→    terminalCursor = Color(0xFFF5E0DC),
+   476→    terminalBlack = Color(0xFF45475A),
+   477→    terminalRed = Color(0xFFF38BA8),
+   478→    terminalGreen = Color(0xFFA6E3A1),
+   479→    terminalYellow = Color(0xFFF9E2AF),
+   480→    terminalBlue = Color(0xFF89B4FA),
+   481→    terminalMagenta = Color(0xFFF5C2E7),
+   482→    terminalCyan = Color(0xFF94E2D5),
+   483→    terminalWhite = Color(0xFFBAC2DE),
+   484→    terminalBrightBlack = Color(0xFF585B70),
+   485→    terminalBrightRed = Color(0xFFF38BA8),
+   486→    terminalBrightGreen = Color(0xFFA6E3A1),
+   487→    terminalBrightYellow = Color(0xFFF9E2AF),
+   488→    terminalBrightBlue = Color(0xFF89B4FA),
+   489→    terminalBrightMagenta = Color(0xFFF5C2E7),
+   490→    terminalBrightCyan = Color(0xFF94E2D5),
+   491→    terminalBrightWhite = Color(0xFFA6ADC8),
+   492→
+   493→    // Diff
+   494→    diffAddedBackground = Color(0xFFE8F5E9),
+   495→    diffAddedText = Color(0xFF2E7D32),
+   496→    diffAddedBorder = Color(0xFFA5D6A7),
+   497→    diffAddedGutter = Color(0xFFC8E6C9),
+   498→    diffRemovedBackground = Color(0xFFFFEBEE),
+   499→    diffRemovedText = Color(0xFFC62828),
+   500→    diffRemovedBorder = Color(0xFFEF9A9A),
+   501→    diffRemovedGutter = Color(0xFFFFCDD2),
+   502→    diffModifiedBackground = Color(0xFFFFF8E1),
+   503→    diffModifiedText = Color(0xFFF57F17),
+   504→    diffModifiedBorder = Color(0xFFFFE082),
+   505→    diffHeaderBackground = Color(0xFFE8EAF6),
+   506→    diffHeaderText = Color(0xFF3949AB),
+   507→    diffWordAdded = Color(0xFFA5D6A7),
+   508→    diffWordRemoved = Color(0xFFEF9A9A),
+   509→
+   510→    // Semantic
+   511→    success = Color(0xFF00C48C),
+   512→    successBackground = Color(0xFFE8F5E9),
+   513→    successBorder = Color(0xFFA5D6A7),
+   514→    warning = Color(0xFFFFB547),
+   515→    warningBackground = Color(0xFFFFF8E1),
+   516→    warningBorder = Color(0xFFFFE082),
+   517→    error = Color(0xFFFF6B6B),
+   518→    errorBackground = Color(0xFFFFEBEE),
+   519→    errorBorder = Color(0xFFEF9A9A),
+   520→    info = Color(0xFF5CA0FF),
+   521→    infoBackground = Color(0xFFE3F2FD),
+   522→    infoBorder = Color(0xFF90CAF9),
+   523→
+   524→    // Chat / AI
+   525→    chatUserBubble = Color(0xFF6B5CE7),
+   526→    chatUserText = Color(0xFFFFFFFF),
+   527→    chatAiBubble = Color(0xFFF0F1F7),
+   528→    chatAiText = Color(0xFF1B1B2F),
+   529→    chatInputBackground = Color(0xFFFFFFFF),
+   530→    chatInputBorder = Color(0xFFE4E5ED),
+   531→    chatInputFocusedBorder = Color(0xFF6B5CE7),
+   532→    chatCodeBlockBackground = Color(0xFFF7F8FC),
+   533→    chatCodeBlockBorder = Color(0xFFE4E5ED),
+   534→    chatTimestamp = Color(0xFF8B8BA0),
+   535→    chatDivider = Color(0xFFECEEF5),
+   536→
+   537→    // Dialog / Bottom Sheet
+   538→    dialogBackground = Color(0xFFFFFFFF),
+   539→    dialogScrim = Color(0xFF1B1B2F),
+   540→    bottomSheetBackground = Color(0xFFFFFFFF),
+   541→    bottomSheetHandle = Color(0xFFC4C5D0),
+   542→
+   543→    // Notification
+   544→    notificationBackground = Color(0xFF303044),
+   545→    notificationText = Color(0xFFF0F0FA),
+   546→    notificationIcon = Color(0xFFA9A0FF),
+   547→
+   548→    // Progress
+   549→    progressTrack = Color(0xFFE4E5ED),
+   550→    progressIndeterminate = Color(0xFF6B5CE7),
+   551→
+   552→    // File Colors
+   553→    fileFolder = Color(0xFF6B5CE7),
+   554→    fileFolderClosed = Color(0xFF8B84FF),
+   555→)
+   556→
+   557→// ---------------------------------------------------------------------------
+   558→//  Dark Palette
+   559→// ---------------------------------------------------------------------------
+   560→val XCoderDarkColors = IdeColors(
+   561→    // Brand
+   562→    primary = Color(0xFF6B5CE7),
+   563→    primaryLight = Color(0xFFA9A0FF),
+   564→    primaryDark = Color(0xFF8B84FF),
+   565→    onPrimary = Color(0xFF1B1B2F),
+   566→    primaryContainer = Color(0xFF5249B8),
+   567→    onPrimaryContainer = Color(0xFFE0DEFF),
+   568→    primaryHover = Color(0xFF8B84FF),
+   569→    primaryPressed = Color(0xFFA9A0FF),
+   570→
+   571→    // Background & Surface
+   572→    background = Color(0xFF0E0E1A),
+   573→    onBackground = Color(0xFFE4E4F0),
+   574→    surface = Color(0xFF161625),
+   575→    onSurface = Color(0xFFE4E4F0),
+   576→    surfaceVariant = Color(0xFF242438),
+   577→    onSurfaceVariant = Color(0xFFA0A0B8),
+   578→    surfaceElevated = Color(0xFF1C1C30),
+   579→    surfaceContainer = Color(0xFF1A1A2E),
+   580→    surfaceContainerHigh = Color(0xFF262640),
+   581→    surfaceContainerHighest = Color(0xFF303044),
+   582→    outline = Color(0xFF484860),
+   583→    outlineVariant = Color(0xFF363650),
+   584→    inverseSurface = Color(0xFFE4E4F0),
+   585→    inverseOnSurface = Color(0xFF303044),
+   586→    inversePrimary = Color(0xFF6B5CE7),
+   587→    scrollbarThumb = Color(0xFF484860),
+   588→    scrollbarTrack = Color(0xFF242438),
+   589→
+   590→    // Text
+   591→    textPrimary = Color(0xFFE4E4F0),
+   592→    textSecondary = Color(0xFFA0A0B8),
+   593→    textTertiary = Color(0xFF6E6E86),
+   594→    textDisabled = Color(0xFF484860),
+   595→    textPlaceholder = Color(0xFF6E6E86),
+   596→    textLink = Color(0xFFA9A0FF),
+   597→
+   598→    // Studio Panels
+   599→    studioBackground = Color(0xFF0E0E1A),
+   600→    studioSurface = Color(0xFF161625),
+   601→    studioSurfaceElevated = Color(0xFF1C1C30),
+   602→    studioSurfaceDim = Color(0xFF1A1A2E),
+   603→
+   604→    // Toolbar
+   605→    toolbarBackground = Color(0xFF161625),
+   606→    toolbarDivider = Color(0xFF303044),
+   607→    toolbarTitle = Color(0xFFE4E4F0),
+   608→
+   609→    // Tab Bar
+   610→    tabBarBackground = Color(0xFF12121F),
+   611→    tabActiveBackground = Color(0xFF161625),
+   612→    tabInactiveBackground = Color(0xFF12121F),
+   613→    tabActiveIndicator = Color(0xFF8B84FF),
+   614→    tabActiveText = Color(0xFFE4E4F0),
+   615→    tabInactiveText = Color(0xFF6E6E86),
+   616→    tabCloseIcon = Color(0xFF6E6E86),
+   617→    tabModifiedIndicator = Color(0xFF8B84FF),
+   618→
+   619→    // Sidebar
+   620→    sidebarBackground = Color(0xFF12121F),
+   621→    sidebarHeaderBackground = Color(0xFF1A1A2E),
+   622→    sidebarItemHover = Color(0xFF1C1C30),
+   623→    sidebarItemSelected = Color(0xFF2A2845),
+   624→    sidebarItemSelectedText = Color(0xFFA9A0FF),
+   625→    sidebarIcon = Color(0xFF6E6E86),
+   626→    sidebarIconActive = Color(0xFF8B84FF),
+   627→    sidebarDivider = Color(0xFF303044),
+   628→    sidebarSectionHeader = Color(0xFFA0A0B8),
+   629→
+   630→    // Status Bar
+   631→    statusBarBackground = Color(0xFF0E0E1A),
+   632→    statusBarText = Color(0xFFA0A0B8),
+   633→    statusBarIcon = Color(0xFF6E6E86),
+   634→    statusBarError = Color(0xFFFF6B6B),
+   635→    statusBarWarning = Color(0xFFFFB547),
+   636→    statusBarSuccess = Color(0xFF00C48C),
+   637→
+   638→    // Breadcrumb
+   639→    breadcrumbBackground = Color(0xFF161625),
+   640→    breadcrumbText = Color(0xFFA0A0B8),
+   641→    breadcrumbSeparator = Color(0xFF484860),
+   642→    breadcrumbActive = Color(0xFFA9A0FF),
+   643→
+   644→    // Minimap
+   645→    minimapBackground = Color(0xFF161625),
+   646→    minimapSlider = Color(0x408B84FF),
+   647→    minimapViewport = Color(0x1A8B84FF),
+   648→
+   649→    // Editor
+   650→    editorBackground = Color(0xFF1E1E2E),
+   651→    editorGutterBackground = Color(0xFF191928),
+   652→    editorLineNumber = Color(0xFF484860),
+   653→    editorLineNumberActive = Color(0xFFA9A0FF),
+   654→    editorCurrentLineHighlight = Color(0xFF262640),
+   655→    editorSelectionBackground = Color(0xFF4A4580),
+   656→    editorSelectionForeground = Color(0xFFE4E4F0),
+   657→    editorCaret = Color(0xFF8B84FF),
+   658→    editorFindMatchBackground = Color(0xFF42370E),
+   659→    editorFindMatchBorder = Color(0xFFE5C84F),
+   660→    editorFindMatchCurrentBackground = Color(0xFF6B5B1A),
+   661→    editorFindRangeBackground = Color(0xFF2A2510),
+   662→    editorWordHighlightBackground = Color(0xFF3A3560),
+   663→    editorIndentGuide = Color(0xFF303044),
+   664→    editorIndentGuideActive = Color(0xFF484860),
+   665→    editorBracketMatching = Color(0xFF4A4580),
+   666→    editorFoldingIcon = Color(0xFF484860),
+   667→    editorFoldingHover = Color(0xFF6E6E86),
+   668→    editorWhitespace = Color(0xFF363650),
+   669→    editorLink = Color(0xFFA9A0FF),
+   670→
+   671→    // Syntax (Dark — Material Ocean-ish)
+   672→    syntaxKeyword = Color(0xFFC792EA),
+   673→    syntaxString = Color(0xFFC3E88D),
+   674→    syntaxNumber = Color(0xFFF78C6C),
+   675→    syntaxComment = Color(0xFF546E7A),
+   676→    syntaxCommentDoc = Color(0xFF6D8F3E),
+   677→    syntaxFunction = Color(0xFF82AAFF),
+   678→    syntaxVariable = Color(0xFFEEFFFF),
+   679→    syntaxType = Color(0xFFFFCB6B),
+   680→    syntaxOperator = Color(0xFF89DDFF),
+   681→    syntaxAnnotation = Color(0xFFC792EA),
+   682→    syntaxConstant = Color(0xFFF78C6C),
+   683→    syntaxTag = Color(0xFFF07178),
+   684→    syntaxAttributeName = Color(0xFFFFCB6B),
+   685→    syntaxAttributeValue = Color(0xFFC3E88D),
+   686→    syntaxDelimiter = Color(0xFF89DDFF),
+   687→    syntaxIdentifier = Color(0xFFEEFFFF),
+   688→
+   689→    // Search
+   690→    searchPanelBackground = Color(0xFF1C1C30),
+   691→    searchPanelBorder = Color(0xFF303044),
+   692→    searchInputBackground = Color(0xFF242438),
+   693→    searchInputFocusedBorder = Color(0xFF8B84FF),
+   694→    searchResultHighlight = Color(0xFF42370E),
+   695→    searchResultSelected = Color(0xFF2A2845),
+   696→    searchResultTextMatch = Color(0xFFF78C6C),
+   697→    searchResultFileHeader = Color(0xFF1A1A2E),
+   698→    searchResultLineNumber = Color(0xFF484860),
+   699→
+   700→    // Terminal (always dark)
+   701→    terminalBackground = Color(0xFF1E1E2E),
+   702→    terminalForeground = Color(0xFFCDD6F4),
+   703→    terminalCursor = Color(0xFFF5E0DC),
+   704→    terminalBlack = Color(0xFF45475A),
+   705→    terminalRed = Color(0xFFF38BA8),
+   706→    terminalGreen = Color(0xFFA6E3A1),
+   707→    terminalYellow = Color(0xFFF9E2AF),
+   708→    terminalBlue = Color(0xFF89B4FA),
+   709→    terminalMagenta = Color(0xFFF5C2E7),
+   710→    terminalCyan = Color(0xFF94E2D5),
+   711→    terminalWhite = Color(0xFFBAC2DE),
+   712→    terminalBrightBlack = Color(0xFF585B70),
+   713→    terminalBrightRed = Color(0xFFF38BA8),
+   714→    terminalBrightGreen = Color(0xFFA6E3A1),
+   715→    terminalBrightYellow = Color(0xFFF9E2AF),
+   716→    terminalBrightBlue = Color(0xFF89B4FA),
+   717→    terminalBrightMagenta = Color(0xFFF5C2E7),
+   718→    terminalBrightCyan = Color(0xFF94E2D5),
+   719→    terminalBrightWhite = Color(0xFFA6ADC8),
+   720→
+   721→    // Diff
+   722→    diffAddedBackground = Color(0xFF1A3328),
+   723→    diffAddedText = Color(0xFFA6E3A1),
+   724→    diffAddedBorder = Color(0xFF2D5A3D),
+   725→    diffAddedGutter = Color(0xFF1E3A2E),
+   726→    diffRemovedBackground = Color(0xFF3A1A1A),
+   727→    diffRemovedText = Color(0xFFF38BA8),
+   728→    diffRemovedBorder = Color(0xFF5A2D2D),
+   729→    diffRemovedGutter = Color(0xFF3A2020),
+   730→    diffModifiedBackground = Color(0xFF332E1A),
+   731→    diffModifiedText = Color(0xFFF9E2AF),
+   732→    diffModifiedBorder = Color(0xFF5A4D2D),
+   733→    diffHeaderBackground = Color(0xFF1A1A33),
+   734→    diffHeaderText = Color(0xFF89B4FA),
+   735→    diffWordAdded = Color(0xFF2D5A3D),
+   736→    diffWordRemoved = Color(0xFF5A2D2D),
+   737→
+   738→    // Semantic
+   739→    success = Color(0xFF00C48C),
+   740→    successBackground = Color(0xFF1A3328),
+   741→    successBorder = Color(0xFF2D5A3D),
+   742→    warning = Color(0xFFFFB547),
+   743→    warningBackground = Color(0xFF332E1A),
+   744→    warningBorder = Color(0xFF5A4D2D),
+   745→    error = Color(0xFFFF6B6B),
+   746→    errorBackground = Color(0xFF3A1A1A),
+   747→    errorBorder = Color(0xFF5A2D2D),
+   748→    info = Color(0xFF5CA0FF),
+   749→    infoBackground = Color(0xFF1A2640),
+   750→    infoBorder = Color(0xFF2D4A6B),
+   751→
+   752→    // Chat / AI
+   753→    chatUserBubble = Color(0xFF5249B8),
+   754→    chatUserText = Color(0xFFE4E4F0),
+   755→    chatAiBubble = Color(0xFF1C1C30),
+   756→    chatAiText = Color(0xFFE4E4F0),
+   757→    chatInputBackground = Color(0xFF242438),
+   758→    chatInputBorder = Color(0xFF303044),
+   759→    chatInputFocusedBorder = Color(0xFF8B84FF),
+   760→    chatCodeBlockBackground = Color(0xFF12121F),
+   761→    chatCodeBlockBorder = Color(0xFF303044),
+   762→    chatTimestamp = Color(0xFF6E6E86),
+   763→    chatDivider = Color(0xFF242438),
+   764→
+   765→    // Dialog / Bottom Sheet
+   766→    dialogBackground = Color(0xFF1C1C30),
+   767→    dialogScrim = Color(0xFF000000),
+   768→    bottomSheetBackground = Color(0xFF1C1C30),
+   769→    bottomSheetHandle = Color(0xFF484860),
+   770→
+   771→    // Notification
+   772→    notificationBackground = Color(0xFF303044),
+   773→    notificationText = Color(0xFFE4E4F0),
+   774→    notificationIcon = Color(0xFFA9A0FF),
+   775→
+   776→    // Progress
+   777→    progressTrack = Color(0xFF303044),
+   778→    progressIndeterminate = Color(0xFF8B84FF),
+   779→
+   780→    // File Colors
+   781→    fileFolder = Color(0xFF8B84FF),
+   782→    fileFolderClosed = Color(0xFF6B5CE7),
+   783→)
+   784→

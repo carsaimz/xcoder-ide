@@ -1,0 +1,918 @@
+     1→/*
+     2→ *  This file is part of AndroidIDE.
+     3→ *
+     4→ *  AndroidIDE is free software: you can redistribute it and/or modify
+     5→ *  it under the terms of the GNU General Public License as published by
+     6→ *  the Free Software Foundation, either version 3 of the License, or
+     7→ *  (at your option) any later version.
+     8→ *
+     9→ *  AndroidIDE is distributed in the hope that it will be useful,
+    10→ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+    11→ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    12→ *  GNU General Public License for more details.
+    13→ *
+    14→ *  You should have received a copy of the GNU General Public License
+    15→ *   along with AndroidIDE.  If not, see <https://www.gnu.org/licenses/>.
+    16→ */
+    17→
+    18→package com.itsaky.androidide.editor.ui
+    19→
+    20→import android.content.Context
+    21→import android.graphics.Rect
+    22→import android.os.Bundle
+    23→import android.os.Handler
+    24→import android.os.Looper
+    25→import android.util.AttributeSet
+    26→import android.view.inputmethod.EditorInfo
+    27→import androidx.annotation.StringRes
+    28→import com.blankj.utilcode.util.FileUtils
+    29→import com.blankj.utilcode.util.SizeUtils
+    30→import com.itsaky.androidide.editor.R.string
+    31→import com.itsaky.androidide.editor.adapters.CompletionListAdapter
+    32→import com.itsaky.androidide.editor.api.IEditor
+    33→import com.itsaky.androidide.editor.api.ILspEditor
+    34→import com.itsaky.androidide.editor.language.IDELanguage
+    35→import com.itsaky.androidide.editor.language.cpp.CppLanguage
+    36→import com.itsaky.androidide.editor.language.groovy.GroovyLanguage
+    37→import com.itsaky.androidide.editor.language.treesitter.TreeSitterLanguage
+    38→import com.itsaky.androidide.editor.language.treesitter.TreeSitterLanguageProvider
+    39→import com.itsaky.androidide.editor.schemes.IDEColorScheme
+    40→import com.itsaky.androidide.editor.schemes.IDEColorSchemeProvider
+    41→import com.itsaky.androidide.editor.snippets.AbstractSnippetVariableResolver
+    42→import com.itsaky.androidide.editor.snippets.FileVariableResolver
+    43→import com.itsaky.androidide.editor.snippets.WorkspaceVariableResolver
+    44→import com.itsaky.androidide.eventbus.events.editor.ChangeType
+    45→import com.itsaky.androidide.eventbus.events.editor.ColorSchemeInvalidatedEvent
+    46→import com.itsaky.androidide.eventbus.events.editor.DocumentChangeEvent
+    47→import com.itsaky.androidide.eventbus.events.editor.DocumentCloseEvent
+    48→import com.itsaky.androidide.eventbus.events.editor.DocumentOpenEvent
+    49→import com.itsaky.androidide.eventbus.events.editor.DocumentSaveEvent
+    50→import com.itsaky.androidide.eventbus.events.editor.DocumentSelectedEvent
+    51→import com.itsaky.androidide.flashbar.Flashbar
+    52→import com.itsaky.androidide.lsp.api.ILanguageClient
+    53→import com.itsaky.androidide.lsp.api.ILanguageServer
+    54→import com.itsaky.androidide.lsp.java.utils.CancelChecker
+    55→import com.itsaky.androidide.lsp.models.Command
+    56→import com.itsaky.androidide.lsp.models.DefinitionParams
+    57→import com.itsaky.androidide.lsp.models.DefinitionResult
+    58→import com.itsaky.androidide.lsp.models.ExpandSelectionParams
+    59→import com.itsaky.androidide.lsp.models.ReferenceParams
+    60→import com.itsaky.androidide.lsp.models.ReferenceResult
+    61→import com.itsaky.androidide.lsp.models.ShowDocumentParams
+    62→import com.itsaky.androidide.lsp.models.SignatureHelp
+    63→import com.itsaky.androidide.lsp.models.SignatureHelpParams
+    64→import com.itsaky.androidide.models.Position
+    65→import com.itsaky.androidide.models.Range
+    66→import com.itsaky.androidide.preferences.internal.EditorPreferences
+    67→import com.itsaky.androidide.progress.ICancelChecker
+    68→import com.itsaky.androidide.syntax.colorschemes.DynamicColorScheme
+    69→import com.itsaky.androidide.syntax.colorschemes.SchemeAndroidIDE
+    70→import com.itsaky.androidide.tasks.JobCancelChecker
+    71→import com.itsaky.androidide.tasks.cancelIfActive
+    72→import com.itsaky.androidide.tasks.launchAsyncWithProgress
+    73→import com.itsaky.androidide.utils.DocumentUtils
+    74→import com.itsaky.androidide.utils.flashError
+    75→import io.github.rosemoe.sora.event.ContentChangeEvent
+    76→import io.github.rosemoe.sora.event.SelectionChangeEvent
+    77→import io.github.rosemoe.sora.lang.EmptyLanguage
+    78→import io.github.rosemoe.sora.lang.Language
+    79→import io.github.rosemoe.sora.widget.CodeEditor
+    80→import io.github.rosemoe.sora.widget.EditorSearcher
+    81→import io.github.rosemoe.sora.widget.IDEEditorSearcher
+    82→import io.github.rosemoe.sora.widget.component.EditorAutoCompletion
+    83→import io.github.rosemoe.sora.widget.component.EditorBuiltinComponent
+    84→import io.github.rosemoe.sora.widget.component.EditorTextActionWindow
+    85→import kotlinx.coroutines.CoroutineName
+    86→import kotlinx.coroutines.CoroutineScope
+    87→import kotlinx.coroutines.Dispatchers
+    88→import kotlinx.coroutines.Job
+    89→import kotlinx.coroutines.cancel
+    90→import kotlinx.coroutines.isActive
+    91→import kotlinx.coroutines.launch
+    92→import kotlinx.coroutines.withContext
+    93→import org.greenrobot.eventbus.EventBus
+    94→import org.greenrobot.eventbus.Subscribe
+    95→import org.greenrobot.eventbus.ThreadMode
+    96→import org.slf4j.LoggerFactory
+    97→import java.io.File
+    98→
+    99→/**
+   100→ * [CodeEditor] implementation for the IDE.
+   101→ *
+   102→ * @author Akash Yadav
+   103→ */
+   104→open class IDEEditor @JvmOverloads constructor(
+   105→  context: Context,
+   106→  attrs: AttributeSet? = null,
+   107→  defStyleAttr: Int = 0,
+   108→  defStyleRes: Int = 0,
+   109→  private val editorFeatures: EditorFeatures = EditorFeatures()
+   110→) : CodeEditor(context, attrs, defStyleAttr, defStyleRes), IEditor by editorFeatures, ILspEditor {
+   111→
+   112→  @Suppress("PropertyName")
+   113→  internal var _file: File? = null
+   114→
+   115→  private var _actionsMenu: EditorActionsMenu? = null
+   116→  private var _signatureHelpWindow: SignatureHelpWindow? = null
+   117→  private var _diagnosticWindow: DiagnosticWindow? = null
+   118→  private var fileVersion = 0
+   119→  internal var isModified = false
+   120→
+   121→  private val selectionChangeHandler = Handler(Looper.getMainLooper())
+   122→  private var selectionChangeRunner: Runnable? = Runnable {
+   123→    val languageClient = languageClient ?: return@Runnable
+   124→    val cursor = this.cursor ?: return@Runnable
+   125→
+   126→    if (cursor.isSelected || _signatureHelpWindow?.isShowing == true) {
+   127→      return@Runnable
+   128→    }
+   129→
+   130→    diagnosticWindow.showDiagnostic(
+   131→      languageClient.getDiagnosticAt(file, cursor.leftLine, cursor.leftColumn))
+   132→  }
+   133→
+   134→  /**
+   135→   * The [CoroutineScope] for the editor.
+   136→   *
+   137→   * All the jobs in this scope are cancelled when the editor is released.
+   138→   */
+   139→  val editorScope = CoroutineScope(Dispatchers.Default + CoroutineName("IDEEditor"))
+   140→
+   141→  protected val eventDispatcher = EditorEventDispatcher()
+   142→
+   143→  private var setupTsLanguageJob: Job? = null
+   144→  private var sigHelpCancelChecker: ICancelChecker? = null
+   145→
+   146→  var languageServer: ILanguageServer? = null
+   147→    private set
+   148→
+   149→  var languageClient: ILanguageClient? = null
+   150→    private set
+   151→
+   152→  /**
+   153→   * Whether the cursor position change animation is enabled for the editor.
+   154→   */
+   155→  var isEnsurePosAnimEnabled = true
+   156→
+   157→  /**
+   158→   * The text searcher for the editor.
+   159→   */
+   160→  lateinit var searcher: IDEEditorSearcher
+   161→
+   162→  /**
+   163→   * The signature help window for the editor.
+   164→   */
+   165→  val signatureHelpWindow: SignatureHelpWindow
+   166→    get() {
+   167→      return _signatureHelpWindow ?: SignatureHelpWindow(this).also { _signatureHelpWindow = it }
+   168→    }
+   169→
+   170→  /**
+   171→   * The diagnostic window for the editor.
+   172→   */
+   173→  val diagnosticWindow: DiagnosticWindow
+   174→    get() {
+   175→      return _diagnosticWindow ?: DiagnosticWindow(this).also { _diagnosticWindow = it }
+   176→    }
+   177→
+   178→  companion object {
+   179→
+   180→    private const val SELECTION_CHANGE_DELAY = 500L
+   181→
+   182→    internal val log = LoggerFactory.getLogger(IDEEditor::class.java)
+   183→
+   184→    /**
+   185→     * Create input type flags for the editor.
+   186→     */
+   187→    fun createInputTypeFlags(): Int {
+   188→      var flags = EditorInfo.TYPE_CLASS_TEXT or EditorInfo.TYPE_TEXT_FLAG_MULTI_LINE or EditorInfo.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+   189→      if (EditorPreferences.visiblePasswordFlag) {
+   190→        flags = flags or EditorInfo.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+   191→      }
+   192→      return flags
+   193→    }
+   194→  }
+   195→
+   196→  init {
+   197→    run {
+   198→      editorFeatures.editor = this
+   199→      eventDispatcher.editor = this
+   200→      eventDispatcher.init(editorScope)
+   201→      initEditor()
+   202→    }
+   203→  }
+   204→
+   205→  /**
+   206→   * Set the file for this editor.
+   207→   */
+   208→  fun setFile(file: File?) {
+   209→    if (isReleased) {
+   210→      return
+   211→    }
+   212→
+   213→    this._file = file
+   214→    file?.also {
+   215→      dispatchDocumentOpenEvent()
+   216→    }
+   217→  }
+   218→
+   219→  override fun setLanguageServer(server: ILanguageServer?) {
+   220→    if (isReleased) {
+   221→      return
+   222→    }
+   223→    this.languageServer = server
+   224→    server?.also {
+   225→      this.languageClient = it.client
+   226→      snippetController.apply {
+   227→        fileVariableResolver = FileVariableResolver(this@IDEEditor)
+   228→        workspaceVariableResolver = WorkspaceVariableResolver()
+   229→      }
+   230→    }
+   231→  }
+   232→
+   233→  override fun setLanguageClient(client: ILanguageClient?) {
+   234→    if (isReleased) {
+   235→      return
+   236→    }
+   237→    this.languageClient = client
+   238→  }
+   239→
+   240→  override fun executeCommand(command: Command?) {
+   241→    if (isReleased) {
+   242→      return
+   243→    }
+   244→    if (command == null) {
+   245→      log.warn("Cannot execute command in editor. Command is null.")
+   246→      return
+   247→    }
+   248→
+   249→    log.info(String.format("Executing command '%s' for completion item.", command.title))
+   250→    when (command.command) {
+   251→      Command.TRIGGER_COMPLETION -> {
+   252→        val completion = getComponent(EditorAutoCompletion::class.java)
+   253→        completion.requireCompletion()
+   254→      }
+   255→
+   256→      Command.TRIGGER_PARAMETER_HINTS -> signatureHelp()
+   257→      Command.FORMAT_CODE -> formatCodeAsync()
+   258→    }
+   259→  }
+   260→
+   261→  override fun signatureHelp() {
+   262→    if (isReleased) {
+   263→      return
+   264→    }
+   265→    val languageServer = this.languageServer ?: return
+   266→    val file = this.file ?: return
+   267→
+   268→    this.languageClient ?: return
+   269→
+   270→    sigHelpCancelChecker?.also { it.cancel() }
+   271→
+   272→    val cancelChecker = JobCancelChecker().also {
+   273→      this.sigHelpCancelChecker = it
+   274→    }
+   275→
+   276→    editorScope.launch(Dispatchers.Default) {
+   277→      cancelChecker.job = coroutineContext[Job]
+   278→
+   279→      val help = safeGet("signature help request") {
+   280→        val params = SignatureHelpParams(file.toPath(), cursorLSPPosition, cancelChecker)
+   281→        languageServer.signatureHelp(params)
+   282→      }
+   283→
+   284→      withContext(Dispatchers.Main) {
+   285→        showSignatureHelp(help)
+   286→      }
+   287→    }.logError("signature help request")
+   288→  }
+   289→
+   290→  override fun showSignatureHelp(help: SignatureHelp?) {
+   291→    if (isReleased) {
+   292→      return
+   293→    }
+   294→    signatureHelpWindow.setupAndDisplay(help)
+   295→  }
+   296→
+   297→  override fun findDefinition() {
+   298→    if (isReleased) {
+   299→      return
+   300→    }
+   301→    val languageServer = this.languageServer ?: return
+   302→    val file = file ?: return
+   303→
+   304→    launchCancellableAsyncWithProgress(string.msg_finding_definition) { _, cancelChecker ->
+   305→      val result = safeGet("definition request") {
+   306→        val params = DefinitionParams(file.toPath(), cursorLSPPosition, cancelChecker)
+   307→        languageServer.findDefinition(params)
+   308→      }
+   309→
+   310→      onFindDefinitionResult(result)
+   311→    }?.logError("definition request")
+   312→  }
+   313→
+   314→  override fun findReferences() {
+   315→    if (isReleased) {
+   316→      return
+   317→    }
+   318→    val languageServer = this.languageServer ?: return
+   319→    val file = file ?: return
+   320→
+   321→    launchCancellableAsyncWithProgress(string.msg_finding_references) { _, cancelChecker ->
+   322→      val result = safeGet("references request") {
+   323→        val params = ReferenceParams(file.toPath(), cursorLSPPosition, true, cancelChecker)
+   324→        languageServer.findReferences(params)
+   325→      }
+   326→
+   327→      onFindReferencesResult(result)
+   328→    }?.logError("references request")
+   329→  }
+   330→
+   331→  override fun expandSelection() {
+   332→    if (isReleased) {
+   333→      return
+   334→    }
+   335→    val languageServer = this.languageServer ?: return
+   336→    val file = file ?: return
+   337→
+   338→    launchCancellableAsyncWithProgress(string.please_wait) { _, _ ->
+   339→      val initialRange = cursorLSPRange
+   340→      val result = safeGet("expand selection request") {
+   341→        val params = ExpandSelectionParams(file.toPath(), initialRange)
+   342→        languageServer.expandSelection(params)
+   343→      } ?: initialRange
+   344→
+   345→      withContext(Dispatchers.Main) {
+   346→        setSelection(result)
+   347→      }
+   348→    }?.logError("expand selection request")
+   349→  }
+   350→
+   351→  override fun ensureWindowsDismissed() {
+   352→    if (_diagnosticWindow?.isShowing == true) {
+   353→      _diagnosticWindow?.dismiss()
+   354→    }
+   355→
+   356→    if (_signatureHelpWindow?.isShowing == true) {
+   357→      _signatureHelpWindow?.dismiss()
+   358→    }
+   359→
+   360→    if (_actionsMenu?.isShowing == true) {
+   361→      _actionsMenu?.dismiss()
+   362→    }
+   363→  }
+   364→
+   365→  // not overridable!
+   366→  final override fun <T : EditorBuiltinComponent?> replaceComponent(clazz: Class<T>,
+   367→    replacement: T & Any) {
+   368→    super.replaceComponent(clazz, replacement)
+   369→  }
+   370→
+   371→  // not overridable
+   372→  final override fun <T : EditorBuiltinComponent?> getComponent(clazz: Class<T>): T & Any {
+   373→    return super.getComponent(clazz)
+   374→  }
+   375→
+   376→  override fun release() {
+   377→    ensureWindowsDismissed()
+   378→
+   379→    if (isReleased) {
+   380→      return
+   381→    }
+   382→
+   383→    super.release()
+   384→
+   385→    snippetController.apply {
+   386→      (fileVariableResolver as? AbstractSnippetVariableResolver?)?.close()
+   387→      (workspaceVariableResolver as? AbstractSnippetVariableResolver?)?.close()
+   388→
+   389→      fileVariableResolver = null
+   390→      workspaceVariableResolver = null
+   391→    }
+   392→
+   393→    _actionsMenu?.destroy()
+   394→
+   395→    _actionsMenu = null
+   396→    _signatureHelpWindow = null
+   397→    _diagnosticWindow = null
+   398→
+   399→    languageServer = null
+   400→    languageClient = null
+   401→
+   402→    _file = null
+   403→    fileVersion = 0
+   404→    markUnmodified()
+   405→
+   406→    editorFeatures.editor = null
+   407→    eventDispatcher.editor = null
+   408→
+   409→    eventDispatcher.destroy()
+   410→
+   411→    selectionChangeRunner?.also { selectionChangeHandler.removeCallbacks(it) }
+   412→    selectionChangeRunner = null
+   413→
+   414→    if (EventBus.getDefault().isRegistered(this)) {
+   415→      EventBus.getDefault().unregister(this)
+   416→    }
+   417→
+   418→    setupTsLanguageJob?.cancel("Editor is releasing resources.")
+   419→
+   420→    if (editorScope.isActive) {
+   421→      editorScope.cancelIfActive("Editor is releasing resources.")
+   422→    }
+   423→  }
+   424→
+   425→  override fun getSearcher(): EditorSearcher {
+   426→    return this.searcher
+   427→  }
+   428→
+   429→  override fun getExtraArguments(): Bundle {
+   430→    return super.getExtraArguments().apply {
+   431→      putString(IEditor.KEY_FILE, file?.absolutePath)
+   432→    }
+   433→  }
+   434→
+   435→  override fun ensurePositionVisible(line: Int, column: Int, noAnimation: Boolean) {
+   436→    super.ensurePositionVisible(line, column, !isEnsurePosAnimEnabled || noAnimation)
+   437→  }
+   438→
+   439→  override fun getTabWidth(): Int {
+   440→    return EditorPreferences.tabSize
+   441→  }
+   442→
+   443→  override fun beginSearchMode() {
+   444→    throw UnsupportedOperationException(
+   445→      "Search ActionMode is not supported. Use CodeEditorView.beginSearch() instead.")
+   446→  }
+   447→
+   448→  override fun onFocusChanged(gainFocus: Boolean, direction: Int, previouslyFocusedRect: Rect?) {
+   449→    super.onFocusChanged(gainFocus, direction, previouslyFocusedRect)
+   450→    if (!gainFocus) {
+   451→      ensureWindowsDismissed()
+   452→    }
+   453→  }
+   454→
+   455→  /**
+   456→   * Analyze the opened file and publish the diagnostics result.
+   457→   */
+   458→  open fun analyze() {
+   459→    if (isReleased) {
+   460→      return
+   461→    }
+   462→    if (editorLanguage !is IDELanguage) {
+   463→      return
+   464→    }
+   465→
+   466→    val languageServer = languageServer ?: return
+   467→    val file = file ?: return
+   468→
+   469→    editorScope.launch {
+   470→      val result = safeGet("LSP file analysis") { languageServer.analyze(file.toPath()) }
+   471→      languageClient?.publishDiagnostics(result)
+   472→    }.logError("LSP file analysis")
+   473→  }
+   474→
+   475→  /**
+   476→   * Mark this editor as NOT modified.
+   477→   */
+   478→  open fun markUnmodified() {
+   479→    this.isModified = false
+   480→  }
+   481→
+   482→  /**
+   483→   * Mark this editor as modified.
+   484→   */
+   485→  open fun markModified() {
+   486→    this.isModified = true
+   487→  }
+   488→
+   489→  /**
+   490→   * Notify the language server that the file in this editor is about to be closed.
+   491→   */
+   492→  open fun notifyClose() {
+   493→    if (isReleased) {
+   494→      return
+   495→    }
+   496→    file ?: run {
+   497→      log.info("Cannot notify language server. File is null.")
+   498→      return
+   499→    }
+   500→
+   501→    dispatchDocumentCloseEvent()
+   502→
+   503→    _actionsMenu?.unsubscribeEvents()
+   504→    selectionChangeRunner?.also {
+   505→      selectionChangeHandler.removeCallbacks(it)
+   506→    }
+   507→
+   508→    selectionChangeRunner = null
+   509→
+   510→    ensureWindowsDismissed()
+   511→  }
+   512→
+   513→  /**
+   514→   * Called when this editor is selected and visible to the user.
+   515→   */
+   516→  open fun onEditorSelected() {
+   517→    if (isReleased) {
+   518→      return
+   519→    }
+   520→
+   521→    file ?: return
+   522→    dispatchDocumentSelectedEvent()
+   523→  }
+   524→
+   525→  /**
+   526→   * Dispatches the [DocumentSaveEvent] for this editor.
+   527→   */
+   528→  open fun dispatchDocumentSaveEvent() {
+   529→    markUnmodified()
+   530→    if (isReleased) {
+   531→      return
+   532→    }
+   533→    if (file == null) {
+   534→      return
+   535→    }
+   536→    eventDispatcher.dispatch(DocumentSaveEvent(file!!.toPath()))
+   537→  }
+   538→
+   539→  /**
+   540→   * Called when the color scheme has been invalidated. This usually happens when the user reloads
+   541→   * the color schemes.
+   542→   */
+   543→  @Suppress("unused")
+   544→  @Subscribe(threadMode = ThreadMode.MAIN_ORDERED)
+   545→  open fun onColorSchemeInvalidated(event: ColorSchemeInvalidatedEvent?) {
+   546→    val file = file ?: return
+   547→    setupLanguage(file)
+   548→  }
+   549→
+   550→  /**
+   551→   * Setup the editor language for the given [file].
+   552→   *
+   553→   * This applies a proper [Language] and the color scheme to the editor.
+   554→   */
+   555→  open fun setupLanguage(file: File?) {
+   556→    if (isReleased) {
+   557→      return
+   558→    }
+   559→    if (file == null) {
+   560→      return
+   561→    }
+   562→
+   563→    createLanguage(file) { language ->
+   564→      val extension = file.extension
+   565→      if (language is TreeSitterLanguage) {
+   566→        IDEColorSchemeProvider.readSchemeAsync(context = context, coroutineScope = editorScope,
+   567→          type = extension) { scheme ->
+   568→          applyTreeSitterLang(language, extension, scheme)
+   569→        }
+   570→      } else {
+   571→        setEditorLanguage(language)
+   572→      }
+   573→    }
+   574→  }
+   575→
+   576→  /**
+   577→   * Applies the given [TreeSitterLanguage] and the [color scheme][scheme] for the given [file type][type].
+   578→   */
+   579→  open fun applyTreeSitterLang(language: TreeSitterLanguage, type: String,
+   580→    scheme: SchemeAndroidIDE?) {
+   581→    applyTreeSitterLangInternal(language, type, scheme)
+   582→  }
+   583→
+   584→  private fun applyTreeSitterLangInternal(language: TreeSitterLanguage, type: String,
+   585→    scheme: SchemeAndroidIDE?) {
+   586→    if (isReleased) {
+   587→      return
+   588→    }
+   589→    var finalScheme = if (scheme != null) {
+   590→      scheme
+   591→    } else {
+   592→      log.error("Failed to read current color scheme")
+   593→      SchemeAndroidIDE.newInstance(context)
+   594→    }
+   595→
+   596→    if (finalScheme is IDEColorScheme) {
+   597→
+   598→      language.setupWith(finalScheme)
+   599→
+   600→      if (finalScheme.getLanguageScheme(type) == null) {
+   601→        log.warn("Color scheme does not support file type '{}'", type)
+   602→        finalScheme = SchemeAndroidIDE.newInstance(context)
+   603→      }
+   604→    }
+   605→
+   606→    if (finalScheme is DynamicColorScheme) {
+   607→      finalScheme.apply(context)
+   608→    }
+   609→
+   610→    colorScheme = finalScheme!!
+   611→    setEditorLanguage(language)
+   612→  }
+   613→
+   614→  private inline fun createLanguage(file: File, crossinline callback: (Language?) -> Unit) {
+   615→
+   616→    // 1 -> If the given File object does not represent a file, return emtpy language
+   617→    if (!file.isFile) {
+   618→      return callback(EmptyLanguage())
+   619→    }
+   620→
+   621→    // 2 -> In case a TreeSitterLanguage has been registered for this file type,
+   622→    //      Initialize the TreeSitterLanguage asynchronously and then invoke the callback
+   623→    if (TreeSitterLanguageProvider.hasTsLanguage(file)) {
+   624→
+   625→      // lazily create TS languages as they need to read files from assets
+   626→      setupTsLanguageJob = editorScope.launch {
+   627→        callback(TreeSitterLanguageProvider.forFile(file, context))
+   628→      }.also { job ->
+   629→        job.invokeOnCompletion { err ->
+   630→          if (err != null) {
+   631→            log.error("Failed to setup tree sitter language for file: {}", file, err)
+   632→          }
+   633→
+   634→          setupTsLanguageJob = null
+   635→        }
+   636→      }
+   637→
+   638→      return
+   639→    }
+   640→
+   641→    // 3 -> Check if we have ANTLR4 lexer-based languages for this file,
+   642→    //      return the language if we do, otherwise return an empty language
+   643→    val lang = when (FileUtils.getFileExtension(file)) {
+   644→      "gradle" -> GroovyLanguage()
+   645→      "c", "h", "cc", "cpp", "cxx" -> CppLanguage()
+   646→      else -> EmptyLanguage()
+   647→    }
+   648→
+   649→    callback(lang)
+   650→  }
+   651→
+   652→  /**
+   653→   * Initialize the editor.
+   654→   */
+   655→  protected open fun initEditor() {
+   656→
+   657→    lineNumberMarginLeft = SizeUtils.dp2px(2f).toFloat()
+   658→
+   659→    _actionsMenu = EditorActionsMenu(this).also {
+   660→      it.init()
+   661→    }
+   662→
+   663→    markUnmodified()
+   664→
+   665→    searcher = IDEEditorSearcher(this)
+   666→    colorScheme = SchemeAndroidIDE.newInstance(context)
+   667→    inputType = createInputTypeFlags()
+   668→
+   669→    val window = EditorCompletionWindow(this)
+   670→    window.setAdapter(CompletionListAdapter())
+   671→    replaceComponent(EditorAutoCompletion::class.java, window)
+   672→
+   673→    getComponent(EditorTextActionWindow::class.java).isEnabled = false
+   674→
+   675→    subscribeEvent(ContentChangeEvent::class.java) { event, _ ->
+   676→      if (isReleased) {
+   677→        return@subscribeEvent
+   678→      }
+   679→
+   680→      markModified()
+   681→      file ?: return@subscribeEvent
+   682→
+   683→      editorScope.launch {
+   684→        dispatchDocumentChangeEvent(event)
+   685→        checkForSignatureHelp(event)
+   686→      }
+   687→    }
+   688→
+   689→    subscribeEvent(SelectionChangeEvent::class.java) { _, _ ->
+   690→      if (isReleased) {
+   691→        return@subscribeEvent
+   692→      }
+   693→
+   694→      if (_diagnosticWindow?.isShowing == true) {
+   695→        _diagnosticWindow?.dismiss()
+   696→      }
+   697→
+   698→      selectionChangeRunner?.also {
+   699→        selectionChangeHandler.removeCallbacks(it)
+   700→        selectionChangeHandler.postDelayed(it, SELECTION_CHANGE_DELAY)
+   701→      }
+   702→    }
+   703→
+   704→    EventBus.getDefault().register(this)
+   705→  }
+   706→
+   707→  private inline fun launchCancellableAsyncWithProgress(@StringRes message: Int,
+   708→    crossinline action: suspend CoroutineScope.(flashbar: Flashbar, cancelChecker: ICancelChecker) -> Unit): Job? {
+   709→    if (isReleased) {
+   710→      return null
+   711→    }
+   712→
+   713→    return editorScope.launchAsyncWithProgress(configureFlashbar = { builder, cancelChecker ->
+   714→      configureFlashbar(builder, message, cancelChecker)
+   715→    }, action = action)
+   716→  }
+   717→
+   718→  protected open suspend fun onFindDefinitionResult(
+   719→    result: DefinitionResult?,
+   720→  ) = withContext(Dispatchers.Main) {
+   721→
+   722→    if (isReleased) {
+   723→      return@withContext
+   724→    }
+   725→
+   726→    val languageClient = languageClient ?: run {
+   727→      log.error("No language client found to handle the definitions result")
+   728→      return@withContext
+   729→    }
+   730→
+   731→    if (result == null) {
+   732→      log.error("Invalid definitions result from language server (null)")
+   733→      flashError(string.msg_no_definition)
+   734→      return@withContext
+   735→    }
+   736→
+   737→    val locations = result.locations
+   738→    if (locations.isEmpty()) {
+   739→      log.error("No definitions found")
+   740→      flashError(string.msg_no_definition)
+   741→      return@withContext
+   742→    }
+   743→
+   744→    if (locations.size != 1) {
+   745→      languageClient.showLocations(locations)
+   746→      return@withContext
+   747→    }
+   748→
+   749→    val (file1, range) = locations[0]
+   750→    if (DocumentUtils.isSameFile(file1, file!!.toPath())) {
+   751→      setSelection(range)
+   752→      return@withContext
+   753→    }
+   754→
+   755→    languageClient.showDocument(ShowDocumentParams(file1, range))
+   756→  }
+   757→
+   758→  protected open suspend fun onFindReferencesResult(result: ReferenceResult?) =
+   759→    withContext(Dispatchers.Main) {
+   760→
+   761→      if (isReleased) {
+   762→        return@withContext
+   763→      }
+   764→
+   765→      val languageClient = languageClient ?: run {
+   766→        log.error("No language client found to handle the references result")
+   767→        return@withContext
+   768→      }
+   769→
+   770→      if (result == null) {
+   771→        log.error("Invalid references result from language server (null)")
+   772→        flashError(string.msg_no_references)
+   773→        return@withContext
+   774→      }
+   775→
+   776→      val locations = result.locations
+   777→      if (locations.isEmpty()) {
+   778→        log.error("No references found")
+   779→        flashError(string.msg_no_references)
+   780→        return@withContext
+   781→      }
+   782→
+   783→      if (result.locations.size == 1) {
+   784→        val (file, range) = result.locations[0]
+   785→
+   786→        if (DocumentUtils.isSameFile(file, getFile()!!.toPath())) {
+   787→          setSelection(range)
+   788→          return@withContext
+   789→        }
+   790→      }
+   791→
+   792→      languageClient.showLocations(result.locations)
+   793→    }
+   794→
+   795→  protected open fun dispatchDocumentOpenEvent() {
+   796→    if (isReleased) {
+   797→      return
+   798→    }
+   799→
+   800→    val file = this.file ?: return
+   801→
+   802→    this.fileVersion = 0
+   803→
+   804→    val openEvent = DocumentOpenEvent(file.toPath(), text.toString(), fileVersion)
+   805→
+   806→    eventDispatcher.dispatch(openEvent)
+   807→  }
+   808→
+   809→  protected open fun dispatchDocumentChangeEvent(event: ContentChangeEvent) {
+   810→    if (isReleased) {
+   811→      return
+   812→    }
+   813→
+   814→    val file = file?.toPath() ?: return
+   815→    var type = ChangeType.INSERT
+   816→    if (event.action == ContentChangeEvent.ACTION_DELETE) {
+   817→      type = ChangeType.DELETE
+   818→    } else if (event.action == ContentChangeEvent.ACTION_SET_NEW_TEXT) {
+   819→      type = ChangeType.NEW_TEXT
+   820→    }
+   821→    var changeDelta = if (type == ChangeType.NEW_TEXT) 0 else event.changedText.length
+   822→    if (type == ChangeType.DELETE) {
+   823→      changeDelta = -changeDelta
+   824→    }
+   825→    val start = event.changeStart
+   826→    val end = event.changeEnd
+   827→    val changeRange = Range(Position(start.line, start.column, start.index),
+   828→      Position(end.line, end.column, end.index))
+   829→    val changedText = event.changedText.toString()
+   830→    val changeEvent = DocumentChangeEvent(file, changedText, text.toString(), ++fileVersion, type,
+   831→      changeDelta, changeRange)
+   832→
+   833→    eventDispatcher.dispatch(changeEvent)
+   834→  }
+   835→
+   836→  protected open fun dispatchDocumentSelectedEvent() {
+   837→    if (isReleased) {
+   838→      return
+   839→    }
+   840→    val file = file ?: return
+   841→    eventDispatcher.dispatch(DocumentSelectedEvent(file.toPath()))
+   842→  }
+   843→
+   844→  protected open fun dispatchDocumentCloseEvent() {
+   845→    if (isReleased) {
+   846→      return
+   847→    }
+   848→    val file = file ?: return
+   849→
+   850→    eventDispatcher.dispatch(DocumentCloseEvent(file.toPath(), cursorLSPRange))
+   851→  }
+   852→
+   853→  /**
+   854→   * Checks if the content change event should trigger signature help. Signature help trigger
+   855→   * characters are :
+   856→   *
+   857→   *
+   858→   *  * `'('` (parentheses)
+   859→   *  * `','` (comma)
+   860→   *
+   861→   *
+   862→   * @param event The content change event.
+   863→   */
+   864→  private fun checkForSignatureHelp(event: ContentChangeEvent) {
+   865→    if (isReleased) {
+   866→      return
+   867→    }
+   868→    if (languageServer == null) {
+   869→      return
+   870→    }
+   871→    val changeLength = event.changedText.length
+   872→    if (event.action != ContentChangeEvent.ACTION_INSERT || changeLength < 1 || changeLength > 2) {
+   873→      // change length will be 1 if ',' is inserted
+   874→      // changeLength will be 2 as '(' and ')' are inserted at the same time
+   875→      return
+   876→    }
+   877→
+   878→    val ch = event.changedText[0]
+   879→    if (ch == '(' || ch == ',') {
+   880→      signatureHelp()
+   881→    }
+   882→  }
+   883→
+   884→  private fun configureFlashbar(builder: Flashbar.Builder, @StringRes message: Int,
+   885→    cancelChecker: ICancelChecker) {
+   886→    builder.message(message).primaryActionText(android.R.string.cancel)
+   887→      .primaryActionTapListener { bar: Flashbar ->
+   888→        cancelChecker.cancel()
+   889→        bar.dismiss()
+   890→      }
+   891→  }
+   892→
+   893→  private inline fun <T> safeGet(name: String, action: () -> T): T? {
+   894→    return try {
+   895→      action()
+   896→    } catch (err: Throwable) {
+   897→      logError(err, name)
+   898→      null
+   899→    }
+   900→  }
+   901→
+   902→  private fun Job.logError(action: String): Job = apply {
+   903→    invokeOnCompletion { err -> logError(err, action) }
+   904→  }
+   905→
+   906→  private fun logError(err: Throwable?, action: String) {
+   907→    err ?: return
+   908→    if (CancelChecker.isCancelled(err)) {
+   909→      log.warn("{} has been cancelled", action)
+   910→    } else {
+   911→      log.error("{} failed", action)
+   912→    }
+   913→  }
+   914→
+   915→  override fun setSelectionAround(line: Int, column: Int) {
+   916→    editorFeatures.setSelectionAround(line, column)
+   917→  }
+   918→}
