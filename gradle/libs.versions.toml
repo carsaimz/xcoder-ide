@@ -35,8 +35,7 @@ sora-editor = "0.23.5"
 # --- Termux terminal-emulator ---
 termux-terminal = "v0.118.0"
 
-# --- AndroidTreeView (Bogdan Melnychuk) ---
-android-tree-view = "2.5.1"
+# --- AndroidTreeView removed (JitPack unavailable) ---
 
 # --- LSP (Language Server Protocol) ---
 lsp4j = "0.21.1"
@@ -120,8 +119,6 @@ termux-terminal-emulator = { group = "com.github.termux.termux-app", name = "ter
 termux-terminal-view = { group = "com.github.termux.termux-app", name = "terminal-view", version.ref = "termux-terminal" }
 guava-empty = { group = "com.google.guava", name = "listenablefuture", version = "9999.0-empty-to-avoid-conflict-with-guava" }
 
-# ── AndroidTreeView (Bogdan Melnychuk) ────────────────────────────────────
-android-tree-view = { group = "com.github.bmelnychuk", name = "AndroidTreeView", version.ref = "android-tree-view" }
 
 # ── LSP4J (Language Server Protocol client) ───────────────────────────────
 lsp4j = { group = "org.eclipse.lsp4j", name = "org.eclipse.lsp4j", version.ref = "lsp4j" }

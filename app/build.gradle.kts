@@ -101,8 +101,7 @@ dependencies {
     // --- Plugin System ---
     implementation(project(":plugin-system:loader"))
 
-    // --- AndroidTreeView (Bogdan Melnychuk) ---
-    implementation(libs.android.tree.view)
+    // --- AndroidTreeView --- (removed: JitPack unavailable, use Compose LazyColumn tree)
 
     // --- AndroidX Core ---
     implementation(libs.androidx.core.ktx)
