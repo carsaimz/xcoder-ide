@@ -47,7 +47,7 @@ apksig = "8.2.0"
 appcompat = "1.6.1"
 sshj = "0.38.0"
 jsch = "0.1.55"
-commons-net = "3.10.0"
+commons-net = "3.13.0"
 documentfile = "1.0.0"
 viewpager2 = "1.0.0"
 
