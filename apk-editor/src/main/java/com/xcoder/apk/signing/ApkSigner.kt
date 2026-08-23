@@ -155,10 +155,6 @@ class ApkSigner() {
                 .setV3SigningEnabled(config.v3Enabled)
                 .setOtherSignersSignaturesPreserved(false)
 
-            if (config.deterministicDsaSigning) {
-                builder.setDeterministicDsaSigning(true)
-            }
-
             builder.build().sign()
 
             val elapsed = System.currentTimeMillis() - startTime

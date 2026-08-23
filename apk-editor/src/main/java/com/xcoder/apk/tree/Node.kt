@@ -135,14 +135,14 @@ abstract class ContainerNode(
     /**
  * Add a child node. Called during [loadChildren] implementations.
  */
-    protected fun addChild(node: Node) {
+    fun addChild(node: Node) {
         _children.add(node)
     }
 
     /**
  * Insert a child at a specific index.
  */
-    protected fun addChild(index: Int, node: Node) {
+    fun addChild(index: Int, node: Node) {
         _children.add(index, node)
     }
 

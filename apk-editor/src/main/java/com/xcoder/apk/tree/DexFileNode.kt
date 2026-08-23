@@ -123,7 +123,7 @@ class DexFileNode(
         return countNodesOfType<PackageNode>(this)
     }
 
-    private inline fun <reified T : Node> countNodesOfType(container: ContainerNode): Int {
+    private fun <T : Node> countNodesOfType(container: ContainerNode): Int {
         var count = 0
         for (child in container.getChildren()) {
             if (child is T) count++
