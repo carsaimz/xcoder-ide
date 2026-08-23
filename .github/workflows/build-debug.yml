@@ -38,14 +38,14 @@ jobs:
       - name: Generate version info
         id: version
         run: |
-          VERSION_NAME=$(grep 'versionName' app/build.gradle.kts | head -1 | sed "s/.*"\(.*\)".*/\1/")
+          VERSION_NAME=$(grep 'versionName' app/build.gradle.kts | head -1 | sed 's/.*"\(.*\)".*/\1/')
           BUILD_NUMBER=${{ github.run_number }}
           echo "version_name=${VERSION_NAME}" >> $GITHUB_OUTPUT
           echo "build_number=${BUILD_NUMBER}" >> $GITHUB_OUTPUT
           echo "version_code=${VERSION_NAME%%-*}-debug.${BUILD_NUMBER}" >> $GITHUB_OUTPUT
 
       - name: Build debug APK
-        run: gradle assembleDebug --no-daemon --stacktrace
+        run: gradle assembleDebug --no-daemon --stacktrace --no-configuration-cache
 
       - name: Rename APK
         run: |
