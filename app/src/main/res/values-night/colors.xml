@@ -114,8 +114,8 @@
 
     <!-- Minimap -->
     <color name="studio_minimap_background">#161625</color>
-    <color name="studio_minimap_slider">rgba(139,132,255,0.25)</color>
-    <color name="studio_minimap_viewport">rgba(139,132,255,0.10)</color>
+    <color name="studio_minimap_slider">#408B84FF</color>
+    <color name="studio_minimap_viewport">#1A8B84FF</color>
 
     <!-- ================================================================== -->
     <!--  Editor — Code Surface (Dark)                                       -->

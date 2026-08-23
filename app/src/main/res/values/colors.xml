@@ -127,8 +127,8 @@
 
     <!-- Minimap -->
     <color name="studio_minimap_background">#F7F8FC</color>
-    <color name="studio_minimap_slider">rgba(107,92,231,0.2)</color>
-    <color name="studio_minimap_viewport">rgba(107,92,231,0.12)</color>
+    <color name="studio_minimap_slider">#336B5CE7</color>
+    <color name="studio_minimap_viewport">#1F6B5CE7</color>
 
     <!-- ================================================================== -->
     <!--  Editor – Code Surface                                              -->

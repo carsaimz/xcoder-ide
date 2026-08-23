@@ -3,8 +3,7 @@ package com.xcoder.apk.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.xcoder.apk.dex.DexEditor
-import com.xcoder.apk.resources.ApkResource
-import com.xcoder.apk.resources.AndroidManifest
+import com.xcoder.apk.resources.ResourceEditor
 import com.xcoder.apk.signing.ApkSigner
 import com.xcoder.apk.smali.SmaliEditor
 import kotlinx.coroutines.flow.*
@@ -21,9 +20,9 @@ class ApkEditorViewModel : ViewModel() {
         val apkPath: String = "",
         val isLoaded: Boolean = false,
         val isLoading: Boolean = false,
-        val manifest: AndroidManifest? = null,
-        val resources: List<ApkResource> = emptyList(),
-        val filteredResources: List<ApkResource> = emptyList(),
+        val manifest: ResourceEditor.AndroidManifest? = null,
+        val resources: List<ResourceEditor.ApkResource> = emptyList(),
+        val filteredResources: List<ResourceEditor.ApkResource> = emptyList(),
         val dexClasses: List<DexEditor.DexClass> = emptyList(),
         val isSigned: Boolean = false,
         val signingInfo: Map<String, String> = emptyMap(),
