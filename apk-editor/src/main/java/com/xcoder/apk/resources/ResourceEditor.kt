@@ -6,8 +6,6 @@ import org.w3c.dom.*
 import org.xml.sax.InputSource
 import java.io.*
 import java.util.zip.*
-import javax.inject.Inject
-import javax.inject.Singleton
 import javax.xml.parsers.DocumentBuilderFactory
 
 /**
@@ -32,8 +30,7 @@ import javax.xml.parsers.DocumentBuilderFactory
  * This editor parses the binary format to provide a browsable
  * and editable view of the resource table.
  */
-@Singleton
-class ResourceEditor @Inject constructor() {
+class ResourceEditor() {
 
     companion object {
         private const val TAG = "ResourceEditor"

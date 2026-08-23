@@ -1,8 +1,6 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.hilt)
-    alias(libs.plugins.kapt)
 }
 
 android {
@@ -28,10 +26,6 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.documentfile)
 
-    // ── Hilt ──────────────────────────────────────────────────────
-    implementation(libs.hilt.android)
-    kapt(libs.hilt.compiler)
-
     // ── Coroutines ────────────────────────────────────────────────
     implementation(libs.kotlinx.coroutines.android)
 
@@ -44,5 +38,3 @@ dependencies {
     // ── JSON ─────────────────────────────────────────────────────
     implementation(libs.gson)
 }
-
-kapt { correctErrorTypes = true }

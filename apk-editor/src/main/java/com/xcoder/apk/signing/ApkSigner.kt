@@ -8,8 +8,6 @@ import java.security.cert.X509Certificate
 import java.security.spec.PKCS8EncodedKeySpec
 import java.util.*
 import java.util.zip.*
-import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * APK signing implementation using com.android.apksig library.
@@ -23,8 +21,7 @@ import javax.inject.Singleton
  * The apksig library is the same one used by the Android build system,
  * ensuring maximum compatibility with Android's verification logic.
  */
-@Singleton
-class ApkSigner @Inject constructor() {
+class ApkSigner() {
 
     companion object {
         private const val TAG = "ApkSigner"

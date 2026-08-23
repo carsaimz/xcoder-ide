@@ -75,6 +75,7 @@ jobs:
 
       - name: Compile all modules
         run: |
+          set -o pipefail
           gradle assembleDebug --no-daemon --stacktrace --no-configuration-cache 2>&1 | tee build.log
           echo ''
           echo '=== Error Summary ==='
@@ -194,6 +195,7 @@ jobs:
 
       - name: Run unit tests
         run: |
+          set -o pipefail
           gradle testDebugUnitTest --no-daemon --stacktrace --no-configuration-cache 2>&1 | tee test.log
           echo ''
           echo '=== Test Summary ==='

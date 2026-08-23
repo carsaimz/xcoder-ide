@@ -6,19 +6,15 @@ import com.xcoder.apk.dex.DexEditor
 import com.xcoder.apk.resources.*
 import com.xcoder.apk.signing.ApkSigner
 import com.xcoder.apk.smali.SmaliEditor
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.io.File
-import javax.inject.Inject
 
-@HiltViewModel
-class ApkEditorViewModel @Inject constructor(
-    private val dexEditor: DexEditor,
-    private val resourceEditor: ResourceEditor,
-    private val apkSigner: ApkSigner,
-    private val smaliEditor: SmaliEditor
-) : ViewModel() {
+class ApkEditorViewModel : ViewModel() {
+    private val dexEditor = DexEditor()
+    private val resourceEditor = ResourceEditor()
+    private val apkSigner = ApkSigner()
+    private val smaliEditor = SmaliEditor()
 
     data class ApkEditorState(
         val apkPath: String = "",

@@ -3,8 +3,6 @@ package com.xcoder.apk.dex
 import android.util.Log
 import java.io.*
 import java.util.zip.*
-import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * DEX file editor using raw byte parsing.
@@ -21,8 +19,7 @@ import javax.inject.Singleton
  * For full smali decompilation/assembly, dexlib2+baksmali can be
  * added as a local JAR dependency when needed.
  */
-@Singleton
-class DexEditor @Inject constructor() {
+class DexEditor() {
 
     companion object {
         private const val TAG = "DexEditor"

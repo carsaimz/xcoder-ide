@@ -2,8 +2,6 @@ package com.xcoder.apk.smali
 
 import android.util.Log
 import java.util.regex.Pattern
-import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * Smali file parser and analyzer.
@@ -17,8 +15,7 @@ import javax.inject.Singleton
  * For syntax highlighting integration with sora-editor, see
  * [com.xcoder.editor.sora.SmaliLanguage] in the editor module.
  */
-@Singleton
-class SmaliEditor @Inject constructor() {
+class SmaliEditor() {
 
     // ── Data classes for smali AST ─────────────────────────────────
 
