@@ -19,23 +19,23 @@
     <!-- ================================================================ -->
     <style name="Theme.XCoderIDE" parent="Theme.Material3.Light.NoActionBar">
 
-        <!-- ---- Brand / Primary ---- -->
+        <!-- Brand / Primary -->
         <item name="colorPrimary">@color/xcoder_primary</item>
         <item name="colorOnPrimary">@color/xcoder_on_primary</item>
         <item name="colorPrimaryContainer">@color/xcoder_primary_container</item>
         <item name="colorOnPrimaryContainer">@color/xcoder_on_primary_container</item>
 
-        <!-- ---- Secondary ---- -->
+        <!-- Secondary -->
         <item name="colorSecondary">@color/xcoder_secondary</item>
         <item name="colorOnSecondary">@color/xcoder_on_secondary</item>
         <item name="colorSecondaryContainer">@color/xcoder_secondary_container</item>
 
-        <!-- ---- Tertiary ---- -->
+        <!-- Tertiary -->
         <item name="colorTertiary">@color/xcoder_tertiary</item>
         <item name="colorOnTertiary">@color/xcoder_on_tertiary</item>
         <item name="colorTertiaryContainer">@color/xcoder_tertiary_container</item>
 
-        <!-- ---- Background & Surface ---- -->
+        <!-- Background & Surface -->
         <item name="android:colorBackground">@color/xcoder_background</item>
         <item name="colorOnBackground">@color/xcoder_on_background</item>
         <item name="colorSurface">@color/xcoder_surface</item>
@@ -47,46 +47,46 @@
         <item name="colorSurfaceContainerHighest">@color/xcoder_surface_container_highest</item>
         <item name="colorSurfaceElevated">@color/xcoder_surface_elevated</item>
 
-        <!-- ---- Outline ---- -->
+        <!-- Outline -->
         <item name="colorOutline">@color/xcoder_outline</item>
         <item name="colorOutlineVariant">@color/xcoder_outline_variant</item>
 
-        <!-- ---- Error / Status ---- -->
+        <!-- Error / Status -->
         <item name="colorError">@color/semantic_error</item>
         <item name="colorOnError">@color/xcoder_surface</item>
         <item name="colorErrorContainer">@color/semantic_error_background</item>
 
-        <!-- ---- System Bars ---- -->
+        <!-- System Bars -->
         <item name="android:statusBarColor">@color/studio_toolbar_background</item>
         <item name="android:navigationBarColor">@color/studio_status_bar_background</item>
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:windowLightNavigationBar">true</item>
 
-        <!-- ---- Window ---- -->
+        <!-- Window -->
         <item name="android:windowBackground">@color/xcoder_background</item>
         <item name="android:windowIsTranslucent">false</item>
         <item name="android:windowAnimationStyle">@android:style/Animation.Activity</item>
 
-        <!-- ---- Text Input ---- -->
+        <!-- Text Input -->
         <item name="textInputStyle">@style/Widget.Material3.TextInputLayout.OutlinedBox</item>
         <item name="editTextColor">@color/xcoder_text_primary</item>
         <item name="android:textColorHint">@color/xcoder_text_placeholder</item>
 
-        <!-- ---- Scrollbar ---- -->
+        <!-- Scrollbar -->
         <item name="android:scrollbarThumbVertical">@color/xcoder_scrollbar_thumb</item>
         <item name="android:scrollbarTrackVertical">@color/xcoder_scrollbar_track</item>
         <item name="android:scrollbarSize">6dp</item>
         <item name="android:scrollbarFadeDuration">500</item>
 
-        <!-- ---- TabLayout ---- -->
+        <!-- TabLayout -->
         <item name="tabStyle">@style/Widget.XCoder.TabLayout</item>
         <item name="tabTextColor">@color/studio_tab_inactive_text</item>
         <item name="tabSelectedTextColor">@color/studio_tab_active_text</item>
 
-        <!-- ---- Bottom Sheet ---- -->
+        <!-- Bottom Sheet -->
         <item name="bottomSheetStyle">@style/Widget.XCoder.BottomSheet</item>
 
-        <!-- ---- Popup / Menu ---- -->
+        <!-- Popup / Menu -->
         <item name="popupMenuBackground">@color/xcoder_surface_elevated</item>
         <item name="android:popupMenuStyle">@style/Widget.XCoder.PopupMenu</item>
 

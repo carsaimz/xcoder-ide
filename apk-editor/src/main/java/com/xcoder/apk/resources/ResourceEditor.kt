@@ -187,7 +187,7 @@ class ResourceEditor() {
         val tableSize = readLEInt(bytes, 4)
         val packageCount = readLEInt(bytes, 8)
 
-        if (tableType != 0x0001) return entries
+        if (tableType.toInt() != 0x0001) return entries
 
         // Scan for string entries by searching for common resource types
         // This is a simplified parser — a full implementation would
@@ -273,7 +273,7 @@ class ResourceEditor() {
     }
 
     /**
-     * List icon resources (mipmap-*/ic_launcher, drawable-*//icon).
+     * List icon resources (mipmap-*/ic_launcher, drawable-*/icon).
      */
     fun listIconResources(apkPath: String): List<ApkResource> {
         return listResources(apkPath).filter {
@@ -376,9 +376,11 @@ class ResourceEditor() {
         newValue: String
     ): Boolean {
         return modifyResourceInApk(apkPath, outputApkPath) { entryName, content ->
-            if (!entryName.matches(Regex("res/values.*/strings\\.xml$"))) return null
-            val modified = replaceXmlStringValue(content, resourceName, newValue)
-            if (modified != content) modified else null
+            if (!entryName.matches(Regex("res/values.*/strings\\.xml$"))) null
+            else {
+                val modified = replaceXmlStringValue(content, resourceName, newValue)
+                if (modified != content) modified else null
+            }
         }
     }
 
@@ -648,8 +650,8 @@ class ResourceEditor() {
     }
 
     private fun readLEShort(bytes: ByteArray, offset: Int): Short {
-        return (bytes[offset].toInt() and 0xFF) or
-                ((bytes[offset + 1].toInt() and 0xFF) shl 8).toShort()
+        return ((bytes[offset].toInt() and 0xFF) or
+                ((bytes[offset + 1].toInt() and 0xFF) shl 8)).toShort()
     }
 
     private fun readLEInt(bytes: ByteArray, offset: Int): Int {
