@@ -308,7 +308,20 @@ class IDEEditor(
      * AndroidIDE calls this when closing a file or switching to a file
      * that doesn't have LSP support.
      */
-    fun unbindLspClient() {        try {            statusListener?.let { languageClient?.removeServerStatusListener(it) }            lspEditor = null            languageClient = null            completionWindow = null            diagnosticOverlay = null            statusListener = null            serverStatus = ServerStatus.INITIALIZING            Log.d(TAG, "LSP client unbound for $currentFilePath")        } catch (e: Exception) {            Log.w(TAG, "Error unbinding LSP client: ${e.message}")        }    }
+    fun unbindLspClient() {
+        try {
+            statusListener?.let { languageClient?.removeServerStatusListener(it) }
+            lspEditor = null
+            languageClient = null
+            completionWindow = null
+            diagnosticOverlay = null
+            statusListener = null
+            serverStatus = ServerStatus.INITIALIZING
+            Log.d(TAG, "LSP client unbound for $currentFilePath")
+        } catch (e: Exception) {
+            Log.w(TAG, "Error unbinding LSP client: ${e.message}")
+        }
+    }
 
     /**
      * Request completions at the current cursor position.

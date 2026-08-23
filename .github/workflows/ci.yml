@@ -58,7 +58,7 @@ jobs:
           gradle-version: '8.5'
 
       - name: Run unit tests
-        run: gradle testDebugUnitTest --no-daemon --stacktrace --no-configuration-cache
+        run: gradle testDebugUnitTest --no-daemon --stacktrace --info --no-configuration-cache 2>&1 | grep -E '(FAILED|error:|e: |> Task)' | head -80
 
       - name: Upload test reports
         if: always()
