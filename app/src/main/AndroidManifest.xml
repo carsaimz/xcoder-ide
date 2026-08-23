@@ -27,7 +27,7 @@
     <uses-sdk tools:node="merge"
         android:minSdkVersion="21"
         android:targetSdkVersion="34"
-        tools:overrideLibrary="com.termux.view" />
+        tools:overrideLibrary="com.termux.view,com.termux.terminal" />
 
     <application
         android:name=".XCoderApp"
