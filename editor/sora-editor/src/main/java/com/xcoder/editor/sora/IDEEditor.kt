@@ -369,9 +369,9 @@ class IDEEditor(
         lspEditor?.let { lspEd ->
             try {
                 val cursor = editor.cursor ?: return
-                val indexer = editor.text.getIndexer()
-                val line = indexer.getLineNumber(cursor.left)
-                val column = indexer.getColumnNumber(cursor.left)
+                val lineCol = editor.text.getIndexer().getLineAndColumn(cursor.left)
+                val line = lineCol[0]
+                val column = lineCol[1]
                 isSignatureHelpActive = true
                 lspEd.requestManager?.signatureHelp(
                     currentFilePath,
@@ -688,9 +688,9 @@ class IDEEditor(
         // Selection change listener
         editor.subscribeEvent(SelectionChangeEvent::class.java) { event, _ ->
             val cursor = editor.cursor ?: return@subscribeEvent true
-            val indexer = editor.text.getIndexer()
-            val line = indexer.getLineNumber(cursor.left) + 1
-            val column = indexer.getColumnNumber(cursor.left) + 1
+            val lineCol = editor.text.getIndexer().getLineAndColumn(cursor.left)
+            val line = lineCol[0] + 1
+            val column = lineCol[1] + 1
             val selStart = event.leftIndex
             val selEnd = event.rightIndex
             onSelectionChanged?.invoke(line, column, selStart, selEnd)

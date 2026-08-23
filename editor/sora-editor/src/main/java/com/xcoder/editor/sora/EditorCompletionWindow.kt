@@ -142,8 +142,9 @@ class EditorCompletionWindow(
     fun requestCompletion() {
         val cursor = editor.cursor ?: return
         val text = editor.text
-        val line = text.getIndexer().getLineNumber(cursor.left)
-        val column = text.getIndexer().getColumnNumber(cursor.left)
+        val lineCol = text.getIndexer().getLineAndColumn(cursor.left)
+        val line = lineCol[0]
+        val column = lineCol[1]
         val lineContent = text.getLine(line)
 
         // Compute the prefix (identifier before cursor)
@@ -277,8 +278,7 @@ class EditorCompletionWindow(
             when (doc) {
                 is org.eclipse.lsp4j.MarkupContent -> doc.value
                 is org.eclipse.lsp4j.MarkedString -> doc.value
-                is String -> doc
-                else -> null
+                else -> doc.left ?: doc.right?.value
             }
         }
     }
@@ -337,9 +337,7 @@ class EditorCompletionWindow(
             CompletionItemKind.Operator,
             CompletionItemKind.Snippet -> KIND_COLOR_GRAY
 
-            CompletionItemKind.Module,
-            CompletionItemKind.Package,
-            CompletionItemKind.Namespace -> KIND_COLOR_YELLOW
+            CompletionItemKind.Module -> KIND_COLOR_YELLOW
 
             CompletionItemKind.File,
             CompletionItemKind.Folder,

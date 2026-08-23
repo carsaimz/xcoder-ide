@@ -516,9 +516,9 @@ fun SoraEditor(
 
                 subscribeEvent(SelectionChangeEvent::class.java) { event, _ ->
                     val cursor = this.cursor ?: return@subscribeEvent true
-                    val indexer = text.getIndexer()
-                    val line = indexer.getLineNumber(cursor.left) + 1
-                    val column = indexer.getColumnNumber(cursor.left) + 1
+                    val lineCol = text.getIndexer().getLineAndColumn(cursor.left)
+                    val line = lineCol[0] + 1
+                    val column = lineCol[1] + 1
                     val selStart = event.leftIndex
                     val selEnd = event.rightIndex
                     callbacks.onSelectionChanged?.invoke(line, column, selStart, selEnd)
@@ -780,9 +780,9 @@ private fun toggleComment(editor: CodeEditor, filePath: String) {
 /** Get the current cursor position as (line, column), both 1-indexed. */
 fun getCursorPosition(editor: CodeEditor): Pair<Int, Int> {
     val cursor = editor.cursor ?: return 1 to 1
-    val indexer = editor.text.getIndexer()
-    val line = indexer.getLineNumber(cursor.left) + 1
-    val column = indexer.getColumnNumber(cursor.left) + 1
+    val lineCol = editor.text.getIndexer().getLineAndColumn(cursor.left)
+    val line = lineCol[0] + 1
+    val column = lineCol[1] + 1
     return line to column
 }
 

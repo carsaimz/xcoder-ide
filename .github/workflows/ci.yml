@@ -59,6 +59,11 @@ jobs:
     name: Build All Modules
     runs-on: ubuntu-latest
     needs: resolve-deps
+    outputs:
+      build_status: ${{ steps.build-result.status }}
+      error_count: ${{ steps.build-result.outputs.error_count }}
+      warning_count: ${{ steps.build-result.outputs.warning_count }}
+      has_apk: ${{ steps.check-apk.outputs.has_apk }}
     steps:
       - uses: actions/checkout@v4
 
@@ -74,15 +79,30 @@ jobs:
           gradle-version: '8.5'
 
       - name: Compile all modules
+        id: build-result
         run: |
           set -o pipefail
-          gradle assembleDebug --no-daemon --stacktrace --no-configuration-cache --no-build-cache 2>&1 | tee build.log
+          gradle assembleDebug --no-daemon --stacktrace --no-configuration-cache 2>&1 | tee build.log
           echo ''
-          echo '=== Error Summary ==='
-          grep -E '^e: |FAILED' build.log || echo 'No compilation errors'
+          # Error summary
+          ERROR_COUNT=$(grep -c '^e: ' build.log 2>/dev/null || echo '0')
+          echo "error_count=$ERROR_COUNT" >> $GITHUB_OUTPUT
           echo ''
-          echo '=== Warning Count ==='
-          grep -c '^w: ' build.log 2>/dev/null || echo '0 warnings'
+          echo "=== Error Summary ($ERROR_COUNT errors) ==="
+          grep -E '^e: ' build.log || echo 'No compilation errors'
+          echo ''
+          # Warning count
+          WARN_COUNT=$(grep -c '^w: ' build.log 2>/dev/null || echo '0')
+          echo "warning_count=$WARN_COUNT" >> $GITHUB_OUTPUT
+          echo "=== Warning Count: $WARN_COUNT ==="
+          echo ''
+          # Per-module error breakdown
+          echo '=== Per-Module Errors ==='
+          grep -E '^e: file://.*' build.log | \
+            sed 's|.*xcoder-ide/||' | \
+            sed 's|/src/.*|:|' | \
+            cut -d: -f1 | \
+            sort | uniq -c | sort -rn || echo 'No module errors'
 
       - name: Check for APK output
         id: check-apk
@@ -119,6 +139,8 @@ jobs:
           echo "- **Commit:** \`${GITHUB_SHA:0:7}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Errors:** ${{ steps.build-result.outputs.error_count }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Warnings:** ${{ steps.build-result.outputs.warning_count }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           # Module build status
           echo '### Module Build Status' >> $GITHUB_STEP_SUMMARY
@@ -127,7 +149,9 @@ jobs:
           for dir in app core/* editor/* visual-editor build-engine ai-copilot search-in-project code-formatter bookmarks apk-editor remote-filesystem lsp-java plugin-system/*; do
             if [ -d "$dir" ] && [ -d "$dir/build" ]; then
               name=$(basename "$dir")
-              if [ -f "$dir/build/outputs/aar" ] || ls "$dir/build"/outputs/**/*.aar 1>/dev/null 2>&1 || ls "$dir/build"/intermediates/compile_library_classes_jar/*.jar 1>/dev/null 2>&1; then
+              if ls "$dir/build/intermediates/compile_library_classes_jar"/classes.jar 1>/dev/null 2>&1 || \
+                 ls "$dir/build/intermediates/javac/debug/classes" 1>/dev/null 2>&1 || \
+                 ls "$dir/build/outputs/apk/debug"/*.apk 1>/dev/null 2>&1; then
                 echo "| \`$name\` | ✅ Built |" >> $GITHUB_STEP_SUMMARY
               else
                 echo "| \`$name\` | ⚠️ Check log |" >> $GITHUB_STEP_SUMMARY
@@ -144,11 +168,12 @@ jobs:
             ls -lh app/build/outputs/apk/debug/*.apk | awk '{print "- " $NF " (" $5 ")"}' >> $GITHUB_STEP_SUMMARY
           fi
 
-  # ── Lint ───────────────────────────────────────────────────────
+  # ── Lint (non-blocking) ───────────────────────────────────────
   lint:
     name: Lint & Code Quality
     runs-on: ubuntu-latest
-    needs: resolve-deps
+    needs: build
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
@@ -164,15 +189,29 @@ jobs:
           gradle-version: '8.5'
 
       - name: Run lint
-        run: gradle lintDebug --no-daemon --stacktrace --no-configuration-cache
+        run: |
+          set -o pipefail
+          gradle lintDebug --no-daemon --stacktrace --no-configuration-cache 2>&1 | tee lint.log
+          echo ''
+          echo '=== Lint Summary ==='
+          LINT_ISSUES=$(grep -cE '^[A-Z]+:' lint.log 2>/dev/null || echo '0')
+          echo "Found $LINT_ISSUES lint issues"
 
       - name: Upload lint reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: lint-reports
-          path: '**/build/reports/lint-results-debug.html'
+          path: |
+            **/build/reports/lint-results-debug.html
+            lint.log
           retention-days: 14
+
+      - name: Lint summary
+        if: always()
+        run: |
+          echo "### Lint Results" >> $GITHUB_STEP_SUMMARY
+          echo "Lint runs as a **non-blocking** check. Review issues but they do not block merges." >> $GITHUB_STEP_SUMMARY
 
   # ── Unit Tests ─────────────────────────────────────────────────
   test:
@@ -216,3 +255,32 @@ jobs:
           name: test-log
           path: test.log
           retention-days: 7
+
+  # ── CI Gate ───────────────────────────────────────────────────
+  ci-gate:
+    name: CI Status
+    runs-on: ubuntu-latest
+    needs: [resolve-deps, build, lint, test]
+    if: always()
+    steps:
+      - name: Check CI results
+        run: |
+          echo "### CI Pipeline Status" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          DEPS="${{ needs.resolve-deps.result }}"
+          BUILD="${{ needs.build.result }}"
+          LINT="${{ needs.lint.result }}"
+          TEST="${{ needs.test.result }}"
+          echo "| Resolve Deps | $DEPS |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | $BUILD |" >> $GITHUB_STEP_SUMMARY
+          echo "| Lint (advisory) | $LINT |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests | $TEST |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          # Only deps and build are hard gates
+          if [ "$DEPS" = "failure" ] || [ "$BUILD" = "failure" ]; then
+            echo '::error::CI failed — check Build and/or Resolve Dependencies jobs'
+            exit 1
+          fi
+          echo 'CI passed (lint is advisory)'

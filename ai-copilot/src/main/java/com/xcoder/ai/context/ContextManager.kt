@@ -1,5 +1,6 @@
 package com.xcoder.ai.context
 
+import com.xcoder.ai.ChatMessage
 import com.xcoder.ai.MessageRole
 import com.xcoder.core.file.FileManager
 import kotlinx.coroutines.Dispatchers
