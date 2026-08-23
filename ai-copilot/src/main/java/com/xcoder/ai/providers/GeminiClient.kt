@@ -33,7 +33,7 @@ class GeminiClient(config: LlmConfig) : LlmClient(config) {
             val url = "$baseUrl/models/${config.model}:generateContent?key=${config.apiKey}"
             val request = Request.Builder()
                 .url(url)
-                .post(requestBody.toRequestBody(jsonMediaType))
+                .post(gson.toJson(requestBody).toRequestBody(jsonMediaType))
                 .build()
 
             client.newCall(request).execute().use { response ->
@@ -51,7 +51,7 @@ class GeminiClient(config: LlmConfig) : LlmClient(config) {
         val url = "$baseUrl/models/${config.model}:streamGenerateContent?alt=sse&key=${config.apiKey}"
         val request = Request.Builder()
             .url(url)
-            .post(requestBody.toRequestBody(jsonMediaType))
+            .post(gson.toJson(requestBody).toRequestBody(jsonMediaType))
             .build()
 
         val response = client.newCall(request).execute()

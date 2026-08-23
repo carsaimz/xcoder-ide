@@ -94,7 +94,7 @@ Always use the appropriate tools when the user asks you to work with files."""
 
     private suspend fun findRelevantFiles(query: String, root: File, maxFiles: Int): List<String> =
         withContext(Dispatchers.IO) {
-            val queryWords = query.lowercase().split("\W+").filter { it.length > 2 }
+            val queryWords = query.lowercase().split("\\W+").filter { it.length > 2 }
             val scoredFiles = mutableListOf<Pair<String, Int>>()
             root.walkTopDown()
                 .filter { it.isFile && it.length() < 100_000 }

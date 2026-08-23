@@ -87,7 +87,7 @@ class ClaudeClient(config: LlmConfig) : LlmClient(config) {
                 close()
             }
         })
-        awaitClose { }
+        awaitClose()
     }.flowOn(Dispatchers.IO)
 
     private fun buildRequestBody(
