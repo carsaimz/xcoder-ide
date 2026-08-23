@@ -15,7 +15,7 @@ import java.util.zip.ZipFile
  * Based on Dalvikus's ApkNode which:
  * - Opens APK as ZIP and iterates entries
  * - Detects DEX files (classes.dex, classes2.dex, ...)
- * - Detects binary XML files (AndroidManifest.xml, layout/*.xml)
+ * - Detects binary XML files (AndroidManifest.xml, layout XML files)
  * - Detects resource.arsc for the compiled resource table
  * - Creates appropriate typed nodes for each category
  *
@@ -347,7 +347,7 @@ class ZipEntryFileNode(
  * Binary XML is Android's compiled XML format (AXML). These files
  * need to be decoded to plain XML for editing, then re-encoded.
  *
- * Examples: AndroidManifest.xml, res/layout/*.xml, res/values/*.xml
+ * Examples: AndroidManifest.xml, layout XML files, values XML files
  */
 class BinaryXmlNode(
     override val name: String,

@@ -115,19 +115,19 @@ class DexFileNode(
 
     val classCount: Int get() {
         if (!isLoaded) loadChildren()
-        return countNodesOfType<ClassNode>(this)
+        return countNodesOfType(ClassNode::class, this)
     }
 
     val packageCount: Int get() {
         if (!isLoaded) loadChildren()
-        return countNodesOfType<PackageNode>(this)
+        return countNodesOfType(PackageNode::class, this)
     }
 
-    private fun <T : Node> countNodesOfType(container: ContainerNode): Int {
+    private fun countNodesOfType(clazz: kotlin.reflect.KClass<*>, container: ContainerNode): Int {
         var count = 0
         for (child in container.getChildren()) {
-            if (child is T) count++
-            else if (child is ContainerNode) count += countNodesOfType<T>(child)
+            if (clazz.isInstance(child)) count++
+            else if (child is ContainerNode) count += countNodesOfType(clazz, child)
         }
         return count
     }
