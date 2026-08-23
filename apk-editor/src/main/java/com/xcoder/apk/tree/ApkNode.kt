@@ -5,8 +5,6 @@ import java.io.ByteArrayInputStream
 import java.io.File
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
-import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * Root tree node for an APK file.

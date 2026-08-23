@@ -153,7 +153,6 @@ class ApkSigner() {
                 .setV1SigningEnabled(config.v1Enabled)
                 .setV2SigningEnabled(config.v2Enabled)
                 .setV3SigningEnabled(config.v3Enabled)
-                .setDebuggableApk(config.debuggable)
                 .setOtherSignersSignaturesPreserved(false)
 
             if (config.deterministicDsaSigning) {

@@ -273,7 +273,7 @@ class ResourceEditor() {
     }
 
     /**
-     * List icon resources (mipmap-*/ic_launcher, drawable-*/icon).
+     * List icon resources (mipmap icons, drawable icons).
      */
     fun listIconResources(apkPath: String): List<ApkResource> {
         return listResources(apkPath).filter {

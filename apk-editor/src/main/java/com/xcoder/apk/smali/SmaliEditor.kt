@@ -141,7 +141,7 @@ class SmaliEditor() {
                     val code = if (commentIdx >= 0) trimmed.substring(0, commentIdx).trim() else trimmed
                     val comment = if (commentIdx >= 0) trimmed.substring(commentIdx + 1).trim() else ""
                     if (code.isNotBlank()) {
-                        val spaceIdx = code.indexOf(Regex("\\s+"))
+                        val spaceIdx = code.indexOfFirst { it.isWhitespace() }
                         currentInstructions.add(SmaliInstruction(
                             opcode = if (spaceIdx >= 0) code.substring(0, spaceIdx) else code,
                             operands = if (spaceIdx >= 0) code.substring(spaceIdx + 1).trim() else "",

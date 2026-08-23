@@ -2,7 +2,6 @@ package com.xcoder.apk.tree
 
 import android.util.Log
 import java.util.zip.ZipFile
-import javax.inject.Inject
 
 /**
  * Tree node for a DEX file inside an APK.
