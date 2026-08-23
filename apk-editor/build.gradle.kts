@@ -45,9 +45,4 @@ dependencies {
     implementation(libs.gson)
 }
 
-kapt {
-    correctErrorTypes = true
-    // Run kapt in-process to avoid worker classpath issues
-    // that cause "Could not load module <Error module>"
-    useWorkerApi = false
-}
+kapt { correctErrorTypes = true }
