@@ -38,7 +38,8 @@
         android:largeHeap="true"
         android:hardwareAccelerated="true"
         android:requestLegacyExternalStorage="true"
-        tools:targetApi="34">
+        tools:targetApi="34"
+        tools:overrideLibrary="com.termux.view">
 
         <!-- Main Activity -->
         <activity
