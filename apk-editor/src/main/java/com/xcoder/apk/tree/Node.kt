@@ -67,7 +67,6 @@ abstract class ContainerNode(
 
     /** Cached list of child nodes. Empty until [loadChildren] is called. */
     private val _children = mutableListOf<Node>()
-    val children: List<Node> get() = _children
 
     /** Whether children have been loaded at least once. */
     var isLoaded: Boolean = false
@@ -94,13 +93,13 @@ abstract class ContainerNode(
             loadChildren()
             isLoaded = true
         }
-        return children
+        return _children
     }
 
     /**
  * Returns children if already loaded, without triggering a load.
  */
-    fun getChildrenIfLoaded(): List<Node> = if (isLoaded) children else emptyList()
+    fun getChildrenIfLoaded(): List<Node> = if (isLoaded) _children else emptyList()
 
     /**
  * Force-reload children from the data source.
@@ -216,7 +215,7 @@ abstract class ContainerNode(
         return count
     }
 
-    override fun toString(): String = "ContainerNode(name='$name', children=${children.size})"
+    override fun toString(): String = "ContainerNode(name='$name', children=${getChildren().size})"
 }
 
 /**

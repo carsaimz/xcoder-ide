@@ -39,6 +39,7 @@ android {
     }
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -142,6 +143,9 @@ dependencies {
 
     // --- DataStore ---
     implementation(libs.datastore.preferences)
+
+    // --- Desugaring (required by sora-editor language-textmate) ---
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 
     // --- Testing ---
     testImplementation(libs.junit)
