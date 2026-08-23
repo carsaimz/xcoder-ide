@@ -275,6 +275,7 @@ class ApkNode(
             when (child) {
                 is BinaryXmlNode -> out.add(child)
                 is ContainerNode -> collectChildrenOfType(child, out)
+                else -> {}
             }
         }
     }

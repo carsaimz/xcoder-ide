@@ -3,7 +3,8 @@ package com.xcoder.apk.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.xcoder.apk.dex.DexEditor
-import com.xcoder.apk.resources.*
+import com.xcoder.apk.resources.ApkResource
+import com.xcoder.apk.resources.AndroidManifest
 import com.xcoder.apk.signing.ApkSigner
 import com.xcoder.apk.smali.SmaliEditor
 import kotlinx.coroutines.flow.*
