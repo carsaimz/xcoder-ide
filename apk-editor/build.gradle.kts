@@ -21,7 +21,23 @@ android {
     kotlinOptions { jvmTarget = "17" }
 }
 
+// Force consistent Kotlin stdlib across all configurations to prevent
+// kapt "Could not load module <Error module>" caused by mixed stdlib versions.
+configurations.all {
+    resolutionStrategy {
+        force("org.jetbrains.kotlin:kotlin-stdlib:1.9.22")
+        force("org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.22")
+        force("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.22")
+        force("org.jetbrains.kotlin:kotlin-reflect:1.9.22")
+    }
+}
+
 dependencies {
+    // ── Kotlin stdlib (explicit to avoid version conflicts in kapt) ──
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.22")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.22")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.22")
+
     // ── AndroidX ──────────────────────────────────────────────────
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

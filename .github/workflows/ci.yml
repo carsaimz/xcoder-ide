@@ -10,9 +10,13 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=4"
+
 jobs:
-  lint:
-    name: Lint & Code Quality
+  # ── Dependency Resolution ──────────────────────────────────────
+  resolve-deps:
+    name: Resolve Dependencies
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,7 +27,137 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Gradle (auto-generates wrapper)
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.5'
+
+      - name: Resolve all dependencies
+        run: |
+          gradle dependencies --no-daemon --no-configuration-cache \
+            | tee deps.log
+          echo ''
+          echo '=== Dependency Resolution Summary ==='
+          if grep -qiE 'FAIL|could not resolve|could not find' deps.log; then
+            echo '::error::Dependency resolution failed'
+            grep -iE 'FAIL|could not resolve|could not find' deps.log
+            exit 1
+          else
+            echo 'All dependencies resolved successfully'
+          fi
+
+      - name: Upload dependency log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-log
+          path: deps.log
+          retention-days: 7
+
+  # ── Build ──────────────────────────────────────────────────────
+  build:
+    name: Build All Modules
+    runs-on: ubuntu-latest
+    needs: resolve-deps
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.5'
+
+      - name: Compile all modules
+        run: |
+          gradle assembleDebug --no-daemon --stacktrace --no-configuration-cache 2>&1 | tee build.log
+          echo ''
+          echo '=== Error Summary ==='
+          grep -E '^e: |FAILED' build.log || echo 'No compilation errors'
+          echo ''
+          echo '=== Warning Count ==='
+          grep -c '^w: ' build.log 2>/dev/null || echo '0 warnings'
+
+      - name: Check for APK output
+        id: check-apk
+        if: always()
+        run: |
+          if ls app/build/outputs/apk/debug/*.apk 1>/dev/null 2>&1; then
+            echo "has_apk=true" >> $GITHUB_OUTPUT
+            ls -lh app/build/outputs/apk/debug/*.apk
+          else
+            echo "has_apk=false" >> $GITHUB_OUTPUT
+            echo 'No APK produced'
+          fi
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
+          retention-days: 7
+
+      - name: Upload debug APK
+        if: steps.check-apk.outputs.has_apk == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcoder-debug-${{ github.sha }}
+          path: app/build/outputs/apk/debug/*.apk
+          retention-days: 30
+
+      - name: Build summary
+        if: always()
+        run: |
+          echo "### Build Info" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** \`${GITHUB_SHA:0:7}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          # Module build status
+          echo '### Module Build Status' >> $GITHUB_STEP_SUMMARY
+          echo '| Module | Status |' >> $GITHUB_STEP_SUMMARY
+          echo '|--------|--------|' >> $GITHUB_STEP_SUMMARY
+          for dir in app core/* editor/* visual-editor build-engine ai-copilot search-in-project code-formatter bookmarks apk-editor remote-filesystem lsp-java plugin-system/*; do
+            if [ -d "$dir" ] && [ -d "$dir/build" ]; then
+              name=$(basename "$dir")
+              if [ -f "$dir/build/outputs/aar" ] || ls "$dir/build"/outputs/**/*.aar 1>/dev/null 2>&1 || ls "$dir/build"/intermediates/compile_library_classes_jar/*.jar 1>/dev/null 2>&1; then
+                echo "| \`$name\` | ✅ Built |" >> $GITHUB_STEP_SUMMARY
+              else
+                echo "| \`$name\` | ⚠️ Check log |" >> $GITHUB_STEP_SUMMARY
+              fi
+            elif [ -d "$dir" ]; then
+              name=$(basename "$dir")
+              echo "| \`$name\` | ❓ No build dir |" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+          # APK info
+          if [ "${{ steps.check-apk.outputs.has_apk }}" = 'true' ]; then
+            echo '' >> $GITHUB_STEP_SUMMARY
+            echo '### APK Output' >> $GITHUB_STEP_SUMMARY
+            ls -lh app/build/outputs/apk/debug/*.apk | awk '{print "- " $NF " (" $5 ")"}' >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # ── Lint ───────────────────────────────────────────────────────
+  lint:
+    name: Lint & Code Quality
+    runs-on: ubuntu-latest
+    needs: resolve-deps
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.5'
@@ -39,58 +173,7 @@ jobs:
           path: '**/build/reports/lint-results-debug.html'
           retention-days: 14
 
-  build:
-    name: Build All Modules
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      - name: Setup Gradle (auto-generates wrapper)
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.5'
-
-      - name: Compile all modules
-        run: |
-          gradle assembleDebug --no-daemon --stacktrace --no-configuration-cache 2>&1 | tee build.log
-          # Show only errors/warnings summary from the log
-          echo ''
-          echo '=== Error Summary ==='
-          grep -E '^e: |FAILED' build.log || echo 'No errors'
-
-      - name: Upload build log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-log
-          path: build.log
-          retention-days: 7
-
-      - name: Upload debug APK
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: xcoder-debug-${{ github.sha }}
-          path: app/build/outputs/apk/debug/*.apk
-          retention-days: 30
-
-      - name: Build summary
-        if: always()
-        run: |
-          echo "### Build Info" >> $GITHUB_STEP_SUMMARY
-          echo "- **Commit:** \`${GITHUB_SHA:0:7}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
-          if [ -f app/build/outputs/apk/debug/*.apk ]; then
-            ls -lh app/build/outputs/apk/debug/ >> $GITHUB_STEP_SUMMARY 2>/dev/null || true
-          fi
-
+  # ── Unit Tests ─────────────────────────────────────────────────
   test:
     name: Unit Tests
     runs-on: ubuntu-latest
@@ -104,13 +187,17 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Gradle (auto-generates wrapper)
+      - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.5'
 
       - name: Run unit tests
-        run: gradle testDebugUnitTest --no-daemon --stacktrace --no-configuration-cache
+        run: |
+          gradle testDebugUnitTest --no-daemon --stacktrace --no-configuration-cache 2>&1 | tee test.log
+          echo ''
+          echo '=== Test Summary ==='
+          grep -E 'tests completed|tests? (passed|failed|skipped)' test.log || echo 'Check full log for results'
 
       - name: Upload test reports
         if: always()
@@ -119,3 +206,11 @@ jobs:
           name: test-reports
           path: '**/build/reports/tests/'
           retention-days: 14
+
+      - name: Upload test log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-log
+          path: test.log
+          retention-days: 7
