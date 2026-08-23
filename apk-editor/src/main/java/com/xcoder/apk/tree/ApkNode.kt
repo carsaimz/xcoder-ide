@@ -198,7 +198,7 @@ class ApkNode(
         fullPath: String,
         zipEntry: ZipEntry,
         parent: ContainerNode
-    ): FileNode? {
+    ): Node? {
         // Skip META-INF signature files from tree (they're not interesting to browse)
         // but keep MANIFEST.MF
         if (fullPath.startsWith("META-INF/") &&
@@ -212,7 +212,7 @@ class ApkNode(
         return when {
             // DEX files: classes.dex, classes2.dex, etc.
             DEX_PATTERN.matches(fileName) -> {
-                DexFileNode(fileName, this, parent)
+                DexFileNode(fileName, this, parent) as Node
             }
 
             // Binary XML: AndroidManifest.xml is always binary in APK
@@ -222,7 +222,7 @@ class ApkNode(
 
             // Layout XML in res/ is compiled (binary XML)
             isBinaryXmlPath(fullPath) -> {
-                BinaryXmlNode(fileName, fullPath, this, parent)
+                BinaryXmlNode(fileName, fullPath, this, parent) as Node
             }
 
             // Compiled resource table
@@ -232,7 +232,7 @@ class ApkNode(
 
             // Everything else: raw file from ZIP
             else -> {
-                ZipEntryFileNode(fileName, fullPath, this, parent, editable = true)
+                ZipEntryFileNode(fileName, fullPath, this, parent, editable = true) as Node
             }
         }
     }
