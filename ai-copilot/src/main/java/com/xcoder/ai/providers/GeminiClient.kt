@@ -96,7 +96,7 @@ class GeminiClient(config: LlmConfig) : LlmClient(config) {
                 "topP" to config.topP
             )
         )
-        if (systemInstruction != null) body["systemInstruction"] = systemInstruction
+        systemInstruction?.let { body["systemInstruction"] = it }
         if (tools.isNotEmpty()) {
             body["tools"] = listOf(mapOf(
                 "functionDeclarations" to tools.map { tool ->

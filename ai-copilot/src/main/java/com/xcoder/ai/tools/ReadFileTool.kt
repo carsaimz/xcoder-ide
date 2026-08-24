@@ -4,7 +4,6 @@ import com.google.gson.Gson
 import com.xcoder.ai.*
 import com.xcoder.core.file.FileManager
 import dagger.hilt.android.scopes.ViewModelScoped
-import java.net.URI
 import javax.inject.Inject
 
 @ViewModelScoped
@@ -23,11 +22,12 @@ class ReadFileTool @Inject constructor(
     )
 
     override suspend fun execute(argumentsJson: String): ToolResult {
-        val args = gson.fromJson(argumentsJson, Map::class.java)
-        val path = args["path"]?.toString() ?: return ToolResult("", "read_file", "Error: path is required", isError = true)
+        val args = gson.fromJson(argumentsJson, Map::class.java) as? Map<String, Any>
+        val path = args?.get("path")?.toString() ?: return ToolResult("", "read_file", "Error: path is required", isError = true)
         val uri = normalizePath(path)
         return try {
-            val content = fileManager.readFile(uri)
+            val result = fileManager.readFile(uri)
+            val content = result.getOrDefault("")
             if (content.length > 50_000) {
                 ToolResult("", "read_file", "${content.take(50_000)}\n\n[Truncated: file too long (${content.length} chars)]")
             } else {

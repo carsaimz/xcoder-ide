@@ -4,6 +4,7 @@ import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import com.xcoder.ai.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.withContext
 import okhttp3.*
@@ -47,7 +48,8 @@ class OpenAIClient(config: LlmConfig) : LlmClient(config) {
         }
     }
 
-    override fun streamMessage(messages: List<ChatMessage>, tools: List<ToolDefinition>): Flow<StreamChunk> = callbackFlow {
+    override fun streamMessage(messages: List<ChatMessage>, tools: List<ToolDefinition>): Flow<StreamChunk> {
+        val channel = Channel<StreamChunk>(Channel.BUFFERED)
         val requestBody = buildRequestBody(messages, tools, stream = true)
         val request = Request.Builder()
             .url("$baseUrl/chat/completions")
@@ -57,11 +59,11 @@ class OpenAIClient(config: LlmConfig) : LlmClient(config) {
             .build()
 
         val factory = EventSources.createFactory(client)
-        factory.newEventSource(request, object : EventSourceListener() {
+        val eventSource = factory.newEventSource(request, object : EventSourceListener() {
             override fun onEvent(eventSource: EventSource, id: String?, type: String?, data: String) {
                 if (data == "[DONE]") {
-                    trySend(StreamChunk(isFinal = true))
-                    close()
+                    channel.trySend(StreamChunk(isFinal = true))
+                    channel.close()
                     return
                 }
                 try {
@@ -69,19 +71,18 @@ class OpenAIClient(config: LlmConfig) : LlmClient(config) {
                     val delta = chunk.choices.firstOrNull()?.delta
                     if (delta != null) {
                         if (delta.content != null) {
-                            trySend(StreamChunk(content = delta.content))
+                            channel.trySend(StreamChunk(content = delta.content))
                         }
                         if (!delta.toolCalls.isNullOrEmpty()) {
                             val toolCalls = delta.toolCalls.map { tc ->
                                 ToolCall(tc.id ?: "", tc.function?.name ?: "", tc.function?.arguments ?: "{}")
                             }
-                            trySend(StreamChunk(toolCalls = toolCalls))
+                            channel.trySend(StreamChunk(toolCalls = toolCalls))
                         }
                         if (delta.toolCalls == null && delta.content == null) {
-                            // Check finish reason
                             val finishReason = chunk.choices.firstOrNull()?.finishReason
                             if (finishReason != null) {
-                                trySend(StreamChunk(finishReason = finishReason, isFinal = true))
+                                channel.trySend(StreamChunk(finishReason = finishReason, isFinal = true))
                             }
                         }
                     }
@@ -89,8 +90,8 @@ class OpenAIClient(config: LlmConfig) : LlmClient(config) {
             }
 
             override fun onFailure(eventSource: EventSource, t: Throwable?, response: Response?) {
-                trySend(StreamChunk(content = "Error: ${t?.message ?: response?.message ?: "Unknown"}", isFinal = true))
-                close()
+                channel.trySend(StreamChunk(content = "Error: ${t?.message ?: response?.message ?: "Unknown"}", isFinal = true))
+                channel.close()
             }
 
             override fun onClosed(eventSource: EventSource) {
@@ -98,18 +99,21 @@ class OpenAIClient(config: LlmConfig) : LlmClient(config) {
             }
         })
 
-        awaitClose { }
-    }.flowOn(Dispatchers.IO)
+        return channel.receiveAsFlow()
+            .onCompletion { eventSource.cancel() }
+            .flowOn(Dispatchers.IO)
+    }
 
     private fun buildRequestBody(messages: List<ChatMessage>, tools: List<ToolDefinition>, stream: Boolean): RequestBody {
         val body = mutableMapOf<String, Any>(
             "model" to config.model,
             "messages" to messages.map { msg ->
-                val map = mutableMapOf(
+                val map = mutableMapOf<String, Any>(
                     "role" to msg.role.name.lowercase(),
                     "content" to msg.content
                 )
                 if (msg.toolCalls.isNotEmpty()) {
+                    @Suppress("UNCHECKED_CAST")
                     map["tool_calls"] = msg.toolCalls.map { tc ->
                         mapOf("id" to tc.id, "type" to "function", "function" to mapOf("name" to tc.name, "arguments" to tc.arguments))
                     }

@@ -11,13 +11,14 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=4"
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=4 -Dorg.gradle.caching=true"
 
 jobs:
   # ── Dependency Resolution ──────────────────────────────────────
   resolve-deps:
     name: Resolve Dependencies
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -31,6 +32,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.5'
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
 
       - name: Resolve all dependencies
         run: |
@@ -59,6 +61,7 @@ jobs:
     name: Build All Modules
     runs-on: ubuntu-latest
     needs: resolve-deps
+    timeout-minutes: 30
     outputs:
       build_status: ${{ steps.build-result.status }}
       error_count: ${{ steps.build-result.outputs.error_count }}
@@ -77,12 +80,13 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.5'
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
 
       - name: Compile all modules
         id: build-result
         run: |
           set -o pipefail
-          gradle assembleDebug --no-daemon --stacktrace --no-configuration-cache 2>&1 | tee build.log
+          gradle assembleDebug --no-daemon --build-cache --stacktrace --no-configuration-cache 2>&1 | tee build.log
           echo ''
           # Error summary
           ERROR_COUNT=$(grep -c '^e: ' build.log 2>/dev/null || echo '0')
@@ -173,7 +177,9 @@ jobs:
     name: Lint & Code Quality
     runs-on: ubuntu-latest
     needs: build
+    if: needs.build.result == 'success'
     continue-on-error: true
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -187,11 +193,12 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.5'
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
 
       - name: Run lint
         run: |
           set -o pipefail
-          gradle lintDebug --no-daemon --stacktrace --no-configuration-cache 2>&1 | tee lint.log
+          gradle lintDebug --no-daemon --build-cache --stacktrace --no-configuration-cache 2>&1 | tee lint.log
           echo ''
           echo '=== Lint Summary ==='
           LINT_ISSUES=$(grep -cE '^[A-Z]+:' lint.log 2>/dev/null || echo '0')
@@ -218,6 +225,8 @@ jobs:
     name: Unit Tests
     runs-on: ubuntu-latest
     needs: build
+    if: needs.build.result == 'success'
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -231,11 +240,12 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.5'
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
 
       - name: Run unit tests
         run: |
           set -o pipefail
-          gradle testDebugUnitTest --no-daemon --stacktrace --no-configuration-cache 2>&1 | tee test.log
+          gradle testDebugUnitTest --no-daemon --build-cache --stacktrace --no-configuration-cache 2>&1 | tee test.log
           echo ''
           echo '=== Test Summary ==='
           grep -E 'tests completed|tests? (passed|failed|skipped)' test.log || echo 'Check full log for results'
@@ -255,6 +265,17 @@ jobs:
           name: test-log
           path: test.log
           retention-days: 7
+
+      - name: Test summary
+        if: always()
+        run: |
+          echo "### Test Results" >> $GITHUB_STEP_SUMMARY
+          TOTAL=$(grep -oP '\d+ tests' test.log 2>/dev/null | tail -1 || echo 'N/A')
+          PASSED=$(grep -oP '\d+ passed' test.log 2>/dev/null | tail -1 || echo 'N/A')
+          FAILED=$(grep -oP '\d+ failed' test.log 2>/dev/null | tail -1 || echo '0')
+          echo "- **Tests:** $TOTAL" >> $GITHUB_STEP_SUMMARY
+          echo "- **Passed:** $PASSED" >> $GITHUB_STEP_SUMMARY
+          echo "- **Failed:** $FAILED" >> $GITHUB_STEP_SUMMARY
 
   # ── CI Gate ───────────────────────────────────────────────────
   ci-gate:

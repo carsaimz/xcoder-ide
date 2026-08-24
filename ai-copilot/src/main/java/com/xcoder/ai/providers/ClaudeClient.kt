@@ -3,6 +3,7 @@ package com.xcoder.ai.providers
 import com.google.gson.Gson
 import com.xcoder.ai.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.withContext
 import okhttp3.*
@@ -50,7 +51,8 @@ class ClaudeClient(config: LlmConfig) : LlmClient(config) {
         }
     }
 
-    override fun streamMessage(messages: List<ChatMessage>, tools: List<ToolDefinition>): Flow<StreamChunk> = callbackFlow {
+    override fun streamMessage(messages: List<ChatMessage>, tools: List<ToolDefinition>): Flow<StreamChunk> {
+        val channel = Channel<StreamChunk>(Channel.BUFFERED)
         val systemMsg = messages.firstOrNull { it.role == MessageRole.SYSTEM }?.content
         val conversation = messages.filter { it.role != MessageRole.SYSTEM }
         val requestBody = buildRequestBody(conversation, tools, systemMsg, stream = true)
@@ -63,32 +65,35 @@ class ClaudeClient(config: LlmConfig) : LlmClient(config) {
             .build()
 
         val factory = EventSources.createFactory(client)
-        factory.newEventSource(request, object : EventSourceListener() {
+        val eventSource = factory.newEventSource(request, object : EventSourceListener() {
             override fun onEvent(eventSource: EventSource, id: String?, type: String?, data: String) {
                 try {
                     val event = gson.fromJson(data, ClaudeStreamEvent::class.java)
                     if (event.type == "content_block_delta") {
                         val text = event.delta?.text
                         if (text != null) {
-                            trySend(StreamChunk(content = text))
+                            channel.trySend(StreamChunk(content = text))
                         }
                         val inputJson = event.delta?.partialJson
                         if (inputJson != null) {
-                            trySend(StreamChunk(content = inputJson))
+                            channel.trySend(StreamChunk(content = inputJson))
                         }
                     } else if (event.type == "message_stop") {
-                        trySend(StreamChunk(isFinal = true))
-                        close()
+                        channel.trySend(StreamChunk(isFinal = true))
+                        channel.close()
                     }
                 } catch (_: Exception) {}
             }
             override fun onFailure(eventSource: EventSource, t: Throwable?, response: Response?) {
-                trySend(StreamChunk(content = "Error: ${t?.message}", isFinal = true))
-                close()
+                channel.trySend(StreamChunk(content = "Error: ${t?.message}", isFinal = true))
+                channel.close()
             }
         })
-        awaitClose()
-    }.flowOn(Dispatchers.IO)
+
+        return channel.receiveAsFlow()
+            .onCompletion { eventSource.cancel() }
+            .flowOn(Dispatchers.IO)
+    }
 
     private fun buildRequestBody(
         messages: List<ChatMessage>,
