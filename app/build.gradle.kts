@@ -118,6 +118,9 @@ dependencies {
     debugImplementation(libs.compose.ui.tooling)
     debugImplementation(libs.compose.ui.test.manifest)
 
+    // --- Material Components (XML-based Material3 attrs like cornerFamily) ---
+    implementation("com.google.android.material:material:1.11.0")
+
     // --- Compose Integration ---
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.navigation.compose)

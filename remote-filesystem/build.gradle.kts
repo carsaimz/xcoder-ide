@@ -27,6 +27,9 @@ android {
     }
 
     kotlinOptions { jvmTarget = "17" }
+
+    buildFeatures { compose = true }
+    composeOptions { kotlinCompilerExtensionVersion = "1.5.8" }
 }
 
 dependencies {
@@ -42,4 +45,11 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.datastore.preferences)
     implementation(libs.gson)
+
+    // --- Compose ---
+    implementation(platform(libs.compose.bom))
+    implementation(libs.compose.ui)
+    implementation(libs.compose.material3)
+    implementation(libs.compose.material.icons.extended)
+    implementation(libs.compose.foundation)
 }
