@@ -58,15 +58,16 @@ class SettingsRepositoryImpl @Inject constructor(
         if (rawValue == null) {
             return@withContext default
         }
-        when (default) {
-            is String -> rawValue as T
+        val result: Any = when (default) {
+            is String -> rawValue
             is Boolean -> rawValue.toBooleanStrictOrNull() ?: default
             is Int -> rawValue.toIntOrNull() ?: default
             is Long -> rawValue.toLongOrNull() ?: default
             is Float -> rawValue.toFloatOrNull() ?: default
             is Double -> rawValue.toDoubleOrNull() ?: default
-            else -> rawValue as T
+            else -> rawValue
         }
+        result as T
     }
 
     override suspend fun <T> set(key: String, value: T) {
