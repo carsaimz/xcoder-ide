@@ -1,5 +1,6 @@
 package com.xcoder.ide.di
 
+import android.app.NotificationManager
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.compose.runtime.Composable
@@ -99,6 +100,13 @@ object AppModule {
     fun provideDataStore(@AppContext context: Context): DataStore<Preferences> {
         return context.appDataStore
     }
+
+    // --- Android services ---------------------------------------------------
+
+    @Provides
+    @Singleton
+    fun provideNotificationManager(@ApplicationContext context: Context): NotificationManager =
+        context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
     // --- SharedPreferences (legacy bridge) --------------------------------
 
