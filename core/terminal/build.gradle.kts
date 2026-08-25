@@ -38,10 +38,10 @@ android {
 
 dependencies {
     // ── Termux terminal-emulator (JNI + TerminalSession) ──────────────────
-    implementation(libs.termux.terminal.emulator)
+    api(libs.termux.terminal.emulator)
 
     // ── Termux terminal-view (TerminalView + TerminalEmulatorView) ───────
-    implementation(libs.termux.terminal.view)
+    api(libs.termux.terminal.view)
 
     // ── Guava (empty jar to resolve transitive conflict) ──────────────────
     // Termux's terminal-emulator depends on Guava, but our Hilt
