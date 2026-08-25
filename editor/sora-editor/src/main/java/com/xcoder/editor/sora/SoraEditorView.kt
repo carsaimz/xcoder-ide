@@ -138,7 +138,7 @@ fun detectLanguageForFile(context: Context, filePath: String): Language {
 
     // Use built-in Java language for best performance
     if (ext == "java") {
-        return try { JavaLanguage() } catch (_: Exception) { createTextMate(scopeName) }
+        return try { JavaLanguage() } catch (_: Exception) { createTextMate(scopeName) ?: EmptyLanguage() }
     }
 
     return createTextMate(scopeName) ?: EmptyLanguage()
@@ -515,18 +515,16 @@ fun SoraEditor(
                 }
 
                 subscribeEvent(SelectionChangeEvent::class.java) { event, _ ->
-                    val cursor = this.cursor ?: return@subscribeEvent true
+                    val cursor = this.cursor ?: return@subscribeEvent
                     val line = cursor.leftLine + 1
                     val column = cursor.leftColumn + 1
                     val selStart = event.left.index
                     val selEnd = event.right.index
                     callbacks.onSelectionChanged?.invoke(line, column, selStart, selEnd)
-                    true
                 }
 
                 subscribeEvent(ScrollEvent::class.java) { event, _ ->
                     callbacks.onScrollChanged?.invoke(event.endX - event.startX, event.endY - event.startY)
-                    true
                 }
 
                 // Expose via ref

@@ -63,7 +63,7 @@ class SmaliLanguage : Language {
         analyzeManager.destroy()
     }
 
-    override fun getSpans(text: CharSequence): Styles {
+    fun getSpans(text: CharSequence): Styles {
         val lines = text.toString().split("\n")
         val builder = MappedSpans.Builder(lines.size)
         lines.forEachIndexed { index, line -> builder.add(index, highlightLine(line)) }
