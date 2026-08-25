@@ -85,7 +85,7 @@ class FileObserver @Inject constructor() {
     ): android.os.FileObserver? {
         val file = File(path)
         if (!file.exists()) return null
-        val observer = object : android.os.FileObserver(file, mask) {
+        val observer = object : android.os.FileObserver(path, mask) {
             override fun onEvent(event: Int, path: String?) {
                 val fullPath = if (path != null) "${file.absolutePath}/$path" else file.absolutePath
                 val uri = Uri.fromFile(File(fullPath))
