@@ -86,7 +86,7 @@ jobs:
         id: build-result
         run: |
           set -o pipefail
-          gradle assembleDebug --no-daemon --build-cache --stacktrace --no-configuration-cache 2>&1 | tee build.log
+          gradle assembleDebug --no-daemon --stacktrace --no-configuration-cache 2>&1 | tee build.log
           echo ''
           # Error summary
           ERROR_COUNT=$(grep -c '^e: ' build.log 2>/dev/null || echo '0')
