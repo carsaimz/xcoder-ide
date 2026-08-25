@@ -53,3 +53,5 @@ dependencies {
     implementation(libs.compose.material.icons.extended)
     implementation(libs.compose.foundation)
 }
+
+kapt { correctErrorTypes = true }

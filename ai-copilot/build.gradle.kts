@@ -36,3 +36,5 @@ dependencies {
     implementation(libs.compose.material3)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
 }
+
+kapt { correctErrorTypes = true }
