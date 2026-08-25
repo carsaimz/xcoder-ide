@@ -20,6 +20,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import kotlinx.coroutines.launch
 import com.xcoder.ide.ui.editor.EditorScreen
 import com.xcoder.ide.ui.terminal.TerminalScreen
 import com.xcoder.ide.ui.visual.VisualEditorScreen

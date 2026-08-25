@@ -35,6 +35,7 @@ fun FileIconProvider(
 }
 
 /** Returns (icon, color) pair for the given file name or path. */
+@Composable
 private fun iconForFile(fileName: String): Pair<androidx.compose.ui.graphics.vector.ImageVector, Color> {
     val name = fileName.substringAfterLast('/').substringAfterLast('\\')
     val ext = name.substringAfterLast('.', "").lowercase()
@@ -70,7 +71,7 @@ private fun iconForFile(fileName: String): Pair<androidx.compose.ui.graphics.vec
         "hpp", "hxx" -> Icons.Default.Code to Color(0xFF4FC1FF)
 
         // ── JavaScript / TypeScript ─────────────────────────
-        "js", "mjs" -> Icons.Default.JavaScript to Color(0xFFF7DF1E)
+        "js", "mjs" -> Icons.Default.Code to Color(0xFFF7DF1E)
         "ts", "tsx" -> Icons.Default.Code to Color(0xFF4FC1FF)
 
         // ── Python ──────────────────────────────────────────

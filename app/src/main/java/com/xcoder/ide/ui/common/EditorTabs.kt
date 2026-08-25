@@ -119,7 +119,7 @@ fun EditorTabs(
                     ) {
                         // Leading icon (file type icon).
                         if (tab.icon != null) {
-                            tab.icon()
+                            tab.icon?.invoke()
                             Spacer(Modifier.width(6.dp))
                         } else {
                             Icon(

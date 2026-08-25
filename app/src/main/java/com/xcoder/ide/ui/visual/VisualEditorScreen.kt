@@ -71,7 +71,7 @@ private val paletteItems = listOf(
     PaletteItem("constraint", "ConstraintLayout", Icons.Default.Dashboard, PaletteCategory.LAYOUT),
     PaletteItem("frame", "FrameLayout", Icons.Default.CropSquare, PaletteCategory.LAYOUT),
     PaletteItem("scroll_v", "ScrollView", Icons.Default.SwipeVertical, PaletteCategory.LAYOUT),
-    PaletteItem("scroll_h", "HorizontalScroll", Icons.Default.SwipeHorizontal, PaletteCategory.LAYOUT),
+    PaletteItem("scroll_h", "HorizontalScroll", Icons.Default.Swipe, PaletteCategory.LAYOUT),
     PaletteItem("grid", "GridLayout", Icons.Default.GridOn, PaletteCategory.LAYOUT),
     PaletteItem("card", "CardView", Icons.Default.Style, PaletteCategory.LAYOUT),
     // ── Widgets ─────────────────────────────────────────────
@@ -80,7 +80,7 @@ private val paletteItems = listOf(
     PaletteItem("floating_btn", "FloatingBtn", Icons.Default.AddCircle, PaletteCategory.WIDGETS),
     PaletteItem("switch", "Switch", Icons.Default.ToggleOn, PaletteCategory.WIDGETS),
     PaletteItem("checkbox", "CheckBox", Icons.Default.CheckBox, PaletteCategory.WIDGETS),
-    PaletteItem("radio", "RadioButton", Icons.Default.RadioButton, PaletteCategory.WIDGETS),
+    PaletteItem("radio", "RadioButton", Icons.Default.Circle, PaletteCategory.WIDGETS),
     PaletteItem("slider", "Slider", Icons.Default.LinearScale, PaletteCategory.WIDGETS),
     PaletteItem("progress", "ProgressBar", Icons.Default.LinearScale, PaletteCategory.WIDGETS),
     PaletteItem("seekbar", "SeekBar", Icons.Default.LinearScale, PaletteCategory.WIDGETS),
@@ -128,6 +128,8 @@ fun VisualEditorScreen(
     modifier: Modifier = Modifier
 ) {
     val ideColors = LocalIdeColors.current
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val outlineColor = MaterialTheme.colorScheme.outlineVariant
 
     // ── State ──────────────────────────────────────────────────
     var isDesignMode by remember { mutableStateOf(true) }
@@ -135,7 +137,7 @@ fun VisualEditorScreen(
     var zoomLevel by remember { mutableFloatStateOf(1.0f) }
     var showPropertySheet by remember { mutableStateOf(false) }
     var selectedBlockId by remember { mutableStateOf<String?>(null) }
-    var expandedCategory by remember { mutableStateOf(PaletteCategory.LAYOUT) }
+    var expandedCategory by remember { mutableStateOf<PaletteCategory?>(PaletteCategory.LAYOUT) }
 
     var canvasBlocks by remember {
         mutableStateOf(
@@ -225,7 +227,7 @@ fun VisualEditorScreen(
                                 label = item.label,
                                 x = 80f + (canvasBlocks.size % 4) * 160f,
                                 y = 80f + (canvasBlocks.size / 4) * 80f,
-                                color = MaterialTheme.colorScheme.primary
+                                color = primaryColor
                             )
                             canvasBlocks = canvasBlocks + newBlock
                             selectedBlockId = newBlock.id
@@ -244,7 +246,7 @@ fun VisualEditorScreen(
                     Canvas(modifier = Modifier.fillMaxSize()) {
                         val spacing = 24.dp.toPx() / zoomLevel
                         val dotRadius = 1.dp.toPx()
-                        val color = MaterialTheme.colorScheme.outlineVariant
+                        val color = outlineColor
                         for (x in 0 until size.width.toInt() step spacing.toInt()) {
                             for (y in 0 until size.height.toInt() step spacing.toInt()) {
                                 drawCircle(color = color, radius = dotRadius, center = Offset(x.toFloat(), y.toFloat()))
@@ -521,6 +523,7 @@ private fun CanvasBlockView(
     onDrag: (dx: Float, dy: Float) -> Unit,
     onDelete: () -> Unit
 ) {
+    val ideColors = LocalIdeColors.current
     var offset by remember { mutableStateOf(Offset(block.x, block.y)) }
 
     Box(
@@ -541,7 +544,7 @@ private fun CanvasBlockView(
             .clickable(onClick = onSelect)
             .drawBehind {
                 val strokeWidth = if (isSelected) 2.dp.toPx() else 1.dp.toPx()
-                val strokeColor = if (isSelected) LocalIdeColors.current.primary else block.color.copy(alpha = 0.5f)
+                val strokeColor = if (isSelected) ideColors.primary else block.color.copy(alpha = 0.5f)
                 drawRoundRect(
                     color = block.color.copy(alpha = 0.15f),
                     cornerRadius = CornerRadius(8.dp.toPx())
@@ -557,7 +560,7 @@ private fun CanvasBlockView(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
-                paletteItems.find { it.id == block.paletteItemId }?.icon ?: Icons.Default.Widget,
+                paletteItems.find { it.id == block.paletteItemId }?.icon ?: Icons.Default.ViewModule,
                 null, Modifier.size(16.dp), tint = block.color
             )
             Spacer(Modifier.width(6.dp))
@@ -593,7 +596,7 @@ private fun CanvasBlockView(
 // ==========================================================================
 
 @Composable
-private fun CanvasToolbar(
+private fun BoxScope.CanvasToolbar(
     onPanLeft: () -> Unit, onPanRight: () -> Unit,
     onPanUp: () -> Unit, onPanDown: () -> Unit
 ) {
@@ -733,7 +736,7 @@ private fun XmlSourceView(xmlContent: String) {
         Text(
             xmlContent,
             style = com.xcoder.ide.theme.CodeTypography.editorBody,
-            color = ideColors.editorForeground
+            color = ideColors.textPrimary
         )
     }
 }

@@ -5,6 +5,7 @@ import android.widget.LinearLayout
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -124,7 +125,7 @@ fun EditorScreen(
         EditorTabs(
             tabs = tabs,
             onTabSelected = { selected ->
-                tabs = tabs.map { it.copy(isActive = it.id == selected.id) }
+                tabs = tabs.map { it.copy(isActive = it.id == selected.id) }.toMutableList()
                 // In production: editorTabManager.switchTo(selected.id)
             },
             onTabClosed = { closed ->
@@ -136,7 +137,7 @@ fun EditorScreen(
                         val activateIdx = (idx - 1).coerceAtLeast(0)
                         tabs = tabs.mapIndexed { i, t ->
                             t.copy(isActive = i == activateIdx)
-                        }
+                        }.toMutableList()
                     }
                 }
             }

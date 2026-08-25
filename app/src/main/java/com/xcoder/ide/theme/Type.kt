@@ -2,7 +2,6 @@ package com.xcoder.ide.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
@@ -13,27 +12,9 @@ import androidx.compose.ui.unit.sp
 // Assuming the bundled font files live in res/font/.
 // If the resource is not found at runtime Android falls back to the default.
 
-private val JetBrainsMono = FontFamily(
-    Font(resId = R.font.jetbrains_mono, weight = FontWeight.Normal),
-    Font(resId = R.font.jetbrains_mono_bold, weight = FontWeight.Bold),
-    Font(
-        resId = R.font.jetbrains_mono_italic,
-        weight = FontWeight.Normal,
-        style = androidx.compose.ui.text.font.FontStyle.Italic
-    ),
-    Font(
-        resId = R.font.jetbrains_mono_bold_italic,
-        weight = FontWeight.Bold,
-        style = androidx.compose.ui.text.font.FontStyle.Italic
-    )
-)
+private val JetBrainsMono = FontFamily.Monospace
 
-private val Inter = FontFamily(
-    Font(resId = R.font.inter, weight = FontWeight.Normal),
-    Font(resId = R.font.inter_medium, weight = FontWeight.Medium),
-    Font(resId = R.font.inter_semi_bold, weight = FontWeight.SemiBold),
-    Font(resId = R.font.inter_bold, weight = FontWeight.Bold)
-)
+private val Inter = FontFamily.SansSerif
 
 // ---------------------------------------------------------------------------
 //  M3 Typography Scale (UI text — Inter)

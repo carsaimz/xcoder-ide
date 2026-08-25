@@ -7,6 +7,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.runtime.provides
 import androidx.compose.ui.platform.*
 import androidx.core.view.*
 
@@ -119,7 +121,7 @@ object XCoderTheme {
         @Composable get() = MaterialTheme.typography
 
     val isDark: Boolean
-        @Composable get() = MaterialTheme.colorScheme.isLight().not()
+        @Composable get() = MaterialTheme.colorScheme.background.luminance() < 0.5f
 }
 
 // ============================================================================

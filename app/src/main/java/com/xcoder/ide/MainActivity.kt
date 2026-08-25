@@ -282,7 +282,7 @@ class MainActivity : ComponentActivity() {
     private fun syncSystemBars() {
         val window = this.window
         // The navigation bar should be translucent so content draws behind it.
-        window.navigationBarColor = android.graphics.Color.TRANSLUCENT
+        window.navigationBarColor = android.graphics.Color.TRANSPARENT
         // Status bar is already handled by edge-to-edge + the Compose theme.
     }
 
