@@ -125,11 +125,20 @@ class PluginLoader @Inject constructor(
     private fun isVersionCompatible(minVersion: String): Boolean {
         val min = parseVersion(minVersion)
         val current = parseVersion(getAppVersion())
-        return current >= min
+        return compareVersions(current, min) >= 0
     }
 
     private fun parseVersion(version: String): List<Int> {
         return version.split(".").map { it.toIntOrNull() ?: 0 }
+    }
+
+    private fun compareVersions(left: List<Int>, right: List<Int>): Int {
+        val size = maxOf(left.size, right.size)
+        for (index in 0 until size) {
+            val difference = (left.getOrElse(index) { 0 } - right.getOrElse(index) { 0 })
+            if (difference != 0) return difference
+        }
+        return 0
     }
 
     private fun getAppVersion(): String {

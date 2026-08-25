@@ -8,13 +8,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import io.github.rosemoe.sora.event.ContentChangeEvent
-import io.github.rosemoe.sora.event.HandleStateChangeEvent
 import io.github.rosemoe.sora.event.ScrollEvent
 import io.github.rosemoe.sora.event.SelectionChangeEvent
 import io.github.rosemoe.sora.lang.EmptyLanguage
 import io.github.rosemoe.sora.lang.Language
 import io.github.rosemoe.sora.langs.textmate.TextMateLanguage
 import io.github.rosemoe.sora.langs.java.JavaLanguage
+import io.github.rosemoe.sora.widget.EditorSearcher
 import io.github.rosemoe.sora.text.Content
 import io.github.rosemoe.sora.widget.CodeEditor
 import io.github.rosemoe.sora.widget.schemes.EditorColorScheme
@@ -158,7 +158,7 @@ fun getCommentStyle(filePath: String): CommentStyle {
 
 private fun createTextMate(scopeName: String): Language? {
     return try {
-        TextMateLanguage.create(scopeName, null)
+        TextMateLanguage.create(scopeName, false)
     } catch (_: Exception) {
         null
     }
@@ -342,29 +342,29 @@ object SoraThemes {
      */
     fun darkScheme(): EditorColorScheme = EditorColorScheme().apply {
         setColor(EditorColorScheme.LINE_NUMBER_BACKGROUND, 0xFF1E1E2E.toInt())
-        setColor(EditorColorScheme.LINE_NUMBER_FOREGROUND, 0xFF6C7086.toInt())
+        setColor(EditorColorScheme.LINE_NUMBER, 0xFF6C7086.toInt())
         setColor(EditorColorScheme.LINE_NUMBER_CURRENT, 0xFFCDD6F4.toInt())
         setColor(EditorColorScheme.TEXT_NORMAL, 0xFFCDD6F4.toInt())
         setColor(EditorColorScheme.WHOLE_BACKGROUND, 0xFF1E1E2E.toInt())
         setColor(EditorColorScheme.TEXT_SELECTED, 0xFF45475A.toInt())
         setColor(EditorColorScheme.SELECTION_INSERT, 0xFF89B4FA.toInt())
         setColor(EditorColorScheme.SELECTION_HANDLE, 0xFF89B4FA.toInt())
-        setColor(EditorColorScheme.HIGHLIGHTED_SEARCH_BACKGROUND, 0xFFF9E2AF.toInt())
-        setColor(EditorColorScheme.HIGHLIGHTED_DELIMITED_BACKGROUND, 0xFF585B70.toInt())
-        setColor(EditorColorScheme.AUTO_COMP_PANEL_BG, 0xFF313244.toInt())
-        setColor(EditorColorScheme.AUTO_COMP_PANEL_CORNER, 0xFF45475A.toInt())
-        setColor(EditorColorScheme.DIAGNOSTIC_TOOLTIP_BG, 0xFF313244.toInt())
-        setColor(EditorColorScheme.UNDERLINE_ERROR, 0xFFF38BA8.toInt())
-        setColor(EditorColorScheme.DIAGNOSTIC_WARNING, 0xFFF9E2AF.toInt())
-        setColor(EditorColorScheme.DIAGNOSTIC_INFO, 0xFF89B4FA.toInt())
-        setColor(EditorColorScheme.DIAGNOSTIC_HINT, 0xFFA6E3A1.toInt())
-        setColor(EditorColorScheme.SIDEBAR_BACKGROUND, 0xFF181825.toInt())
+        setColor(EditorColorScheme.MATCHED_TEXT_BACKGROUND, 0xFFF9E2AF.toInt())
+        setColor(EditorColorScheme.HIGHLIGHTED_DELIMITERS_BACKGROUND, 0xFF585B70.toInt())
+        setColor(EditorColorScheme.COMPLETION_WND_BACKGROUND, 0xFF313244.toInt())
+        setColor(EditorColorScheme.COMPLETION_WND_CORNER, 0xFF45475A.toInt())
+        setColor(EditorColorScheme.DIAGNOSTIC_TOOLTIP_BACKGROUND, 0xFF313244.toInt())
+        setColor(EditorColorScheme.PROBLEM_ERROR, 0xFFF38BA8.toInt())
+        setColor(EditorColorScheme.PROBLEM_WARNING, 0xFFF9E2AF.toInt())
+        setColor(EditorColorScheme.PROBLEM_TYPO, 0xFF89B4FA.toInt())
+        setColor(EditorColorScheme.PROBLEM_TYPO, 0xFFA6E3A1.toInt())
+        setColor(EditorColorScheme.WHOLE_BACKGROUND, 0xFF181825.toInt())
         setColor(EditorColorScheme.CURRENT_LINE, 0xFF313244.toInt())
         setColor(EditorColorScheme.BLOCK_LINE, 0xFF45475A.toInt())
-        setColor(EditorColorScheme.COMMENT_FOREGROUND, 0xFF6C7086.toInt())
+        setColor(EditorColorScheme.COMMENT, 0xFF6C7086.toInt())
         setColor(EditorColorScheme.NON_PRINTABLE_CHAR, 0xFF585B70.toInt())
-        setColor(EditorColorScheme.MATCHED_BRACKETS_BACKGROUND, 0xFF585B70.toInt())
-        setColor(EditorColorScheme.WHITELINE, 0xFF585B70.toInt())
+        setColor(EditorColorScheme.HIGHLIGHTED_DELIMITERS_BACKGROUND, 0xFF585B70.toInt())
+        setColor(EditorColorScheme.NON_PRINTABLE_CHAR, 0xFF585B70.toInt())
     }
 
     /**
@@ -372,26 +372,26 @@ object SoraThemes {
      */
     fun lightScheme(): EditorColorScheme = EditorColorScheme().apply {
         setColor(EditorColorScheme.LINE_NUMBER_BACKGROUND, 0xFFEFF1F5.toInt())
-        setColor(EditorColorScheme.LINE_NUMBER_FOREGROUND, 0xFF7C7F93.toInt())
+        setColor(EditorColorScheme.LINE_NUMBER, 0xFF7C7F93.toInt())
         setColor(EditorColorScheme.LINE_NUMBER_CURRENT, 0xFF4C4F69.toInt())
         setColor(EditorColorScheme.TEXT_NORMAL, 0xFF4C4F69.toInt())
         setColor(EditorColorScheme.WHOLE_BACKGROUND, 0xFFEFF1F5.toInt())
         setColor(EditorColorScheme.TEXT_SELECTED, 0xFFCCD0DA.toInt())
         setColor(EditorColorScheme.SELECTION_INSERT, 0xFF1E66F5.toInt())
         setColor(EditorColorScheme.SELECTION_HANDLE, 0xFF1E66F5.toInt())
-        setColor(EditorColorScheme.HIGHLIGHTED_SEARCH_BACKGROUND, 0xFFDF8E1D.toInt())
-        setColor(EditorColorScheme.AUTO_COMP_PANEL_BG, 0xFFE6E9EF.toInt())
-        setColor(EditorColorScheme.AUTO_COMP_PANEL_CORNER, 0xFFCCD0DA.toInt())
-        setColor(EditorColorScheme.DIAGNOSTIC_TOOLTIP_BG, 0xFFE6E9EF.toInt())
-        setColor(EditorColorScheme.UNDERLINE_ERROR, 0xFFD20F39.toInt())
-        setColor(EditorColorScheme.DIAGNOSTIC_WARNING, 0xFFDF8E1D.toInt())
-        setColor(EditorColorScheme.DIAGNOSTIC_INFO, 0xFF1E66F5.toInt())
-        setColor(EditorColorScheme.DIAGNOSTIC_HINT, 0xFF40A02B.toInt())
+        setColor(EditorColorScheme.MATCHED_TEXT_BACKGROUND, 0xFFDF8E1D.toInt())
+        setColor(EditorColorScheme.COMPLETION_WND_BACKGROUND, 0xFFE6E9EF.toInt())
+        setColor(EditorColorScheme.COMPLETION_WND_CORNER, 0xFFCCD0DA.toInt())
+        setColor(EditorColorScheme.DIAGNOSTIC_TOOLTIP_BACKGROUND, 0xFFE6E9EF.toInt())
+        setColor(EditorColorScheme.PROBLEM_ERROR, 0xFFD20F39.toInt())
+        setColor(EditorColorScheme.PROBLEM_WARNING, 0xFFDF8E1D.toInt())
+        setColor(EditorColorScheme.PROBLEM_TYPO, 0xFF1E66F5.toInt())
+        setColor(EditorColorScheme.PROBLEM_TYPO, 0xFF40A02B.toInt())
         setColor(EditorColorScheme.CURRENT_LINE, 0xFFE6E9EF.toInt())
-        setColor(EditorColorScheme.COMMENT_FOREGROUND, 0xFF7C7F93.toInt())
+        setColor(EditorColorScheme.COMMENT, 0xFF7C7F93.toInt())
         setColor(EditorColorScheme.NON_PRINTABLE_CHAR, 0xFFCCD0DA.toInt())
-        setColor(EditorColorScheme.MATCHED_BRACKETS_BACKGROUND, 0xFFCCD0DA.toInt())
-        setColor(EditorColorScheme.WHITELINE, 0xFFCCD0DA.toInt())
+        setColor(EditorColorScheme.HIGHLIGHTED_DELIMITERS_BACKGROUND, 0xFFCCD0DA.toInt())
+        setColor(EditorColorScheme.NON_PRINTABLE_CHAR, 0xFFCCD0DA.toInt())
     }
 
     /** Get scheme based on dark/light flag. */
@@ -502,7 +502,7 @@ fun SoraEditor(
 
                 // Detect and set language
                 if (filePath.isNotEmpty()) {
-                    setLanguage(detectLanguageForFile(ctx, filePath))
+                    setEditorLanguage(detectLanguageForFile(ctx, filePath))
                 }
 
                 // ── Event listeners (AndroidIDE pattern) ──────────────
@@ -510,7 +510,7 @@ fun SoraEditor(
                 // cursor position (for status bar), modifications (for tab
                 // indicator), and scroll (for minimap sync).
 
-                setOnTextChangedListener { _, _ ->
+                subscribeEvent(ContentChangeEvent::class.java) { _, _ ->
                     callbacks.onContentChanged?.invoke(text.toString())
                 }
 
@@ -518,14 +518,14 @@ fun SoraEditor(
                     val cursor = this.cursor ?: return@subscribeEvent true
                     val line = cursor.leftLine + 1
                     val column = cursor.leftColumn + 1
-                    val selStart = event.leftIndex
-                    val selEnd = event.rightIndex
+                    val selStart = event.left.index
+                    val selEnd = event.right.index
                     callbacks.onSelectionChanged?.invoke(line, column, selStart, selEnd)
                     true
                 }
 
                 subscribeEvent(ScrollEvent::class.java) { event, _ ->
-                    callbacks.onScrollChanged?.invoke(event.dx, event.dy)
+                    callbacks.onScrollChanged?.invoke(event.endX - event.startX, event.endY - event.startY)
                     true
                 }
 
@@ -539,19 +539,19 @@ fun SoraEditor(
             editor.setTextSize(config.fontSize)
             editor.setTabWidth(config.tabSize)
             editor.isEditable = !config.readOnly
-            editor.isCursorVisible = !config.readOnly
+            editor.setCursorAnimationEnabled(!config.readOnly)
             editor.setWordwrap(config.wordWrap)
             editor.isLineNumberEnabled = config.showLineNumbers
-            try { editor.isMinimapEnabled = config.showMinimap } catch (_: Exception) {}
-            try { editor.isIndentGuideEnabled = config.showIndentGuides } catch (_: Exception) {}
-            editor.isStickyScrollEnabled = config.stickyScroll
-            editor.isHighlightCurrentLine = config.highlightCurrentLine
-            editor.isHighlightBracketPair = config.highlightBracketPair
-            editor.isAutoIndent = config.autoIndent
-            editor.isAutoCompletionEnabled = config.autoCompletion
-            editor.isSymbolCompletionEnabled = config.symbolCompletion
-            editor.isSmartBackspace = config.smartBackspace
-            editor.isPinchZoomEnabled = config.pinchZoom
+            editor.getProps().drawSideBlockLine = config.showMinimap
+            editor.getProps().stickyScroll = config.showIndentGuides
+            editor.getProps().stickyScroll = config.stickyScroll
+            editor.setHighlightCurrentLine(config.highlightCurrentLine)
+            editor.setHighlightBracketPair(config.highlightBracketPair)
+            editor.getProps().autoIndent = config.autoIndent
+            editor.getComponent(io.github.rosemoe.sora.widget.component.EditorAutoCompletion::class.java).isEnabled = config.autoCompletion
+            editor.getProps().symbolPairAutoCompletion = config.symbolCompletion
+            editor.getProps().deleteEmptyLineFast = config.smartBackspace
+            editor.isScalable = config.pinchZoom
             config.fontTypeface?.let { editor.typefaceText = it }
 
             // Handle content/switching (AndroidIDE pattern: only reset content
@@ -561,7 +561,7 @@ fun SoraEditor(
                 lastSetTextHash = contentText.hashCode()
                 lastSetFilePath = filePath
                 if (filePath.isNotEmpty()) {
-                    editor.setLanguage(detectLanguageForFile(context, filePath))
+                    editor.setEditorLanguage(detectLanguageForFile(context, filePath))
                 }
             }
 
@@ -587,21 +587,20 @@ private fun CodeEditor.applyConfig(config: EditorConfig, scheme: EditorColorSche
     setTextSize(config.fontSize)
     setTabWidth(config.tabSize)
     setWordwrap(config.wordWrap)
-    isCursorVisible = !config.readOnly
+    setCursorAnimationEnabled(!config.readOnly)
     isEditable = !config.readOnly
     isHighlightCurrentLine = config.highlightCurrentLine
     isHighlightBracketPair = config.highlightBracketPair
-    isHighlightMatchingDelimiters = true
-    isAutoCompletionEnabled = config.autoCompletion
-    isAutoIndent = config.autoIndent
-    isSmartBackspace = config.smartBackspace
-    isShowLineNumber = config.showLineNumbers
-    isLineNumberEnabled = config.showLineNumbers
-    isPinchZoomEnabled = config.pinchZoom
-    isStickyScrollEnabled = config.stickyScroll
-    try { isIndentGuideEnabled = config.showIndentGuides } catch (_: Exception) {}
-    isSymbolCompletionEnabled = config.symbolCompletion
-    try { isMinimapEnabled = config.showMinimap } catch (_: Exception) {}
+    getProps().highlightMatchingDelimiters = true
+    getComponent(io.github.rosemoe.sora.widget.component.EditorAutoCompletion::class.java).isEnabled = config.autoCompletion
+    getProps().autoIndent = config.autoIndent
+    getProps().deleteEmptyLineFast = config.smartBackspace
+        isLineNumberEnabled = config.showLineNumbers
+    isScalable = config.pinchZoom
+    getProps().stickyScroll = config.stickyScroll
+    getProps().stickyScroll = config.showIndentGuides
+    getProps().symbolPairAutoCompletion = config.symbolCompletion
+    getProps().drawSideBlockLine = config.showMinimap
 }
 
 /**
@@ -616,7 +615,7 @@ fun handleEditorAction(editor: CodeEditor, action: EditorAction, filePath: Strin
         is EditorAction.Copy -> editor.copyText()
         is EditorAction.Paste -> { /* handled by system clipboard */ }
         is EditorAction.SelectAll -> editor.selectAll()
-        is EditorAction.FormatCode -> editor.formatCode()
+        is EditorAction.FormatCode -> editor.formatCodeAsync()
 
         is EditorAction.ToggleComment -> toggleComment(editor, filePath)
         is EditorAction.DuplicateLine -> duplicateLine(editor)
@@ -629,36 +628,36 @@ fun handleEditorAction(editor: CodeEditor, action: EditorAction, filePath: Strin
             editor.isLineNumberEnabled = !editor.isLineNumberEnabled
         }
         is EditorAction.ToggleMinimap -> {
-            try { editor.isMinimapEnabled = !editor.isMinimapEnabled } catch (_: Exception) {}
+            editor.getProps().drawSideBlockLine = !editor.getProps().drawSideBlockLine
         }
         is EditorAction.ToggleIndentGuides -> {
-            try { editor.isIndentGuideEnabled = !editor.isIndentGuideEnabled } catch (_: Exception) {}
+            editor.getProps().stickyScroll = !editor.getProps().stickyScroll
         }
         is EditorAction.ToggleStickyScroll -> {
-            editor.isStickyScrollEnabled = !editor.isStickyScrollEnabled
+            editor.getProps().stickyScroll = !editor.getProps().stickyScroll
         }
 
         is EditorAction.FontSizeIncrease -> {
-            editor.setTextSize(editor.props.textSize + 1f)
+            editor.setTextSize(editor.getTextSizePx() + 1f)
         }
         is EditorAction.FontSizeDecrease -> {
-            editor.setTextSize((editor.props.textSize - 1f).coerceAtLeast(8f))
+            editor.setTextSize((editor.getTextSizePx() - 1f).coerceAtLeast(8f))
         }
         is EditorAction.FontSizeReset -> {
             editor.setTextSize(action.defaultSize)
         }
 
         is EditorAction.Search -> {
-            editor.searcher.search(action.query, action.caseSensitive, action.regex)
+            editor.getSearcher().search(action.query, EditorSearcher.SearchOptions(!action.caseSensitive, action.regex))
         }
         is EditorAction.Replace -> {
-            editor.searcher.replaceCurrent(action.query, action.replacement)
+            editor.getSearcher().replaceCurrentMatch(action.replacement)
         }
         is EditorAction.ReplaceAll -> {
-            editor.searcher.replaceAll(action.query, action.replacement)
+            editor.getSearcher().replaceAll(action.replacement)
         }
         is EditorAction.SearchNext -> {
-            if (action.forward) editor.searcher.gotoNext() else editor.searcher.gotoPrevious()
+            if (action.forward) editor.getSearcher().gotoNext() else editor.getSearcher().gotoPrevious()
         }
 
         is EditorAction.GoToLine -> goToLine(editor, action.line)
@@ -672,50 +671,48 @@ fun handleEditorAction(editor: CodeEditor, action: EditorAction, filePath: Strin
 /** Get the 0-indexed line number at the cursor. */
 private fun cursorLineIndex(editor: CodeEditor): Int {
     val cursor = editor.cursor ?: return 0
-    return editor.text.getIndexer().getLineNumber(cursor.left)
+    return editor.text.getIndexer().getCharLine(cursor.left)
 }
 
 /** Get the character index at the end of the cursor's line. */
 private fun cursorLineEnd(editor: CodeEditor): Int {
-    return editor.text.getLineEnd(cursorLineIndex(editor))
+    return editor.text.getIndexer().getCharIndex(cursorLineIndex(editor), editor.text.getLineString(cursorLineIndex(editor)).length)
 }
 
 /** Insert text at the current cursor position. */
 private fun insertAtCursor(editor: CodeEditor, text: String) {
     editor.cursor?.let { cursor ->
-        editor.text.insert(cursor.left, text)
+        editor.commitText(text)
     }
 }
 
 /** Go to a specific line (1-indexed) and place cursor at column 1. */
 private fun goToLine(editor: CodeEditor, line: Int) {
     val clampedLine = line.coerceIn(1, editor.text.lineCount)
-    val position = editor.text.getIndexer().getCharPosition(clampedLine - 1, 0)
-    editor.cursor?.setLeft(position)
-    editor.setSelection(position, position)
+    editor.setSelection(clampedLine - 1, 0)
 }
 
 /** Duplicate the current line below. */
 private fun duplicateLine(editor: CodeEditor) {
     val text = editor.text
     val lineIndex = cursorLineIndex(editor)
-    val lineContent = text.getLine(lineIndex)
-    val endPos = text.getLineEnd(lineIndex)
+    val lineContent = text.getLineString(lineIndex)
+    val endPos = text.getIndexer().getCharIndex(lineIndex, lineContent.length)
     // Insert after the current line's newline
     val insertPos = if (endPos < text.length && text[endPos] == '\n') {
         endPos + 1
     } else {
         endPos
     }
-    text.insert(insertPos, "$lineContent\n")
+    text.replace(insertPos, insertPos, "$lineContent\n")
 }
 
 /** Delete the current line entirely. */
 private fun deleteLine(editor: CodeEditor) {
     val text = editor.text
     val lineIndex = cursorLineIndex(editor)
-    val start = text.getLineStart(lineIndex)
-    var end = text.getLineEnd(lineIndex)
+    val start = text.getIndexer().getCharIndex(lineIndex, 0)
+    var end = text.getIndexer().getCharIndex(lineIndex, text.getLineString(lineIndex).length)
     // Also consume the trailing newline if present
     if (end < text.length && text[end] == '\n') end++
     text.delete(start, end)
@@ -726,10 +723,10 @@ private fun moveLineUp(editor: CodeEditor) {
     val text = editor.text
     val lineIndex = cursorLineIndex(editor)
     if (lineIndex <= 0) return
-    val curLine = text.getLine(lineIndex)
-    val prevLine = text.getLine(lineIndex - 1)
-    val prevStart = text.getLineStart(lineIndex - 1)
-    var curEnd = text.getLineEnd(lineIndex)
+    val curLine = text.getLineString(lineIndex)
+    val prevLine = text.getLineString(lineIndex - 1)
+    val prevStart = text.getIndexer().getCharIndex(lineIndex - 1, 0)
+    var curEnd = text.getIndexer().getCharIndex(lineIndex, text.getLineString(lineIndex).length)
     if (curEnd < text.length && text[curEnd] == '\n') curEnd++
     text.replace(prevStart, curEnd.coerceAtMost(text.length), "$curLine\n$prevLine")
 }
@@ -739,10 +736,10 @@ private fun moveLineDown(editor: CodeEditor) {
     val text = editor.text
     val lineIndex = cursorLineIndex(editor)
     if (lineIndex >= text.lineCount - 1) return
-    val curLine = text.getLine(lineIndex)
-    val nextLine = text.getLine(lineIndex + 1)
-    val curStart = text.getLineStart(lineIndex)
-    var nextEnd = text.getLineEnd(lineIndex + 1)
+    val curLine = text.getLineString(lineIndex)
+    val nextLine = text.getLineString(lineIndex + 1)
+    val curStart = text.getIndexer().getCharIndex(lineIndex, 0)
+    var nextEnd = text.getIndexer().getCharIndex(lineIndex + 1, text.getLineString(lineIndex + 1).length)
     if (nextEnd < text.length && text[nextEnd] == '\n') nextEnd++
     text.replace(curStart, nextEnd.coerceAtMost(text.length), "$nextLine\n$curLine")
 }
@@ -755,8 +752,8 @@ private fun toggleComment(editor: CodeEditor, filePath: String) {
     val text = editor.text
     val lineIndex = cursorLineIndex(editor)
     val style = getCommentStyle(filePath)
-    val line = text.getLine(lineIndex)
-    val lineStart = text.getLineStart(lineIndex)
+    val line = text.getLineString(lineIndex)
+    val lineStart = text.getIndexer().getCharIndex(lineIndex, 0)
 
     // For line comments, toggle the prefix
     val prefix = style.linePrefix.trimEnd()
@@ -770,7 +767,7 @@ private fun toggleComment(editor: CodeEditor, filePath: String) {
         // Comment: insert prefix at the start of line content (preserving indent)
         val indent = line.takeWhile { it == ' ' || it == '\t' }
         val insertPos = lineStart + indent.length
-        text.insert(insertPos, style.linePrefix)
+        text.replace(insertPos, insertPos, style.linePrefix)
     }
 }
 

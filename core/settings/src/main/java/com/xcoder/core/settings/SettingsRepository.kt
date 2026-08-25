@@ -100,23 +100,22 @@ class SettingsRepositoryImpl @Inject constructor(
     @Suppress("UNCHECKED_CAST")
     override fun <T> observe(key: String, default: T): Flow<T> {
         val prefKey = stringPreferencesKey(key)
-        @Suppress("USELESS_CAST")
         return dataStore.data.map { prefs ->
-            val rawValue = prefs[prefKey]
-            if (rawValue == null) {
-                default
+            val rawValue: String? = prefs[prefKey]
+            val result: Any = if (rawValue == null) {
+                default as Any
             } else {
-                val result: Any? = when (default) {
-                    is String -> rawValue as T
+                when (default) {
+                    is String -> rawValue
                     is Boolean -> rawValue.toBooleanStrictOrNull() ?: default
                     is Int -> rawValue.toIntOrNull() ?: default
                     is Long -> rawValue.toLongOrNull() ?: default
                     is Float -> rawValue.toFloatOrNull() ?: default
                     is Double -> rawValue.toDoubleOrNull() ?: default
-                    else -> rawValue as T
+                    else -> rawValue
                 }
-                result as T
             }
+            result as T
         }
     }
 

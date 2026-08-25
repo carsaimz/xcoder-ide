@@ -350,7 +350,7 @@ class SoraEditorViewModel @Inject constructor() : ViewModel() {
 
     // ── Unsaved changes dialog ───────────────────────────────────────────
 
-    private const val TAG = "XCoderEditorVM"
+    private val TAG = "XCoderEditorVM"
 
     private val _unsavedDialog = MutableStateFlow(UnsavedDialogState())
     val unsavedDialog: StateFlow<UnsavedDialogState> = _unsavedDialog
