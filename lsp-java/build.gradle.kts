@@ -15,8 +15,6 @@ android {
     }
 
     buildTypes { release { isMinifyEnabled = false } }
-    buildFeatures { compose = true }
-    composeOptions { kotlinCompilerExtensionVersion = "1.5.8" }
     kotlinOptions { jvmTarget = "17" }
 }
 
