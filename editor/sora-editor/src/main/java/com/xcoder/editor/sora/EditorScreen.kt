@@ -287,7 +287,7 @@ fun EditorScreen(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                        keyboardType = androidx.compose.foundation.text.KeyboardType.Number
+                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
                     ),
                 )
             },
@@ -545,11 +545,7 @@ fun EditorScreen(
                 config = settings.toConfig().copy(isDark = isDark),
                 action = pendingAction,
                 callbacks = editorCallbacks,
-                editorRef = object : androidx.compose.runtime.Ref<CodeEditor?> {
-                    override var value: CodeEditor?
-                        get() = editorRef.value
-                        set(v) { editorRef.value = v }
-                },
+                editorRef = editorRef,
             )
         }
     }

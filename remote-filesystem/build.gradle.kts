@@ -56,4 +56,7 @@ dependencies {
     implementation(libs.compose.foundation)
 }
 
-kapt { correctErrorTypes = true }
+kapt {
+    correctErrorTypes = true
+    useWorkerApi = false
+}

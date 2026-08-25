@@ -142,9 +142,8 @@ class EditorCompletionWindow(
     fun requestCompletion() {
         val cursor = editor.cursor ?: return
         val text = editor.text
-        val lineCol = text.getIndexer().getLineAndColumn(cursor.left)
-        val line = lineCol[0]
-        val column = lineCol[1]
+        val line = cursor.leftLine
+        val column = cursor.leftColumn
         val lineContent = text.getLine(line)
 
         // Compute the prefix (identifier before cursor)
@@ -371,7 +370,6 @@ class EditorCompletionWindow(
             CompletionItemKind.File -> "f"
             CompletionItemKind.Folder -> "D"
             CompletionItemKind.Module -> "M"
-            CompletionItemKind.Package -> "P"
             CompletionItemKind.Constructor -> "C"
             CompletionItemKind.Struct -> "S"
             CompletionItemKind.TypeParameter -> "T"
@@ -379,7 +377,6 @@ class EditorCompletionWindow(
             CompletionItemKind.Reference -> "R"
             CompletionItemKind.Unit -> "U"
             CompletionItemKind.Event -> "E"
-            CompletionItemKind.Namespace -> "N"
             else -> "?"
         }
     }

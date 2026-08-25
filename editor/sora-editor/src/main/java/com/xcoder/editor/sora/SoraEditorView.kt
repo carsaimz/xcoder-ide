@@ -476,7 +476,7 @@ fun SoraEditor(
     config: EditorConfig = EditorConfig(),
     action: EditorAction? = null,
     callbacks: EditorEventCallbacks = EditorEventCallbacks(),
-    editorRef: androidx.compose.runtime.Ref<CodeEditor?>? = null,
+    editorRef: MutableState<CodeEditor?>? = null,
     modifier: Modifier = Modifier,
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -502,7 +502,7 @@ fun SoraEditor(
 
                 // Detect and set language
                 if (filePath.isNotEmpty()) {
-                    setLang(detectLanguageForFile(ctx, filePath))
+                    setLanguage(detectLanguageForFile(ctx, filePath))
                 }
 
                 // ── Event listeners (AndroidIDE pattern) ──────────────
@@ -516,9 +516,8 @@ fun SoraEditor(
 
                 subscribeEvent(SelectionChangeEvent::class.java) { event, _ ->
                     val cursor = this.cursor ?: return@subscribeEvent true
-                    val lineCol = text.getIndexer().getLineAndColumn(cursor.left)
-                    val line = lineCol[0] + 1
-                    val column = lineCol[1] + 1
+                    val line = cursor.leftLine + 1
+                    val column = cursor.leftColumn + 1
                     val selStart = event.leftIndex
                     val selEnd = event.rightIndex
                     callbacks.onSelectionChanged?.invoke(line, column, selStart, selEnd)
@@ -537,14 +536,14 @@ fun SoraEditor(
         update = { editor ->
             // Update configuration properties that may have changed
             editor.colorScheme = currentScheme
-            editor.textSize = config.fontSize
+            editor.setTextSize(config.fontSize)
             editor.setTabWidth(config.tabSize)
             editor.isEditable = !config.readOnly
             editor.isCursorVisible = !config.readOnly
-            editor.isWordWrap = config.wordWrap
+            editor.setWordwrap(config.wordWrap)
             editor.isLineNumberEnabled = config.showLineNumbers
-            editor.isMinimapEnabled = config.showMinimap
-            editor.isIndentGuideEnabled = config.showIndentGuides
+            try { editor.isMinimapEnabled = config.showMinimap } catch (_: Exception) {}
+            try { editor.isIndentGuideEnabled = config.showIndentGuides } catch (_: Exception) {}
             editor.isStickyScrollEnabled = config.stickyScroll
             editor.isHighlightCurrentLine = config.highlightCurrentLine
             editor.isHighlightBracketPair = config.highlightBracketPair
@@ -562,7 +561,7 @@ fun SoraEditor(
                 lastSetTextHash = contentText.hashCode()
                 lastSetFilePath = filePath
                 if (filePath.isNotEmpty()) {
-                    editor.setLang(detectLanguageForFile(context, filePath))
+                    editor.setLanguage(detectLanguageForFile(context, filePath))
                 }
             }
 
@@ -585,9 +584,9 @@ fun SoraEditor(
 private fun CodeEditor.applyConfig(config: EditorConfig, scheme: EditorColorScheme) {
     colorScheme = scheme
     typefaceText = config.fontTypeface ?: Typeface.MONOSPACE
-    textSize = config.fontSize
+    setTextSize(config.fontSize)
     setTabWidth(config.tabSize)
-    isWordWrap = config.wordWrap
+    setWordwrap(config.wordWrap)
     isCursorVisible = !config.readOnly
     isEditable = !config.readOnly
     isHighlightCurrentLine = config.highlightCurrentLine
@@ -600,9 +599,9 @@ private fun CodeEditor.applyConfig(config: EditorConfig, scheme: EditorColorSche
     isLineNumberEnabled = config.showLineNumbers
     isPinchZoomEnabled = config.pinchZoom
     isStickyScrollEnabled = config.stickyScroll
-    isIndentGuideEnabled = config.showIndentGuides
+    try { isIndentGuideEnabled = config.showIndentGuides } catch (_: Exception) {}
     isSymbolCompletionEnabled = config.symbolCompletion
-    isMinimapEnabled = config.showMinimap
+    try { isMinimapEnabled = config.showMinimap } catch (_: Exception) {}
 }
 
 /**
@@ -625,28 +624,28 @@ fun handleEditorAction(editor: CodeEditor, action: EditorAction, filePath: Strin
         is EditorAction.MoveLineUp -> moveLineUp(editor)
         is EditorAction.MoveLineDown -> moveLineDown(editor)
 
-        is EditorAction.ToggleWordWrap -> { editor.isWordWrap = !editor.isWordWrap }
+        is EditorAction.ToggleWordWrap -> { editor.setWordwrap(!editor.isWordwrap) }
         is EditorAction.ToggleLineNumbers -> {
             editor.isLineNumberEnabled = !editor.isLineNumberEnabled
         }
         is EditorAction.ToggleMinimap -> {
-            editor.isMinimapEnabled = !editor.isMinimapEnabled
+            try { editor.isMinimapEnabled = !editor.isMinimapEnabled } catch (_: Exception) {}
         }
         is EditorAction.ToggleIndentGuides -> {
-            editor.isIndentGuideEnabled = !editor.isIndentGuideEnabled
+            try { editor.isIndentGuideEnabled = !editor.isIndentGuideEnabled } catch (_: Exception) {}
         }
         is EditorAction.ToggleStickyScroll -> {
             editor.isStickyScrollEnabled = !editor.isStickyScrollEnabled
         }
 
         is EditorAction.FontSizeIncrease -> {
-            editor.textSize = editor.textSize + 1f
+            editor.setTextSize(editor.props.textSize + 1f)
         }
         is EditorAction.FontSizeDecrease -> {
-            editor.textSize = (editor.textSize - 1f).coerceAtLeast(8f)
+            editor.setTextSize((editor.props.textSize - 1f).coerceAtLeast(8f))
         }
         is EditorAction.FontSizeReset -> {
-            editor.textSize = action.defaultSize
+            editor.setTextSize(action.defaultSize)
         }
 
         is EditorAction.Search -> {
@@ -780,9 +779,8 @@ private fun toggleComment(editor: CodeEditor, filePath: String) {
 /** Get the current cursor position as (line, column), both 1-indexed. */
 fun getCursorPosition(editor: CodeEditor): Pair<Int, Int> {
     val cursor = editor.cursor ?: return 1 to 1
-    val lineCol = editor.text.getIndexer().getLineAndColumn(cursor.left)
-    val line = lineCol[0] + 1
-    val column = lineCol[1] + 1
+    val line = cursor.leftLine + 1
+    val column = cursor.leftColumn + 1
     return line to column
 }
 

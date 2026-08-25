@@ -242,7 +242,7 @@ class IDEEditor(
      */
     fun setLanguage(language: Language) {
         currentLanguage = language
-        editor.setLang(language)
+        editor.setLanguage(language)
     }
 
     /**
@@ -286,7 +286,7 @@ class IDEEditor(
             diagnosticOverlay = EditorDiagnosticOverlay(editor)
 
             // Listen for server status changes (AndroidIDE pattern)
-            statusListener = object : ServerStatusListener {
+            val listener = object : ServerStatusListener {
                 override fun onStatusChanged(status: ServerStatus) {
                     serverStatus = status
                     isIndexing = status == ServerStatus.INDEXING
@@ -294,7 +294,8 @@ class IDEEditor(
                     Log.d(TAG, "LSP server status changed: $status for $currentFilePath")
                 }
             }
-            client.addServerStatusListener(statusListener)
+            statusListener = listener
+            client.addServerStatusListener(listener)
 
             Log.d(TAG, "LSP client bound successfully for $currentFilePath")
         } catch (e: Exception) {
@@ -369,9 +370,8 @@ class IDEEditor(
         lspEditor?.let { lspEd ->
             try {
                 val cursor = editor.cursor ?: return
-                val lineCol = editor.text.getIndexer().getLineAndColumn(cursor.left)
-                val line = lineCol[0]
-                val column = lineCol[1]
+                val line = cursor.leftLine
+                val column = cursor.leftColumn
                 isSignatureHelpActive = true
                 lspEd.requestManager?.signatureHelp(
                     currentFilePath,
@@ -429,22 +429,22 @@ class IDEEditor(
      * @param fontTypeface Custom font typeface, or null for monospace default.
      */
     fun applyPreferences(
-        fontSize: Float = editor.textSize,
+        fontSize: Float = 14f,
         tabSize: Int = editor.tabWidth,
-        wordWrap: Boolean = editor.isWordWrap,
+        wordWrap: Boolean = editor.isWordwrap,
         showLineNumbers: Boolean = editor.isLineNumberEnabled,
-        showMinimap: Boolean = editor.isMinimapEnabled,
-        showIndentGuides: Boolean = editor.isIndentGuideEnabled,
+        showMinimap: Boolean = false,
+        showIndentGuides: Boolean = true,
         isDark: Boolean = true,
         fontTypeface: Typeface? = null,
     ) {
         editor.apply {
-            textSize = fontSize
+            setTextSize(fontSize)
             setTabWidth(tabSize)
-            isWordWrap = wordWrap
+            setWordwrap(wordWrap)
             isLineNumberEnabled = showLineNumbers
-            isMinimapEnabled = showMinimap
-            isIndentGuideEnabled = showIndentGuides
+            try { isMinimapEnabled = showMinimap } catch (_: Exception) {}
+            try { isIndentGuideEnabled = showIndentGuides } catch (_: Exception) {}
             colorScheme = SoraThemes.schemeFor(isDark)
             if (fontTypeface != null) {
                 typefaceText = fontTypeface
@@ -465,7 +465,7 @@ class IDEEditor(
      * Set the font size.
      */
     fun setFontSize(size: Float) {
-        editor.textSize = size.coerceIn(8f, 72f)
+        editor.setTextSize(size.coerceIn(8f, 72f))
     }
 
     /**
@@ -479,7 +479,7 @@ class IDEEditor(
      * Toggle word wrap.
      */
     fun toggleWordWrap() {
-        editor.isWordWrap = !editor.isWordWrap
+        editor.setWordwrap(!editor.isWordwrap)
     }
 
     // ── Public API: Search/Replace ─────────────────────────────────────────
@@ -620,9 +620,9 @@ class IDEEditor(
         editor.apply {
             colorScheme = SoraThemes.darkScheme()
             typefaceText = Typeface.MONOSPACE
-            textSize = 14f
+            setTextSize(14f)
             setTabWidth(4)
-            isWordWrap = false
+            setWordwrap(false)
             isHighlightCurrentLine = true
             isHighlightBracketPair = true
             isHighlightMatchingDelimiters = true
@@ -630,8 +630,8 @@ class IDEEditor(
             isAutoIndent = true
             isSmartBackspace = true
             isLineNumberEnabled = true
-            isMinimapEnabled = true
-            isIndentGuideEnabled = true
+            try { isMinimapEnabled = true } catch (_: Exception) {}
+            try { isIndentGuideEnabled = true } catch (_: Exception) {}
             isSymbolCompletionEnabled = true
             isPinchZoomEnabled = true
             isStickyScrollEnabled = true
@@ -688,9 +688,8 @@ class IDEEditor(
         // Selection change listener
         editor.subscribeEvent(SelectionChangeEvent::class.java) { event, _ ->
             val cursor = editor.cursor ?: return@subscribeEvent true
-            val lineCol = editor.text.getIndexer().getLineAndColumn(cursor.left)
-            val line = lineCol[0] + 1
-            val column = lineCol[1] + 1
+            val line = cursor.leftLine + 1
+            val column = cursor.leftColumn + 1
             val selStart = event.leftIndex
             val selEnd = event.rightIndex
             onSelectionChanged?.invoke(line, column, selStart, selEnd)

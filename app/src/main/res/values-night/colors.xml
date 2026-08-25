@@ -260,6 +260,12 @@
     <color name="chat_divider">#242438</color>
 
     <!-- ================================================================== -->
+    <!--  Misc UI Elements (Dark)                                         -->
+    <!-- ================================================================== -->
+    <color name="xcoder_divider">#303044</color>
+    <color name="xcoder_terminal_extra_keys_bg">#1C1C30</color>
+
+    <!-- ================================================================== -->
     <!--  File Type Colors (Dark — slightly more vibrant for visibility)     -->
     <!-- ================================================================== -->
     <color name="file_folder">#8B84FF</color>

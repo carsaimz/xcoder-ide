@@ -417,9 +417,10 @@ class EditorDiagnosticOverlay(
         val message = diagnostic.message
         val detail = buildString {
             diagnostic.source?.let { append(it) }
-            if (!diagnostic.code?.asString.isNullOrEmpty()) {
+            val codeStr = diagnostic.code?.toString()
+            if (!codeStr.isNullOrEmpty()) {
                 if (isNotEmpty()) append(": ")
-                append(diagnostic.code.asString)
+                append(codeStr)
             }
         }
 
