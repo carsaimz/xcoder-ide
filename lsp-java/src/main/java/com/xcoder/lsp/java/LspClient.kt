@@ -177,7 +177,10 @@ class LspClient @Inject constructor() : LanguageClient {
     private fun getFallbackCompletions(uri: String, column: Int): List<CompletionItem> {
         val content = documentContents[uri] ?: return emptyList()
         val line = content.lines().lastOrNull() ?: return emptyList()
-        val prefix = line.take(column.coerceIn(0, line.length)).substringAfterLast(Regex("\\s|[.;,()]"))
+        val prefix = line.take(column.coerceIn(0, line.length))
+            .split(Regex("\\s|[.;,()]"))
+            .lastOrNull()
+            .orEmpty()
         return FALLBACK_KEYWORDS.filter { it.startsWith(prefix, ignoreCase = true) && !it.equals(prefix, true) }
             .take(10)
             .map { CompletionItem(it).apply { kind = CompletionItemKind.Keyword; insertText = it } }

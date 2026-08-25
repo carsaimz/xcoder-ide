@@ -30,17 +30,19 @@ class CompletionProvider @Inject constructor() {
             .take(MAX_COMPLETIONS)
             .toList()
 
-    fun mapItem(item: LspCompletionItem): CompletionItem? = try {
+    fun mapItem(item: LspCompletionItem): CompletionItem? {
         val label = item.label ?: return null
+        return try {
         val insertText = item.textEditText ?: item.insertText ?: label
         val prefixLength = item.filterText?.let { 0 } ?: 0
         SimpleCompletionItem(label, item.detail ?: "", prefixLength, insertText).apply {
             kind = mapKind(item.kind)
             sortText = item.sortText ?: label
         }
-    } catch (error: Exception) {
-        Log.w(TAG, "Failed to map completion item", error)
-        null
+        } catch (error: Exception) {
+            Log.w(TAG, "Failed to map completion item", error)
+            null
+        }
     }
 
     fun mapKind(kind: LspKind?): SoraKind = when (kind?.value) {

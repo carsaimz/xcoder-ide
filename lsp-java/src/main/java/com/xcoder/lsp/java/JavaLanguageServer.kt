@@ -9,7 +9,6 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
-import java.util.function.Consumer
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -125,8 +124,8 @@ open class JavaLanguageServer @Inject constructor() {
             LanguageServer::class.java,
             serverProcess!!.inputStream,
             serverProcess!!.outputStream,
-            executor,
-            Consumer { message -> Log.v(TAG, "LSP: $message") }
+            true,
+            java.io.PrintWriter(System.err)
         )
         languageServer = launcher.remoteProxy
         client.connect(languageServer!!)
