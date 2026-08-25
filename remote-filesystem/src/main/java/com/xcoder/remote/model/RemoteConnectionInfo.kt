@@ -1,6 +1,6 @@
 package com.xcoder.remote.model
 
-import kotlinx.serialization.Serializable
+import java.util.UUID
 
 /**
  * Supported remote connection protocol types.
@@ -35,7 +35,6 @@ enum class TransferMode {
  *
  * Serialized to/from JSON for persistent storage via DataStore.
  */
-@Serializable
 data class RemoteConnectionInfo(
     /** Unique identifier for this saved connection. */
     val id: String,

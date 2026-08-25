@@ -1,7 +1,6 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.hilt)
     alias(libs.plugins.kapt)
 }
@@ -45,7 +44,6 @@ dependencies {
     implementation(libs.commons.net)
     implementation(libs.okhttp)
     implementation(libs.datastore.preferences)
-    implementation(libs.kotlinx.serialization.json)
     implementation(libs.gson)
 
     // --- Compose ---
@@ -56,7 +54,4 @@ dependencies {
     implementation(libs.compose.foundation)
 }
 
-kapt {
-    correctErrorTypes = true
-    useWorkerApi = false
-}
+kapt { correctErrorTypes = true }

@@ -246,7 +246,8 @@ class ConnectionManager @Inject constructor(
     fun loadConnectionsFromJson(json: String) {
         if (json.isBlank()) return
         try {
-            kotlinx.serialization.json.Json.decodeFromString<List<RemoteConnectionInfo>>(json)
+            val type = object : com.google.gson.reflect.TypeToken<List<RemoteConnectionInfo>>() {}.type
+            com.google.gson.Gson().fromJson<List<RemoteConnectionInfo>>(json, type)
         } catch (_: Exception) {
             emptyList()
         }.let { _savedConnections.value = it }
@@ -257,7 +258,7 @@ class ConnectionManager @Inject constructor(
      */
     fun serializeConnectionsToJson(): String {
         return try {
-            kotlinx.serialization.json.Json.encodeToString(_savedConnections.value)
+            com.google.gson.Gson().toJson(_savedConnections.value)
         } catch (_: Exception) {
             "[]"
         }
