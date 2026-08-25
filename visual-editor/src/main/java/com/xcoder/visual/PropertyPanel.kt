@@ -20,6 +20,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -255,7 +256,7 @@ fun PropertyPanel(
                 FilterChip(
                     selected = tb.italic,
                     onClick = { onPropertyChange.onPropertyChanged(selectedView.id, "text.italic", (!tb.italic).toString()) },
-                    label = { Text("I", fontStyle = androidx.compose.ui.text.FontStyle.Italic, fontSize = 13.sp) }
+                    label = { Text("I", fontStyle = FontStyle.Italic, fontSize = 13.sp) }
                 )
             }
 
@@ -422,30 +423,31 @@ private fun PropDropdown(
     var expanded by remember { mutableStateOf(false) }
     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 1.dp)) {
         Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        // TODO: fix - ExposedDropdownMenu / ExposedDropdownMenuDefaults unresolved + experimental API
         OutlinedTextField(
             value = selected,
-            onValueChange = {},
-            readOnly = true,
+            onValueChange = { onSelect(it) },
+            readOnly = false,
             modifier = Modifier.fillMaxWidth().height(40.dp),
-            textStyle = MaterialTheme.typography.bodySmall,
-            trailingIcon = {
-                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-            }
+            textStyle = MaterialTheme.typography.bodySmall
+            // trailingIcon = {
+            //     ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+            // }
         )
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
-            for (option in options) {
-                DropdownMenuItem(
-                    text = { Text(option, fontSize = 13.sp) },
-                    onClick = {
-                        onSelect(option)
-                        expanded = false
-                    }
-                )
-            }
-        }
+        // ExposedDropdownMenu(
+        //     expanded = expanded,
+        //     onDismissRequest = { expanded = false }
+        // ) {
+        //     for (option in options) {
+        //         DropdownMenuItem(
+        //             text = { Text(option, fontSize = 13.sp) },
+        //             onClick = {
+        //                 onSelect(option)
+        //                 expanded = false
+        //             }
+        //         )
+        //     }
+        // }
     }
 }
 

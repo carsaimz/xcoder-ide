@@ -182,8 +182,8 @@ object XmlParser {
                 // ── Alpha ──
                 "alpha" -> bean.alpha = value.toFloatOrNull() ?: 1f
                 // ── Translation ──
-                "translationX" -> bean.translationX = parseDimension(value)
-                "translationY" -> bean.translationY = parseDimension(value)
+                "translationX" -> bean.translationX = parseDimension(value).toFloat()
+                "translationY" -> bean.translationY = parseDimension(value).toFloat()
                 // ── Scale ──
                 "scaleX" -> bean.scaleX = value.toFloatOrNull() ?: 1f
                 "scaleY" -> bean.scaleY = value.toFloatOrNull() ?: 1f

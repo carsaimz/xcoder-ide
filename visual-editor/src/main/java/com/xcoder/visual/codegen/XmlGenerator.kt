@@ -216,7 +216,7 @@ object XmlGenerator {
                 attrs.add("android:textAlignment" to tb.textAlign)
             }
             if (tb.hint.isNotEmpty()) attrs.add("android:hint" to escapeXml(tb.hint))
-            if (tb.hintColor != 0x80808080) attrs.add("android:textColorHint" to colorToHex(tb.hintColor))
+            if (tb.hintColor != 0x80808080.toInt()) attrs.add("android:textColorHint" to colorToHex(tb.hintColor))
             if (tb.maxLines != Integer.MAX_VALUE && tb.maxLines > 0) {
                 attrs.add("android:maxLines" to tb.maxLines.toString())
             }

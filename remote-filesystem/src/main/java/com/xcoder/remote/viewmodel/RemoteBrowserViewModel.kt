@@ -1,8 +1,5 @@
 package com.xcoder.remote.viewmodel
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.xcoder.remote.cache.CacheManager
@@ -67,8 +64,10 @@ class RemoteBrowserViewModel @Inject constructor(
     private val encryptionUtils: EncryptionUtils
 ) : ViewModel() {
 
-    var uiState by mutableStateOf(BrowserUiState())
+    private var _state = BrowserUiState()
         private set
+
+    val uiState: BrowserUiState get() = _state
 
     private var listJob: Job? = null
     private var currentFileSystem: RemoteFileSystem? = null
@@ -88,11 +87,11 @@ class RemoteBrowserViewModel @Inject constructor(
 
         viewModelScope.launch {
             connectionManager.savedConnections.collect { connections ->
-                val current = uiState.connectionInfo
+                val current = _state.connectionInfo
                 if (current != null) {
                     val updated = connections.firstOrNull { it.id == current.id }
                     if (updated != null) {
-                        uiState = uiState.copy(connectionInfo = updated)
+                        _state = _state.copy(connectionInfo = updated)
                     }
                 }
             }
@@ -103,7 +102,7 @@ class RemoteBrowserViewModel @Inject constructor(
 
     fun connect(info: RemoteConnectionInfo) {
         viewModelScope.launch {
-            uiState = uiState.copy(
+            _state = _state.copy(
                 connectionState = ConnectionState.CONNECTING,
                 error = null,
                 isLoading = true
@@ -111,7 +110,7 @@ class RemoteBrowserViewModel @Inject constructor(
             val result = connectionManager.connect(info)
             if (result.isSuccess) {
                 currentFileSystem = result.data
-                uiState = uiState.copy(
+                _state = _state.copy(
                     connectionId = info.id,
                     connectionInfo = info,
                     connectionState = ConnectionState.CONNECTED,
@@ -122,7 +121,7 @@ class RemoteBrowserViewModel @Inject constructor(
                 navigateTo(info.initialPath)
                 loadServerInfo()
             } else {
-                uiState = uiState.copy(
+                _state = _state.copy(
                     connectionState = ConnectionState.ERROR,
                     error = result.error?.message,
                     isLoading = false
@@ -133,10 +132,10 @@ class RemoteBrowserViewModel @Inject constructor(
 
     fun disconnect() {
         viewModelScope.launch {
-            val id = uiState.connectionId
+            val id = _state.connectionId
             connectionManager.disconnect(id)
             currentFileSystem = null
-            uiState = uiState.copy(
+            _state = _state.copy(
                 connectionState = ConnectionState.DISCONNECTED,
                 connectionId = "",
                 connectionInfo = null,
@@ -152,7 +151,7 @@ class RemoteBrowserViewModel @Inject constructor(
 
     fun navigateTo(path: String) {
         val normalized = PathUtils.normalize(path)
-        uiState = uiState.copy(
+        _state = _state.copy(
             currentPath = normalized,
             isLoading = true,
             selectedEntries = emptySet(),
@@ -162,14 +161,14 @@ class RemoteBrowserViewModel @Inject constructor(
     }
 
     fun navigateUp() {
-        if (uiState.currentPath != "/") {
-            navigateTo(PathUtils.parent(uiState.currentPath))
+        if (_state.currentPath != "/") {
+            navigateTo(PathUtils.parent(_state.currentPath))
         }
     }
 
     fun refresh() {
-        fileCache.invalidateListing(uiState.currentPath)
-        navigateTo(uiState.currentPath)
+        fileCache.invalidateListing(_state.currentPath)
+        navigateTo(_state.currentPath)
     }
 
     // ── Directory Listing ─────────────────────────────────────────────
@@ -182,7 +181,7 @@ class RemoteBrowserViewModel @Inject constructor(
             // Check memory cache first
             val cached = fileCache.getListing(path)
             if (cached != null) {
-                uiState = uiState.copy(
+                _state = _state.copy(
                     directoryEntries = applySortingAndFiltering(cached),
                     isLoading = false
                 )
@@ -195,13 +194,13 @@ class RemoteBrowserViewModel @Inject constructor(
             if (result.isSuccess) {
                 val listing = result.data
                 fileCache.putListing(path, listing.entries)
-                uiState = uiState.copy(
+                _state = _state.copy(
                     directoryEntries = applySortingAndFiltering(listing.entries),
                     currentPath = listing.path,
                     isLoading = false
                 )
             } else {
-                uiState = uiState.copy(
+                _state = _state.copy(
                     error = result.error?.message,
                     isLoading = false
                 )
@@ -214,8 +213,8 @@ class RemoteBrowserViewModel @Inject constructor(
         if (result.isSuccess) {
             fileCache.putListing(path, result.data.entries)
             val entries = applySortingAndFiltering(result.data.entries)
-            if (uiState.currentPath == path && !uiState.isLoading) {
-                uiState = uiState.copy(directoryEntries = entries)
+            if (_state.currentPath == path && !_state.isLoading) {
+                _state = _state.copy(directoryEntries = entries)
             }
         }
     }
@@ -225,16 +224,16 @@ class RemoteBrowserViewModel @Inject constructor(
     fun createNewEntry(name: String, isDirectory: Boolean) {
         viewModelScope.launch {
             val fs = currentFileSystem ?: return@launch
-            val fullPath = PathUtils.join(uiState.currentPath, name)
+            val fullPath = PathUtils.join(_state.currentPath, name)
             val result = if (isDirectory) {
                 fs.makeDirectory(fullPath)
             } else {
                 fs.writeTextFile(fullPath, "")
             }
             if (result.isError) {
-                uiState = uiState.copy(error = result.error?.message)
+                _state = _state.copy(error = result.error?.message)
             } else {
-                uiState = uiState.copy(showCreateDialog = false, newEntryName = "")
+                _state = _state.copy(showCreateDialog = false, newEntryName = "")
                 refresh()
             }
         }
@@ -243,11 +242,11 @@ class RemoteBrowserViewModel @Inject constructor(
     fun deleteSelected() {
         viewModelScope.launch {
             val fs = currentFileSystem ?: return@launch
-            val paths = uiState.selectedEntries.toList()
+            val paths = _state.selectedEntries.toList()
             val errors = mutableListOf<String>()
             for (path in paths) {
                 // Check if it's a directory or file from the entries list
-                val entry = uiState.directoryEntries.firstOrNull { it.fullPath == path }
+                val entry = _state.directoryEntries.firstOrNull { it.fullPath == path }
                 val result = if (entry != null && entry.isDirectory) {
                     fs.removeDirectory(path, recursive = true)
                 } else {
@@ -255,7 +254,7 @@ class RemoteBrowserViewModel @Inject constructor(
                 }
                 if (result.isError) errors.add("$path: ${result.error?.message}")
             }
-            uiState = uiState.copy(
+            _state = _state.copy(
                 selectedEntries = emptySet(),
                 error = if (errors.isNotEmpty()) errors.joinToString("\n") else null
             )
@@ -270,7 +269,7 @@ class RemoteBrowserViewModel @Inject constructor(
             val newPath = PathUtils.join(parent, newName)
             val result = fs.rename(oldPath, newPath)
             if (result.isError) {
-                uiState = uiState.copy(error = result.error?.message)
+                _state = _state.copy(error = result.error?.message)
             } else {
                 refresh()
             }
@@ -280,19 +279,19 @@ class RemoteBrowserViewModel @Inject constructor(
     // ── Selection ─────────────────────────────────────────────────────
 
     fun toggleSelection(path: String) {
-        val current = uiState.selectedEntries.toMutableSet()
+        val current = _state.selectedEntries.toMutableSet()
         if (current.contains(path)) current.remove(path) else current.add(path)
-        uiState = uiState.copy(selectedEntries = current)
+        _state = _state.copy(selectedEntries = current)
     }
 
     fun selectAll() {
-        uiState = uiState.copy(
-            selectedEntries = uiState.directoryEntries.map { it.fullPath }.toSet()
+        _state = _state.copy(
+            selectedEntries = _state.directoryEntries.map { it.fullPath }.toSet()
         )
     }
 
     fun clearSelection() {
-        uiState = uiState.copy(selectedEntries = emptySet())
+        _state = _state.copy(selectedEntries = emptySet())
     }
 
     // ── Transfers ─────────────────────────────────────────────────────
@@ -300,8 +299,8 @@ class RemoteBrowserViewModel @Inject constructor(
     fun downloadSelected(localBasePath: String) {
         viewModelScope.launch {
             val fs = currentFileSystem ?: return@launch
-            for (path in uiState.selectedEntries) {
-                val entry = uiState.directoryEntries.firstOrNull { it.fullPath == path } ?: continue
+            for (path in _state.selectedEntries) {
+                val entry = _state.directoryEntries.firstOrNull { it.fullPath == path } ?: continue
                 val localPath = java.io.File(localBasePath, entry.name).absolutePath
                 fs.downloadFile(path, localPath, overwrite = true)
             }
@@ -323,71 +322,71 @@ class RemoteBrowserViewModel @Inject constructor(
     // ── Search ────────────────────────────────────────────────────────
 
     fun setSearchActive(active: Boolean) {
-        uiState = uiState.copy(isSearchActive = active, searchQuery = "")
+        _state = _state.copy(isSearchActive = active, searchQuery = "")
         if (!active) refresh()
     }
 
     fun search(query: String) {
-        uiState = uiState.copy(searchQuery = query)
+        _state = _state.copy(searchQuery = query)
         if (query.isBlank()) {
             refresh()
             return
         }
         val lowerQuery = query.lowercase()
-        val filtered = uiState.directoryEntries.filter {
+        val filtered = _state.directoryEntries.filter {
             it.name.lowercase().contains(lowerQuery)
         }
-        uiState = uiState.copy(directoryEntries = filtered)
+        _state = _state.copy(directoryEntries = filtered)
     }
 
     // ── Sorting & Filtering ───────────────────────────────────────────
 
     fun setSortBy(sortBy: SortBy) {
-        uiState = uiState.copy(sortBy = sortBy)
-        uiState = uiState.copy(directoryEntries =
-            applySortingAndFiltering(uiState.directoryEntries))
+        _state = _state.copy(sortBy = sortBy)
+        _state = _state.copy(directoryEntries =
+            applySortingAndFiltering(_state.directoryEntries))
     }
 
     fun toggleSortOrder() {
-        val newOrder = if (uiState.sortOrder == SortOrder.ASCENDING) SortOrder.DESCENDING else SortOrder.ASCENDING
-        uiState = uiState.copy(sortOrder = newOrder)
-        uiState = uiState.copy(directoryEntries =
-            applySortingAndFiltering(uiState.directoryEntries))
+        val newOrder = if (_state.sortOrder == SortOrder.ASCENDING) SortOrder.DESCENDING else SortOrder.ASCENDING
+        _state = _state.copy(sortOrder = newOrder)
+        _state = _state.copy(directoryEntries =
+            applySortingAndFiltering(_state.directoryEntries))
     }
 
     fun toggleShowHidden() {
-        uiState = uiState.copy(showHiddenFiles = !uiState.showHiddenFiles)
+        _state = _state.copy(showHiddenFiles = !_state.showHiddenFiles)
         refresh()
     }
 
     // ── UI State ──────────────────────────────────────────────────────
 
     fun showConnectionDialog(editing: RemoteConnectionInfo? = null) {
-        uiState = uiState.copy(showConnectionDialog = true, editingConnection = editing)
+        _state = _state.copy(showConnectionDialog = true, editingConnection = editing)
     }
 
     fun hideConnectionDialog() {
-        uiState = uiState.copy(showConnectionDialog = false, editingConnection = null)
+        _state = _state.copy(showConnectionDialog = false, editingConnection = null)
     }
 
     fun showCreateDialog(isDirectory: Boolean) {
-        uiState = uiState.copy(showCreateDialog = true, newEntryIsDirectory = isDirectory, newEntryName = "")
+        _state = _state.copy(showCreateDialog = true, newEntryIsDirectory = isDirectory, newEntryName = "")
     }
 
     fun hideCreateDialog() {
-        uiState = uiState.copy(showCreateDialog = false, newEntryName = "")
+        _state = _state.copy(showCreateDialog = false, newEntryName = "")
     }
 
     fun setNewEntryName(name: String) {
-        uiState = uiState.copy(newEntryName = name)
+        _state = _state.copy(newEntryName = name)
     }
 
     fun toggleTransfersPanel() {
-        uiState = uiState.copy(showTransfersPanel = !uiState.showTransfersPanel)
+        _state = _state.copy(showTransfersPanel = !_state.showTransfersPanel)
     }
 
     fun clearError() {
-        uiState = uiState.copy(error = null)
+        _state = _state.copy(error = null)
     }
 
     // ── Server Info ───────────────────────────────────────────────────
@@ -397,11 +396,11 @@ class RemoteBrowserViewModel @Inject constructor(
             val fs = currentFileSystem ?: return@launch
             val infoResult = fs.getServerInfo()
             if (infoResult.isSuccess) {
-                uiState = uiState.copy(serverInfo = infoResult.data)
+                _state = _state.copy(serverInfo = infoResult.data)
             }
-            val diskResult = fs.getDiskUsage(uiState.currentPath)
+            val diskResult = fs.getDiskUsage(_state.currentPath)
             if (diskResult.isSuccess) {
-                uiState = uiState.copy(diskUsage = diskResult.data)
+                _state = _state.copy(diskUsage = diskResult.data)
             }
         }
     }
@@ -411,7 +410,7 @@ class RemoteBrowserViewModel @Inject constructor(
     private fun observeFileSystemState(fs: RemoteFileSystem) {
         viewModelScope.launch {
             fs.session.collect { session ->
-                uiState = uiState.copy(
+                _state = _state.copy(
                     connectionState = session.state,
                     currentPath = session.currentWorkingDirectory
                 )
@@ -421,19 +420,19 @@ class RemoteBrowserViewModel @Inject constructor(
 
     private fun applySortingAndFiltering(entries: List<RemoteFileEntry>): List<RemoteFileEntry> {
         var filtered = entries.filter {
-            uiState.showHiddenFiles || !it.name.startsWith(".")
+            _state.showHiddenFiles || !it.name.startsWith(".")
         }
-        if (uiState.isSearchActive && uiState.searchQuery.isNotBlank()) {
-            val query = uiState.searchQuery.lowercase()
+        if (_state.isSearchActive && _state.searchQuery.isNotBlank()) {
+            val query = _state.searchQuery.lowercase()
             filtered = filtered.filter { it.name.lowercase().contains(query) }
         }
-        val comparator = when (uiState.sortBy) {
+        val comparator = when (_state.sortBy) {
             SortBy.NAME -> compareBy<RemoteFileEntry> { !it.isDirectory }.thenBy { it.name.lowercase() }
             SortBy.SIZE -> compareBy<RemoteFileEntry> { !it.isDirectory }.thenByDescending { it.size }
             SortBy.DATE -> compareBy<RemoteFileEntry> { !it.isDirectory }.thenByDescending { it.lastModified }
             SortBy.TYPE -> compareBy<RemoteFileEntry> { !it.isDirectory }.thenBy { it.extension.lowercase() }.thenBy { it.name.lowercase() }
         }
-        val sorted = if (uiState.sortOrder == SortOrder.DESCENDING) {
+        val sorted = if (_state.sortOrder == SortOrder.DESCENDING) {
             filtered.sortedWith(comparator.reversed())
         } else {
             filtered.sortedWith(comparator)
@@ -442,7 +441,7 @@ class RemoteBrowserViewModel @Inject constructor(
     }
 
     private fun updateTransferItem(item: TransferItem) {
-        val current = uiState.transferItems.toMutableList()
+        val current = _state.transferItems.toMutableList()
         val index = current.indexOfFirst { it.id == item.id }
         if (index >= 0) {
             current[index] = item
@@ -451,7 +450,7 @@ class RemoteBrowserViewModel @Inject constructor(
         }
         // Remove completed/failed items older than 30 seconds
         val now = System.currentTimeMillis()
-        uiState = uiState.copy(
+        _state = _state.copy(
             transferItems = current.filter {
                 !it.isTerminal || (now - it.completedAt) < 30_000
             }
@@ -459,8 +458,8 @@ class RemoteBrowserViewModel @Inject constructor(
     }
 
     private fun addTransferItem(item: TransferItem) {
-        uiState = uiState.copy(
-            transferItems = uiState.transferItems + item
+        _state = _state.copy(
+            transferItems = _state.transferItems + item
         )
     }
 
@@ -473,7 +472,7 @@ class RemoteBrowserViewModel @Inject constructor(
 
     fun deleteConnection(id: String) {
         connectionManager.removeConnection(id)
-        if (uiState.connectionId == id) disconnect()
+        if (_state.connectionId == id) disconnect()
     }
 
     fun getSavedConnections(): Flow<List<RemoteConnectionInfo>> {

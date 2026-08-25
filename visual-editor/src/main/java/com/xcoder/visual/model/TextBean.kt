@@ -27,7 +27,7 @@ data class TextBean(
     /** Hint text (primarily for EditText) */
     var hint: String = "",
     /** Hint color as 0xAARRGGBB */
-    var hintColor: Int = 0x80808080,
+    var hintColor: Int = 0x80808080.toInt(),
     /** Maximum number of lines. 0 or negative means no limit. */
     var maxLines: Int = Integer.MAX_VALUE,
     /** Ellipsize mode: "none", "start", "middle", "end", "marquee" */

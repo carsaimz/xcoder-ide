@@ -14,6 +14,7 @@ package com.xcoder.visual
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.draganddrop.dragAndDropSource
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -65,7 +66,8 @@ object PaletteData {
             PaletteItem("LinearLayout", Icons.Default.ViewList, ViewBean.TYPE_LINEAR_LAYOUT, isLayout = true),
             PaletteItem("RelativeLayout", Icons.Default.Widgets, ViewBean.TYPE_RELATIVE_LAYOUT, isLayout = true),
             PaletteItem("ConstraintLayout", Icons.Default.Dashboard, ViewBean.TYPE_CONSTRAINT_LAYOUT, isLayout = true),
-            PaletteItem("FrameLayout", Icons.Default.Stack, ViewBean.TYPE_FRAME_LAYOUT, isLayout = true),
+            // TODO: fix - unresolved reference: Icons.Default.Stack
+            PaletteItem("FrameLayout", Icons.Default.Layers, ViewBean.TYPE_FRAME_LAYOUT, isLayout = true),
             PaletteItem("ScrollView", Icons.Default.ArrowDownward, ViewBean.TYPE_SCROLL_VIEW, isLayout = true),
             PaletteItem("RecyclerView", Icons.Default.GridView, ViewBean.TYPE_RECYCLER_VIEW, isLayout = true),
             PaletteItem("CoordinatorLayout", Icons.Default.Layers, ViewBean.TYPE_COORDINATOR_LAYOUT, isLayout = true),
@@ -135,6 +137,7 @@ fun PaletteScreen(
 
 // ── Individual palette widget item ──────────────────────────────────
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun PaletteWidgetItem(
     item: PaletteItem,
