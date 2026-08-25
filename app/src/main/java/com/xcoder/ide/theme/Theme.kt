@@ -323,7 +323,7 @@ val XCoderAmoledColors = XCoderDarkColors.copy(
  * Syntax highlighting colors for the current theme.
  *
  * This is a convenience object to bridge Compose [IdeColors] syntax
- * tokens to the sora-editor [io.github.rosemoe.sora.lang.styling.]
+ * tokens to the sora-editor styling configuration
  * configuration used by AndroidIDE's `EditorColorScheme`.
  *
  * Usage in the editor module:
