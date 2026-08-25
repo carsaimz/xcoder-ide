@@ -85,7 +85,7 @@ fun ConnectionDialog(
                     placeholder = { Text("My Server") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
-                    leadingIcon = { Icon(Icons.Default.Bookmark, null) }
+                    leadingIcon = { Icon(Icons.Default.Star, null) }
                 )
 
                 // Protocol selector

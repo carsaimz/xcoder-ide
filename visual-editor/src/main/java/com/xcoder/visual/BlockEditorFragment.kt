@@ -31,6 +31,19 @@ import kotlin.math.abs
 
 // Data classes representing the visual block graph
 
+enum class PortType { STRING, NUMBER, BOOLEAN, OBJECT, ANY }
+
+data class PortDef(val name: String, val type: PortType)
+
+@Suppress("unused")
+data class BlockDefinition(
+    val name: String,
+    val color: Color,
+    val inputs: List<PortDef> = emptyList(),
+    val outputs: List<PortDef> = emptyList(),
+    val defaultValues: Map<String, String> = emptyMap()
+)
+
 @Suppress("unused")
 data class PlacedBlock(
     val id: String = "",
@@ -206,7 +219,11 @@ fun BlockEditorScreen(
                 color = MaterialTheme.colorScheme.surface
             ) {
                 PaletteScreen(
-                    onBlockSelected = { def ->
+                    onWidgetSelected = { viewType ->
+                        val def = BlockDefinition(
+                            name = "Block_$viewType",
+                            color = Color(0xFF4CAF50)
+                        )
                         state.addBlock(def, 100f, 100f)
                     }
                 )
@@ -272,11 +289,9 @@ fun BlockEditorScreen(
                 color = MaterialTheme.colorScheme.surface
             ) {
                 PropertyPanel(
-                    selectedBlock = state.getSelectedBlock(),
-                    onValueChanged = { blockId, key, value ->
-                        state.updateBlockValue(blockId, key, value)
-                    },
-                    onDeleteBlock = { blockId -> state.removeBlock(blockId) }
+                    selectedView = null,
+                    onPropertyChange = OnPropertyChangeListener { _, _, _ -> },
+                    onDeleteView = { blockId -> state.removeBlock(blockId) }
                 )
             }
         }

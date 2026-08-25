@@ -134,16 +134,16 @@ object FileIconProvider {
     fun getIcon(extension: String) = when (extension.lowercase()) {
         "kt", "java", "c", "cpp", "h", "hpp", "rs", "go", "py", "rb",
         "js", "ts", "swift", "dart", "scala", "lua", "sh" -> Icons.Default.Code
-        "html", "htm", "xml", "xhtml", "svg", "xsl" -> Icons.Default.Html
-        "css", "scss", "sass", "less" -> Icons.Default.Palette
-        "json", "yaml", "yml", "toml", "ini", "cfg", "properties" -> Icons.Default.DataObject
-        "md", "mdx", "rst", "txt", "log" -> Icons.Default.Description
-        "pdf" -> Icons.Default.PictureAsPdf
-        "png", "jpg", "jpeg", "gif", "bmp", "webp", "ico" -> Icons.Default.Image
-        "mp4", "avi", "mkv", "mov", "webm" -> Icons.Default.VideoFile
-        "mp3", "wav", "ogg", "flac", "aac" -> Icons.Default.AudioFile
-        "zip", "tar", "gz", "bz2", "xz", "7z", "rar" -> Icons.Default.FolderZip
-        "gradle" -> Icons.Default.Build
-        else -> Icons.Default.InsertDriveFile
+        "html", "htm", "xml", "xhtml", "svg", "xsl" -> Icons.Default.Code
+        "css", "scss", "sass", "less" -> Icons.Default.Settings
+        "json", "yaml", "yml", "toml", "ini", "cfg", "properties" -> Icons.Default.Code
+        "md", "mdx", "rst", "txt", "log" -> Icons.Default.FileCopy
+        "pdf" -> Icons.Default.FileCopy
+        "png", "jpg", "jpeg", "gif", "bmp", "webp", "ico" -> Icons.Default.FileCopy
+        "mp4", "avi", "mkv", "mov", "webm" -> Icons.Default.FileCopy
+        "mp3", "wav", "ogg", "flac", "aac" -> Icons.Default.FileCopy
+        "zip", "tar", "gz", "bz2", "xz", "7z", "rar" -> Icons.Default.Folder
+        "gradle" -> Icons.Default.Settings
+        else -> Icons.Default.FileCopy
     }
 }
