@@ -16,7 +16,7 @@ import org.eclipse.jgit.transport.CredentialsProvider
 import org.eclipse.jgit.transport.URIish
 import java.io.ByteArrayInputStream
 import java.security.KeyStore
-import java.util.Base64
+import android.util.Base64
 import javax.inject.Inject
 import javax.inject.Singleton
 import javax.crypto.Cipher
@@ -40,7 +40,7 @@ class GitCredentials @Inject constructor(
                 val key = getOrCreateEncryptionKey()
                 val encrypted = encrypt(token, key)
                 prefs.edit()
-                    .putString("https_$host", "${username}::${Base64.getEncoder().encodeToString(encrypted)}")
+                    .putString("https_$host", "${username}::${Base64.encodeToString(encrypted, Base64.NO_WRAP)}")
                     .apply()
                 true
             } catch (_: Exception) {
@@ -54,7 +54,7 @@ class GitCredentials @Inject constructor(
             val separatorIndex = stored.indexOf("::")
             if (separatorIndex < 0) return@withContext null
             val username = stored.substring(0, separatorIndex)
-            val encryptedToken = Base64.getDecoder().decode(stored.substring(separatorIndex + 2))
+            val encryptedToken = Base64.decode(stored.substring(separatorIndex + 2), Base64.DEFAULT)
             val key = getOrCreateEncryptionKey()
             val token = decrypt(encryptedToken, key)
             Pair(username, token)
@@ -71,7 +71,7 @@ class GitCredentials @Inject constructor(
                 prefs.edit()
                     .putString(
                         "ssh_$host",
-                        "${Base64.getEncoder().encodeToString(encryptedKey)}::$passphrase"
+                        "${Base64.encodeToString(encryptedKey, Base64.NO_WRAP)}::$passphrase"
                     )
                     .apply()
                 true
@@ -84,7 +84,7 @@ class GitCredentials @Inject constructor(
         try {
             val stored = prefs.getString("ssh_$host", null) ?: return@withContext null
             val separatorIndex = stored.indexOf("::")
-            val encryptedKey = Base64.getDecoder().decode(stored.substring(0, separatorIndex))
+            val encryptedKey = Base64.decode(stored.substring(0, separatorIndex), Base64.DEFAULT)
             val passphrase = stored.substring(separatorIndex + 2)
             val key = getOrCreateEncryptionKey()
             val privateKeyPem = decrypt(encryptedKey, key)
