@@ -94,7 +94,7 @@ dependencies {
     implementation(project(":code-formatter"))
     implementation(project(":bookmarks"))
     implementation(project(":apk-editor"))
-    implementation(project(":remote-filesystem"))
+    // implementation(project(":remote-filesystem")) // TODO: disabled
 
     // --- LSP (Java Language Server) ---
     implementation(project(":lsp-java"))

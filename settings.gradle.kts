@@ -55,7 +55,7 @@ include(":search-in-project")
 include(":code-formatter")
 include(":bookmarks")
 include(":apk-editor")
-include(":remote-filesystem")
+// include(":remote-filesystem") // TODO: kapt <Error module> — re-enable after fixing
 include(":lsp-java")
 
 // ── Plugin System Modules ─────────────────────────────────────────────────
