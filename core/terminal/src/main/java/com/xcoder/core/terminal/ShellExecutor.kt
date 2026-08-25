@@ -37,16 +37,26 @@ class ShellExecutor @Inject constructor() {
 
         var stdout: String
         var stderr: String
-        val finished = process.waitFor(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS)
+        var exitCode = -1
+        val waiter = Thread {
+            try {
+                exitCode = process.waitFor()
+            } catch (_: InterruptedException) {
+                // The process is destroyed below when the timeout expires.
+            }
+        }
+        waiter.start()
+        waiter.join(timeoutMs)
 
-        if (!finished) {
-            process.destroyForcibly()
+        if (waiter.isAlive) {
+            process.destroy()
+            waiter.join(1_000L)
             return CommandResult(-1, "", "Command timed out after ${timeoutMs}ms", isFailure = true)
         }
 
         stdout = process.inputStream.bufferedReader().readText()
         stderr = process.errorStream.bufferedReader().readText()
 
-        return CommandResult(process.exitValue(), stdout, stderr)
+        return CommandResult(exitCode, stdout, stderr)
     }
 }
