@@ -89,14 +89,14 @@ jobs:
           gradle assembleDebug --no-daemon --stacktrace --no-configuration-cache 2>&1 | tee build.log
           echo ''
           # Error summary
-          ERROR_COUNT=$(grep -c '^e: ' build.log 2>/dev/null || echo '0')
+          ERROR_COUNT=$(grep -c '^e: ' build.log 2>/dev/null || true)
           echo "error_count=$ERROR_COUNT" >> $GITHUB_OUTPUT
           echo ''
           echo "=== Error Summary ($ERROR_COUNT errors) ==="
           grep -E '^e: ' build.log || echo 'No compilation errors'
           echo ''
           # Warning count
-          WARN_COUNT=$(grep -c '^w: ' build.log 2>/dev/null || echo '0')
+          WARN_COUNT=$(grep -c '^w: ' build.log 2>/dev/null || true)
           echo "warning_count=$WARN_COUNT" >> $GITHUB_OUTPUT
           echo "=== Warning Count: $WARN_COUNT ==="
           echo ''
