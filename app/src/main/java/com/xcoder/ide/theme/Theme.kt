@@ -8,7 +8,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.runtime.provides
 import androidx.compose.ui.platform.*
 import androidx.core.view.*
 
@@ -17,7 +16,7 @@ import androidx.core.view.*
 // ============================================================================
 
 /** Provides the full [IdeColors] palette for the current theme. */
-val LocalIdeColors: CompositionLocal<IdeColors> = staticCompositionLocalOf {
+val LocalIdeColors: ProvidableCompositionLocal<IdeColors> = staticCompositionLocalOf {
     error("IdeColors not provided. Wrap content in XCoderTheme.")
 }
 
