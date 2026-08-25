@@ -34,7 +34,7 @@ private val SMALI_ACCESS_FLAGS = setOf(
  */
 class SmaliLanguage : Language {
 
-    override fun getIndentAdvance(content: String): Int {
+    override fun getIndentAdvance(content: CharSequence): Int {
         val trimmed = content.trimStart()
         return when {
             trimmed.startsWith(".method ") -> 1
@@ -50,9 +50,11 @@ class SmaliLanguage : Language {
 
     override fun useTab(): Boolean = false
 
-    override fun getFormatter(): io.github.rosemoe.sora.lang.format.Formatter? = null
+    // TODO: fix - getFormatter return type mismatch in sora-editor 0.23.5
+    // override fun getFormatter(): io.github.rosemoe.sora.lang.format.Formatter? = null
 
-    override fun getSymbolPairs(): io.github.rosemoe.sora.lang.SymbolPairMatch? = null
+    // TODO: fix - unresolved reference SymbolPairMatch in sora-editor 0.23.5
+    // override fun getSymbolPairs(): io.github.rosemoe.sora.lang.SymbolPairMatch? = null
 
     override fun checkParenthesis(text: CharSequence, position: Int, type: Char, count: Int): Boolean = false
 

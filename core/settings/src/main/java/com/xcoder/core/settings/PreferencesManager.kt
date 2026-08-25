@@ -511,7 +511,7 @@ class PreferencesManager @Inject constructor(
     }
 
     suspend fun getAllPreferences(): Map<String, Any> {
-        return dataStore.first().asMap().mapValues { (_, value) ->
+        return dataStore.data.first().asMap().mapValues { (_, value) ->
             when (value) {
                 is Boolean -> value
                 is Float -> value

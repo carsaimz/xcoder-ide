@@ -52,7 +52,7 @@ class SettingsRepositoryImpl @Inject constructor(
 
     @Suppress("UNCHECKED_CAST")
     override suspend fun <T> get(key: String, default: T): T = withContext(Dispatchers.IO) {
-        val prefs = dataStore.first()
+        val prefs = dataStore.data.first()
         val prefKey = stringPreferencesKey(key)
         val rawValue = prefs[prefKey]
         if (rawValue == null) {
@@ -69,39 +69,44 @@ class SettingsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun <T> set(key: String, value: T) = withContext(Dispatchers.IO) {
-        val prefKey = stringPreferencesKey(key)
-        dataStore.edit { prefs ->
-            prefs[prefKey] = value.toString()
+    override suspend fun <T> set(key: String, value: T) {
+        withContext(Dispatchers.IO) {
+            val prefKey = stringPreferencesKey(key)
+            dataStore.edit { prefs ->
+                prefs[prefKey] = value.toString()
+            }
         }
     }
 
-    override suspend fun remove(key: String) = withContext(Dispatchers.IO) {
-        val prefKey = stringPreferencesKey(key)
-        dataStore.edit { prefs ->
-            prefs.remove(prefKey)
+    override suspend fun remove(key: String) {
+        withContext(Dispatchers.IO) {
+            val prefKey = stringPreferencesKey(key)
+            dataStore.edit { prefs ->
+                prefs.remove(prefKey)
+            }
         }
     }
 
     override suspend fun contains(key: String): Boolean = withContext(Dispatchers.IO) {
-        val prefs = dataStore.first()
+        val prefs = dataStore.data.first()
         val prefKey = stringPreferencesKey(key)
         prefs.contains(prefKey)
     }
 
     override suspend fun getKeys(): Set<String> = withContext(Dispatchers.IO) {
-        dataStore.first().asMap().keys.map { it.name }.toSet()
+        dataStore.data.first().asMap().keys.map { it.name }.toSet()
     }
 
     @Suppress("UNCHECKED_CAST")
     override fun <T> observe(key: String, default: T): Flow<T> {
         val prefKey = stringPreferencesKey(key)
+        @Suppress("USELESS_CAST")
         return dataStore.data.map { prefs ->
             val rawValue = prefs[prefKey]
             if (rawValue == null) {
                 default
             } else {
-                when (default) {
+                val result: Any? = when (default) {
                     is String -> rawValue as T
                     is Boolean -> rawValue.toBooleanStrictOrNull() ?: default
                     is Int -> rawValue.toIntOrNull() ?: default
@@ -110,20 +115,23 @@ class SettingsRepositoryImpl @Inject constructor(
                     is Double -> rawValue.toDoubleOrNull() ?: default
                     else -> rawValue as T
                 }
+                result as T
             }
         }
     }
 
     override suspend fun getAll(): Map<String, Any?> = withContext(Dispatchers.IO) {
-        dataStore.first().asMap().mapKeys { it.key.name }.mapValues { it.value }
+        dataStore.data.first().asMap().mapKeys { it.key.name }.mapValues { it.value }
     }
 
-    override suspend fun clear() = withContext(Dispatchers.IO) {
-        dataStore.edit { prefs -> prefs.clear() }
+    override suspend fun clear() {
+        withContext(Dispatchers.IO) {
+            dataStore.edit { prefs -> prefs.clear() }
+        }
     }
 
     override suspend fun exportToJson(): String = withContext(Dispatchers.IO) {
-        val allPrefs = dataStore.first().asMap().mapKeys { it.key.name }
+        val allPrefs = dataStore.data.first().asMap().mapKeys { it.key.name }
         val exportData = mapOf(
             "version" to 1,
             "exported_at" to SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ", Locale.US).format(Date()),

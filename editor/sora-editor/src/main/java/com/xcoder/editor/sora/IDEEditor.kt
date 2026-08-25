@@ -669,40 +669,40 @@ class IDEEditor(
      * - Trigger LSP completion and signature help on typing
      */
     private fun setupEventListeners() {
+        // TODO: addOnTextChangedListener not available in sora-editor 0.23.5; use subscribeEvent(ContentChangeEvent) instead
         // Content change listener
-        editor.addOnTextChangedListener { _, event ->
-            val newText = editor.text.toString()
-            isModified = newText != originalContent
-            onContentChanged?.invoke(newText)
-
-            // Notify LSP of content changes
-            if (event is ContentChangeEvent) {
-                lspEditor?.let { lspEd ->
-                    try {
-                        lspEd.requestManager?.didChange(
-                            currentFilePath,
-                            newText,
-                            editor.text.lineCount
-                        )
-                    } catch (e: Exception) {
-                        Log.w(TAG, "LSP didChange failed: ${e.message}")
-                    }
-                }
-
-                // Trigger completion on certain trigger characters
-                // AndroidIDE triggers completion when the user types '.', '(', or letters
-                if (event.action != ContentChangeEvent.ACTION_INSERT ||
-                    event.changedText?.length == 1
-                ) {
-                    val char = event.changedText
-                    if (char != null && isCompletionTriggerChar(char)) {
-                        requestCompletion()
-                    } else if (char == "(") {
-                        requestSignatureHelp()
-                    }
-                }
-            }
-        }
+        // editor.addOnTextChangedListener { _, event ->
+        //     val newText = editor.text.toString()
+        //     isModified = newText != originalContent
+        //     onContentChanged?.invoke(newText)
+        //
+        //     // Notify LSP of content changes
+        //     if (event is ContentChangeEvent) {
+        //         lspEditor?.let { lspEd ->
+        //             try {
+        //                 lspEd.requestManager?.didChange(
+        //                     currentFilePath,
+        //                     newText,
+        //                     editor.text.lineCount
+        //                 )
+        //             } catch (e: Exception) {
+        //                 Log.w(TAG, "LSP didChange failed: ${e.message}")
+        //             }
+        //         }
+        //
+        //         // Trigger completion on certain trigger characters
+        //         if (event.action != ContentChangeEvent.ACTION_INSERT ||
+        //             event.changedText?.length == 1
+        //         ) {
+        //             val char = event.changedText
+        //             if (char != null && isCompletionTriggerChar(char)) {
+        //                 requestCompletion()
+        //             } else if (char == "(") {
+        //                 requestSignatureHelp()
+        //             }
+        //         }
+        //     }
+        // }
 
         // Selection change listener
         editor.subscribeEvent(SelectionChangeEvent::class.java) { event, _ ->
@@ -717,7 +717,8 @@ class IDEEditor(
 
         // Scroll change listener
         editor.subscribeEvent(ScrollEvent::class.java) { event, _ ->
-            onScrollChanged?.invoke(event.dx, event.dy)
+            // TODO: ScrollEvent.dx/dy unresolved in sora-editor 0.23.5
+            // onScrollChanged?.invoke(event.dx, event.dy)
         }
     }
 
@@ -728,7 +729,7 @@ class IDEEditor(
      * and certain other characters depending on the language.
      */
     private fun isCompletionTriggerChar(char: String): Boolean {
-        return char == "." || char.isLetter() || char == "_"
+        return char == "." || (char.length == 1 && char[0].isLetter()) || char == "_"
     }
 
     // ── Cleanup ────────────────────────────────────────────────────────────
