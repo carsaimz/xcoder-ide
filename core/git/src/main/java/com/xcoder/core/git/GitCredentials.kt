@@ -1,6 +1,7 @@
 package com.xcoder.core.git
 
 import android.content.Context
+import android.os.Build
 import android.content.SharedPreferences
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
@@ -183,6 +184,9 @@ class GitCredentials @Inject constructor(
     }
 
     private fun getOrCreateEncryptionKey(): SecretKey {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            throw UnsupportedOperationException("Android Keystore AES-GCM requires API 23 or newer")
+        }
         if (keystore.containsAlias(alias)) {
             val entry = keystore.getEntry(alias, null) as KeyStore.SecretKeyEntry
             return entry.secretKey
