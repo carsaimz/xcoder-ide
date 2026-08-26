@@ -27,7 +27,7 @@
     <string name="editor_go_to_line">줄로 이동...</string>
     <string name="editor_go_to_symbol">기호로 이동</string>
     <string name="editor_go_to_definition">정의로 이동</string>
-    <string name="editor_format">\&amp;lt;emph\&amp;gt;서식 코드\&amp;lt;/emph\&amp;gt;</string>
+    <string name="editor_format">서식 코드</string>
     <string name="editor_undo">실행 취소</string>
     <string name="editor_redo">다시 실행</string>
     <string name="editor_cut">절단</string>

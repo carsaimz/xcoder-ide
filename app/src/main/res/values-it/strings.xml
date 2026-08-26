@@ -27,7 +27,7 @@
     <string name="editor_go_to_line">Vai alla riga</string>
     <string name="editor_go_to_symbol">Vai a Simbolo</string>
     <string name="editor_go_to_definition">Vai alla definizione [linea</string>
-    <string name="editor_format">\&amp;lt;emph\&amp;gt;Codici formato\&amp;lt;/emph\&amp;gt;</string>
+    <string name="editor_format">Codice di formattazione</string>
     <string name="editor_undo">Annulla</string>
     <string name="editor_redo">Ripeti</string>
     <string name="editor_cut">Taglia</string>

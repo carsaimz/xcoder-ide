@@ -27,7 +27,7 @@
     <string name="editor_go_to_line">è¡ã«ç§»å</string>
     <string name="editor_go_to_symbol">シンボルに移動</string>
     <string name="editor_go_to_definition">定義に移動</string>
-    <string name="editor_format">\&amp;lt;emph\&amp;gt;書式コード\&amp;lt;/emph\&amp;gt;</string>
+    <string name="editor_format">書式コード</string>
     <string name="editor_undo">取り消し</string>
     <string name="editor_redo">やり直し</string>
     <string name="editor_cut">切断</string>

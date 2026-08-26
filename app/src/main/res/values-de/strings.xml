@@ -27,7 +27,7 @@
     <string name="editor_go_to_line">Go to Line</string>
     <string name="editor_go_to_symbol">Gehe zu Symbol</string>
     <string name="editor_go_to_definition">Zur Definition gehen</string>
-    <string name="editor_format">\&amp;lt;emph\&amp;gt;Formatcode\&amp;lt;/emph\&amp;gt;</string>
+    <string name="editor_format">Formatcode</string>
     <string name="editor_undo">Widerrufen</string>
     <string name="editor_redo">Wiederholen</string>
     <string name="editor_cut">Abschneiden</string>
