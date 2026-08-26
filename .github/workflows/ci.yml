@@ -172,13 +172,12 @@ jobs:
             ls -lh app/build/outputs/apk/debug/*.apk | awk '{print "- " $NF " (" $5 ")"}' >> $GITHUB_STEP_SUMMARY
           fi
 
-  # ── Lint (non-blocking) ───────────────────────────────────────
+  # ── Lint (blocking) ──────────────────────────────────────────
   lint:
     name: Lint & Code Quality
     runs-on: ubuntu-latest
     needs: build
     if: needs.build.result == 'success'
-    continue-on-error: true
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -218,7 +217,7 @@ jobs:
         if: always()
         run: |
           echo "### Lint Results" >> $GITHUB_STEP_SUMMARY
-          echo "Lint runs as a **non-blocking** check. Review issues but they do not block merges." >> $GITHUB_STEP_SUMMARY
+          echo "Lint is a **blocking** quality gate. Any lint failure blocks the pipeline." >> $GITHUB_STEP_SUMMARY
 
   # ── Unit Tests ─────────────────────────────────────────────────
   test:
@@ -296,12 +295,11 @@ jobs:
           TEST="${{ needs.test.result }}"
           echo "| Resolve Deps | $DEPS |" >> $GITHUB_STEP_SUMMARY
           echo "| Build | $BUILD |" >> $GITHUB_STEP_SUMMARY
-          echo "| Lint (advisory) | $LINT |" >> $GITHUB_STEP_SUMMARY
+          echo "| Lint | $LINT |" >> $GITHUB_STEP_SUMMARY
           echo "| Tests | $TEST |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          # Only deps and build are hard gates
-          if [ "$DEPS" = "failure" ] || [ "$BUILD" = "failure" ]; then
-            echo '::error::CI failed — check Build and/or Resolve Dependencies jobs'
+          if [ "$DEPS" != "success" ] || [ "$BUILD" != "success" ] || [ "$LINT" != "success" ] || [ "$TEST" != "success" ]; then
+            echo '::error::CI failed — Resolve Dependencies, Build, Lint and Unit Tests must all pass'
             exit 1
           fi
-          echo 'CI passed (lint is advisory)'
+          echo 'CI passed — all required jobs are green'
