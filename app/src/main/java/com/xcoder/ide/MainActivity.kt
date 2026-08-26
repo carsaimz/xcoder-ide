@@ -100,7 +100,17 @@ class MainActivity : ComponentActivity() {
                         onClose = { finishAffinity() }
                     )
                 } else {
-                    RuntimeErrorBoundary(app)
+                    XCoderTheme {
+                        Surface(
+                            modifier = Modifier.fillMaxSize(),
+                            color = MaterialTheme.colorScheme.background
+                        ) {
+                            MainNavigation(
+                                initialFileUri = pendingFileUri,
+                                onFileHandled = { pendingFileUri = null }
+                            )
+                        }
+                    }
                 }
             }
         } catch (throwable: Throwable) {
@@ -138,51 +148,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
         )
-    }
-
-    /**
-     * Catches exceptions thrown while composing the main UI and replaces the
-     * failing content with a diagnostic screen instead of killing the process.
-     */
-    @Composable
-    private fun RuntimeErrorBoundary(app: XCoderApp?) {
-        var handledError by remember { mutableStateOf<Throwable?>(null) }
-        var pendingError: Throwable? = null
-        if (handledError == null) {
-            try {
-                XCoderTheme {
-                    Surface(
-                        modifier = Modifier.fillMaxSize(),
-                        color = MaterialTheme.colorScheme.background
-                    ) {
-                        MainNavigation(
-                            initialFileUri = pendingFileUri,
-                            onFileHandled = { pendingFileUri = null }
-                        )
-                    }
-                }
-            } catch (throwable: Throwable) {
-                pendingError = throwable
-            }
-        }
-
-        val error = handledError ?: pendingError
-        if (error != null) {
-            SideEffect {
-                if (handledError == null) {
-                    app?.recordHandledError(error)
-                    handledError = error
-                }
-            }
-            CrashRecoveryScreen(
-                crash = error.toCrashSnapshot(),
-                onRetry = {
-                    app?.clearLastCrash()
-                    recreate()
-                },
-                onClose = { finishAffinity() }
-            )
-        }
     }
 
     private fun Throwable.toCrashSnapshot(): XCoderApp.CrashSnapshot {
