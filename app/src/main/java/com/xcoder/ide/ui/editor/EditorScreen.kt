@@ -18,6 +18,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.res.stringResource
+import com.xcoder.ide.R
 import com.xcoder.ide.ui.common.EditorTab
 import com.xcoder.ide.ui.common.EditorTabs
 import com.xcoder.ide.ui.common.FileIconProvider
@@ -422,7 +424,7 @@ private fun SearchPanel(
                 OutlinedTextField(
                     value = query,
                     onValueChange = { query = it },
-                    label = { Text("Find", style = MaterialTheme.typography.bodySmall) },
+                    label = { Text(stringResource(R.string.editor_search), style = MaterialTheme.typography.bodySmall) },
                     singleLine = true,
                     modifier = Modifier.weight(1f),
                     textStyle = MaterialTheme.typography.bodySmall,
@@ -433,20 +435,20 @@ private fun SearchPanel(
                 )
                 Spacer(Modifier.width(8.dp))
                 IconButton(onClick = onFindPrevious, modifier = Modifier.size(32.dp)) {
-                    Icon(Icons.Default.KeyboardArrowUp, "Previous", Modifier.size(18.dp))
+                    Icon(Icons.Default.KeyboardArrowUp, stringResource(R.string.search_previous), Modifier.size(18.dp))
                 }
                 IconButton(onClick = onFindNext, modifier = Modifier.size(32.dp)) {
-                    Icon(Icons.Default.KeyboardArrowDown, "Next", Modifier.size(18.dp))
+                    Icon(Icons.Default.KeyboardArrowDown, stringResource(R.string.search_next), Modifier.size(18.dp))
                 }
                 IconButton(onClick = onClose, modifier = Modifier.size(32.dp)) {
-                    Icon(Icons.Default.Close, "Close", Modifier.size(18.dp))
+                    Icon(Icons.Default.Close, stringResource(R.string.common_close), Modifier.size(18.dp))
                 }
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 OutlinedTextField(
                     value = replace,
                     onValueChange = { replace = it },
-                    label = { Text("Replace", style = MaterialTheme.typography.bodySmall) },
+                    label = { Text(stringResource(R.string.search_replace_placeholder), style = MaterialTheme.typography.bodySmall) },
                     singleLine = true,
                     modifier = Modifier.weight(1f),
                     textStyle = MaterialTheme.typography.bodySmall,
@@ -456,8 +458,8 @@ private fun SearchPanel(
                     )
                 )
                 Spacer(Modifier.width(8.dp))
-                TextButton(onClick = onReplace) { Text("Replace", style = MaterialTheme.typography.labelSmall) }
-                TextButton(onClick = onReplaceAll) { Text("All", style = MaterialTheme.typography.labelSmall) }
+                TextButton(onClick = onReplace) { Text(stringResource(R.string.common_replace), style = MaterialTheme.typography.labelSmall) }
+                TextButton(onClick = onReplaceAll) { Text(stringResource(R.string.search_replace_all), style = MaterialTheme.typography.labelSmall) }
             }
         }
     }

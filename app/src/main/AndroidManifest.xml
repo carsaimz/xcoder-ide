@@ -32,7 +32,6 @@
     <application
         android:name=".XCoderApp"
         android:allowBackup="true"
-        android:backupAgent="androidx.appbackup.BackupAgentHelper"
         android:fullBackupContent="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:icon="@mipmap/ic_launcher"

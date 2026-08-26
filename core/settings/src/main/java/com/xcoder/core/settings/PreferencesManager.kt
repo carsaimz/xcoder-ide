@@ -42,6 +42,9 @@ class PreferencesManager @Inject constructor(
 ) {
     private val dataStore = context.dataStore
 
+    // ========== Global Settings ==========
+    private val APP_LANGUAGE = stringPreferencesKey("app_language")
+
     // ========== Theme Settings ==========
     private val THEME_MODE = stringPreferencesKey("theme_mode")
     private val FONT_SIZE = floatPreferencesKey("font_size")
@@ -99,6 +102,12 @@ class PreferencesManager @Inject constructor(
     private val GIT_SIGN_COMMITS = booleanPreferencesKey("git_sign_commits")
     private val GIT_AUTO_FETCH = booleanPreferencesKey("git_auto_fetch")
     private val GIT_PUSH_DEFAULT = stringPreferencesKey("git_push_default")
+
+    // ========== Global StateFlows ==========
+    /** BCP-47 application language tag; pt-PT is the product default. */
+    val appLanguage: Flow<String> = dataStore.data.map { prefs ->
+        prefs[APP_LANGUAGE] ?: "pt-PT"
+    }
 
     // ========== Theme StateFlows ==========
     val themeMode: Flow<ThemeMode> = dataStore.data.map { prefs ->
@@ -291,6 +300,10 @@ class PreferencesManager @Inject constructor(
     }
 
     // ========== Setters (suspend functions) ==========
+    suspend fun setAppLanguage(languageTag: String) {
+        dataStore.edit { prefs -> prefs[APP_LANGUAGE] = languageTag }
+    }
+
     suspend fun setThemeMode(mode: ThemeMode) {
         dataStore.edit { prefs -> prefs[THEME_MODE] = mode.key }
     }

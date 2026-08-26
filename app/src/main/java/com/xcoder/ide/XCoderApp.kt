@@ -5,15 +5,13 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
 import dagger.hilt.android.HiltAndroidApp
-import javax.inject.Inject
+import com.xcoder.ide.i18n.AppLocaleManager
 
 @HiltAndroidApp
 class XCoderApp : Application() {
 
-    @Inject
-    lateinit var notificationManager: NotificationManager
-
     override fun onCreate() {
+        runCatching { AppLocaleManager.apply(this) }
         super.onCreate()
         instance = this
         createNotificationChannels()
@@ -22,10 +20,11 @@ class XCoderApp : Application() {
 
     private fun createNotificationChannels() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val notificationManager = getSystemService(NotificationManager::class.java) ?: return
             val channels = listOf(
                 NotificationChannel(
                     CHANNEL_BUILD_PROGRESS,
-                    "Build Progress",
+                    getString(com.xcoder.ide.R.string.notification_channel_build),
                     NotificationManager.IMPORTANCE_LOW
                 ).apply {
                     description = "Shows build and compilation progress"
@@ -33,7 +32,7 @@ class XCoderApp : Application() {
                 },
                 NotificationChannel(
                     CHANNEL_TERMINAL_OUTPUT,
-                    "Terminal Output",
+                    getString(com.xcoder.ide.R.string.notification_channel_terminal),
                     NotificationManager.IMPORTANCE_MIN
                 ).apply {
                     description = "Background terminal session output"
@@ -41,7 +40,7 @@ class XCoderApp : Application() {
                 },
                 NotificationChannel(
                     CHANNEL_GIT_OPERATIONS,
-                    "Git Operations",
+                    getString(com.xcoder.ide.R.string.notification_channel_git),
                     NotificationManager.IMPORTANCE_LOW
                 ).apply {
                     description = "Git push, pull, and sync operations"
@@ -49,7 +48,7 @@ class XCoderApp : Application() {
                 },
                 NotificationChannel(
                     CHANNEL_AI_ASSISTANT,
-                    "AI Assistant",
+                    getString(com.xcoder.ide.R.string.notification_channel_ai),
                     NotificationManager.IMPORTANCE_DEFAULT
                 ).apply {
                     description = "AI copilot responses and notifications"
@@ -57,14 +56,14 @@ class XCoderApp : Application() {
                 },
                 NotificationChannel(
                     CHANNEL_PLUGINS,
-                    "Plugin System",
+                    getString(com.xcoder.ide.R.string.notification_channel_plugins),
                     NotificationManager.IMPORTANCE_DEFAULT
                 ).apply {
                     description = "Plugin installation and update notifications"
                     setShowBadge(true)
                 }
             )
-            notificationManager.createNotificationChannels(channels)
+            runCatching { notificationManager.createNotificationChannels(channels) }
         }
     }
 

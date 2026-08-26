@@ -95,12 +95,10 @@
     <!-- ================================================================ -->
     <!--  Splash Theme                                                      -->
     <!-- ================================================================ -->
-    <style name="Theme.XCoderIDE.Splash" parent="Theme.XCoderIDE">
-        <item name="android:windowBackground">@color/splash_background</item>
-        <item name="android:statusBarColor">@color/splash_background</item>
-        <item name="android:navigationBarColor">@color/splash_background</item>
-        <item name="android:windowSplashScreenBackground">@color/splash_background</item>
-        <item name="android:windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+    <style name="Theme.XCoderIDE.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="postSplashScreenTheme">@style/Theme.XCoderIDE</item>
     </style>
 
     <!-- ================================================================ -->

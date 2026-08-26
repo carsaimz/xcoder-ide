@@ -1,104 +1,111 @@
 # XCoder IDE
 
 <p align="center">
-  <strong>A powerful mobile IDE for Android</strong><br>
-  <sub>Built with the same battle-tested libraries as AndroidIDE</sub>
+  <strong>Um IDE Android completo, estável e multilingue para dispositivos móveis</strong><br>
+  <sub>Editor de código, terminal, projetos, Git, compilação e ferramentas de produtividade num único lugar.</sub>
 </p>
 
----
+<p align="center">
+  <a href="https://github.com/carsaimz/xcoder-ide/actions/workflows/ci.yml"><img src="https://github.com/carsaimz/xcoder-ide/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/carsaimz/xcoder-ide" alt="Licença"></a>
+  <a href="https://kotlinlang.org/"><img src="https://img.shields.io/badge/Kotlin-1.9%2B-7F52FF?logo=kotlin&logoColor=white" alt="Kotlin"></a>
+  <a href="https://developer.android.com/jetpack/compose"><img src="https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?logo=android&logoColor=white" alt="Jetpack Compose"></a>
+  <a href="https://developer.android.com/about/versions/14"><img src="https://img.shields.io/badge/Android%20SDK-34-3DDC84?logo=android&logoColor=white" alt="Android SDK 34"></a>
+</p>
 
-## Features
+> **Estado:** em desenvolvimento activo. Cada alteração publicada deve passar a compilação, os testes unitários, o lint e a verificação final de CI antes de ser considerada concluída.
 
-- **Code Editor** — Rosemoe [sora-editor](https://github.com/Rosemoe/sora-editor) with 30+ language syntax highlighting via TextMate, code folding, auto-completion, search & replace (regex), minimap, sticky scroll, indent guides, bracket matching, breadcrumbs, pinch-to-zoom
-- **Terminal** — [Termux](https://github.com/termux/termux-app) terminal-emulator with VT100/xterm emulation, 256-color & true-color, Unicode, scrollback buffer, multi-session, copy/paste, special keys
-- **File Tree** — [AndroidTreeView](https://github.com/bmelnychuk/AndroidTreeView) with lazy loading, file type icons, selection highlighting, context menus
-- **Java LSP** — [Java Language Server](https://github.com/eclipse-jdtls/eclipse.jdt.ls) (jdtls) integration via LSP4J for code completion, hover docs, go-to-definition, diagnostics, code actions, rename refactoring
-- **AI Copilot** — Multi-provider LLM support (OpenAI, Gemini, Claude)
-- **Visual Editor** — Block-based drag-and-drop UI builder
-- **Git** — JGit integration (branch, commit, push, pull, log, diff, stash, clone)
-- **Build Engine** — Gradle-based project building
-- **APK Editor** — Smali/Dex editing, resource editing, APK signing
-- **Remote Filesystem** — FTP/SFTP support with caching and sync
-- **Plugin System** — Dynamic plugin loading via DexClassLoader
-- **Code Formatter** — Kotlin, Java, JSON, XML, HTML, CSS formatting
-- **Search in Project** — Cross-file search and replace
-- **Bookmarks** — Code bookmark management
+## Funcionalidades
 
-## Tech Stack
+O XCoder IDE combina uma experiência de edição orientada para Android com ferramentas que normalmente exigem um computador. Inclui o [sora-editor](https://github.com/Rosemoe/sora-editor), com realce TextMate para mais de 30 linguagens, dobragem de código, auto-completação, minimapa, guias de indentação, correspondência de chavetas, breadcrumbs e pesquisa/substituição com expressões regulares.
 
-| Component | Technology |
-|-----------|-----------|
-| Language | Kotlin 1.9+ |
-| UI | Jetpack Compose + Material 3 |
-| DI | Dagger Hilt |
+A aplicação também integra um terminal baseado no [Termux terminal-emulator](https://github.com/termux/termux-app), árvore de ficheiros com carregamento preguiçoso, Java Language Server via LSP4J, assistente de IA multi-fornecedor, editor visual por blocos, JGit, motor de compilação Gradle, editor de APK, sistema de extensões, formatadores de Kotlin/Java/JSON/XML/HTML/CSS, pesquisa transversal e marcadores.
+
+O arranque utiliza o AndroidX SplashScreen de forma compatível com o tema da aplicação, evita abrir definições de armazenamento de forma invasiva no Android 11 ou posterior, trata permissões SAF rejeitadas por fornecedores externos e mantém inicializações opcionais fora do caminho crítico da primeira UI.
+
+## Idiomas
+
+O idioma predefinido é **português de Portugal (pt-PT)**. A escolha é persistida no dispositivo e pode ser alterada em **Definições → Idioma**. A interface disponibiliza os seguintes locales:
+
+| Locale | Idioma | Estado |
+|---|---|---|
+| `pt-PT` | Português (Portugal) | Predefinido e revisto |
+| `en` | English | Revisto |
+| `es` | Español | Revisto |
+| `fr` | Français | Revisto |
+| `de` | Deutsch | Disponível |
+| `it` | Italiano | Disponível |
+| `ru` | Русский | Disponível |
+| `zh-CN` | 简体中文 | Disponível |
+| `ja` | 日本語 | Disponível |
+| `ko` | 한국어 | Disponível |
+| `ar` | العربية | Disponível, incluindo suporte RTL do sistema |
+| `pt-BR` | Português (Brasil) | Disponível |
+
+As traduções vivem nos recursos Android `values-*`, pelo que novas telas podem adoptar gradualmente o catálogo existente sem duplicar lógica de apresentação. Contribuições de tradução são bem-vindas, sobretudo para mensagens específicas das ferramentas.
+
+## Identidade visual
+
+O launcher usa um ícone adaptativo com um **X geométrico** em primeiro plano, aplicado sobre o fundo de marca roxo/azul. O símbolo foi desenhado como vector drawable para conservar nitidez em diferentes densidades e formatos de launcher, incluindo variantes redondas.
+
+## Stack técnica
+
+| Componente | Tecnologia |
+|---|---|
+| Linguagem | Kotlin 1.9+ |
+| Interface | Jetpack Compose + Material 3 |
+| Injecção de dependências | Dagger Hilt |
 | Min SDK | 21 (Android 5.0) |
-| Target SDK | 34 (Android 14) |
-| Compile SDK | 34 |
+| Target/Compile SDK | 34 |
 | JVM | 17 |
-| AGP | 8.2.0 |
+| Android Gradle Plugin | 8.2.0 |
 | Gradle | 8.5 |
+| Persistência | DataStore Preferences e preferências de locale |
 
-## Modules (16)
+## Módulos
 
-```
+```text
 xcoder-ide/
-├── app/                          # Main application
+├── app/                          # Aplicação principal, navegação e UI
 ├── core/
-│   ├── file-manager/             # File operations & SAF
+│   ├── file-manager/             # Operações de ficheiros e SAF
 │   ├── terminal/                 # Termux terminal-emulator
-│   ├── git/                      # JGit integration
-│   └── settings/                 # Preferences & DataStore
-├── editor/
-│   └── sora-editor/              # Rosemoe sora-editor wrapper
-├── visual-editor/                # Block-based UI builder
-├── build-engine/                 # Gradle build system
-├── ai-copilot/                   # LLM code assistant
-├── search-in-project/            # Cross-file search
-├── code-formatter/               # Code formatting
-├── bookmarks/                    # Bookmark management
-├── apk-editor/                   # APK/Smali/Dex editor
-├── remote-filesystem/            # FTP/SFTP client
+│   ├── git/                      # Integração JGit
+│   └── settings/                 # Preferências e DataStore
+├── editor/                       # Wrapper do Rosemoe sora-editor
+├── visual-editor/                # Construtor visual por blocos
+├── build-engine/                 # Sistema de compilação Gradle
+├── ai-copilot/                   # Assistente de código multi-fornecedor
+├── search-in-project/            # Pesquisa transversal
+├── code-formatter/               # Formatação de código
+├── bookmarks/                    # Gestão de marcadores
+├── apk-editor/                   # Editor APK/Smali/Dex
+├── remote-filesystem/            # Cliente FTP/SFTP
 ├── lsp-java/                     # Java Language Server (jdtls)
-└── plugin-system/
-    ├── api/                      # Plugin API
-    └── loader/                   # Plugin class loader
+└── plugin-system/                # API e carregador de extensões
 ```
-
-## Thanks to
-
-- **[Rosemoe](https://github.com/Rosemoe)** for the awesome [CodeEditor](https://github.com/Rosemoe/sora-editor)
-- **[Termux](https://github.com/termux)** for [Terminal Emulator](https://github.com/termux/termux-app) (terminal-emulator & terminal-view modules)
-- **[AndroidIDE](https://github.com/AndroidIDE/AndroidIDE)** for editor integration patterns, LSP client architecture, build system design, and UI patterns (Apache 2.0)
-- **[Sketchware-IA](https://github.com/FabioSilva11/Sketchware-IA)** for visual editor architecture, widget models (ViewBean/LayoutBean/TextBean), XML parser/generator, AAPT2 build pipeline, and project structure patterns (GPL-3.0)
-- **[Dalvikus](https://github.com/loerting/dalvikus)** for APK/DEX tree architecture, smali editing, resource table browsing, and APK signing patterns (MIT)
-- **[Bogdan Melnychuk](https://github.com/bmelnychuk)** for [AndroidTreeView](https://github.com/bmelnychuk/AndroidTreeView)
-- **[George Fraser](https://github.com/GotoFuse)** for the [Java Language Server](https://github.com/eclipse-jdtls/eclipse.jdt.ls)
 
 ## CI/CD
 
-GitHub Actions workflows handle everything — Gradle is installed via `gradle/actions/setup-gradle@v4`, no wrapper files needed in the repo.
+O workflow [CI](.github/workflows/ci.yml) usa Gradle 8.5 através de `gradle/actions/setup-gradle@v4` e mantém todos os controlos bloqueantes. Uma alteração só está pronta quando **Resolve Dependencies**, **Build All Modules**, **Unit Tests**, **Lint & Code Quality** e **CI Status** aparecem como concluídos com sucesso no GitHub Actions.
 
-| Workflow | Trigger | Description |
-|---------|---------|-------------|
-| CI | Push to main/develop, PRs | Lint → Unit Tests → Build |
-| Build Debug | Push to develop, manual | Pre-release APK with auto-tag |
-| Release | Tag push (v*), manual | Signed APK + AAB + GitHub Release |
-| Tag & Changelog | Manual | Bump version, create tag, trigger release |
-| Update Changelog | Tag push, manual | Generate changelog from git history |
-| Gradle Setup | Manual | Verify Gradle installation |
-| Dependabot | Weekly (Monday) | Check for dependency updates |
+Existem ainda workflows para build de debug, release assinado, tags/changelog, actualização de changelog, verificação manual de Gradle e Dependabot. O clone não depende de um wrapper Gradle local; em ambiente de desenvolvimento, use Gradle 8.5 ou uma distribuição compatível.
 
-## Build
+## Compilar e testar
 
 ```bash
-# CI handles this automatically, but locally you can use:
-gradle assembleDebug     # Build debug APK
-gradle assembleRelease   # Build release APK (needs keystore config)
-gradle testDebugUnitTest  # Run unit tests
-gradle lintDebug         # Run lint checks
+gradle assembleDebug          # APK de debug
+gradle assembleRelease        # Release, com configuração de assinatura
+gradle testDebugUnitTest     # Testes unitários
+gradle lintDebug              # Lint Android e qualidade de código
 ```
 
-## License
+Antes de submeter uma alteração, execute também `git diff --check` e confirme a execução completa do workflow no separador **Actions** do repositório.
 
-See [LICENSE](LICENSE)
+## Créditos e licenças
 
+O projecto aproveita bibliotecas, APIs e padrões de projectos open source, respeitando as respectivas licenças. Agradecimentos especiais a [Rosemoe](https://github.com/Rosemoe), [Termux](https://github.com/termux), [AndroidIDE](https://github.com/AndroidIDE/AndroidIDE), [Sketchware-IA](https://github.com/FabioSilva11/Sketchware-IA), [Dalvikus](https://github.com/loerting/dalvikus), [AndroidTreeView](https://github.com/bmelnychuk/AndroidTreeView) e [Eclipse JDT Language Server](https://github.com/eclipse-jdtls/eclipse.jdt.ls). Consulte [LICENSE](LICENSE) para os termos do XCoder IDE.
+
+## Contribuir
+
+Aceitam-se correcções de estabilidade, melhorias de acessibilidade, traduções e integrações de ferramentas. Mantenha alterações pequenas e verificáveis, documente qualquer código reutilizado com a licença correspondente e não abra uma pull request enquanto o workflow CI não estiver completamente verde.

@@ -1,6 +1,7 @@
 package com.xcoder.ide.navigation
 
 import androidx.compose.material.icons.Icons
+import com.xcoder.ide.R
 import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.graphics.vector.ImageVector
 
@@ -13,6 +14,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 sealed class Screen(
     val route: String,
     val label: String,
+    val labelRes: Int,
     val icon: ImageVector,
     val isDrawerOnly: Boolean = false
 ) {
@@ -24,6 +26,7 @@ sealed class Screen(
     data object CodeEditor : Screen(
         route = "editor",
         label = "Editor",
+        labelRes = R.string.nav_web_editor,
         icon = Icons.Default.Edit
     )
 
@@ -31,6 +34,7 @@ sealed class Screen(
     data object Terminal : Screen(
         route = "terminal",
         label = "Terminal",
+        labelRes = R.string.nav_terminal,
         icon = Icons.Default.Terminal
     )
 
@@ -38,6 +42,7 @@ sealed class Screen(
     data object VisualEditor : Screen(
         route = "visual_editor",
         label = "Visual",
+        labelRes = R.string.nav_visual_editor,
         icon = Icons.Default.Dashboard
     )
 
@@ -45,6 +50,7 @@ sealed class Screen(
     data object ApkEditor : Screen(
         route = "apk_editor",
         label = "APK",
+        labelRes = R.string.nav_apk_editor,
         icon = Icons.Default.Android,
         isDrawerOnly = true
     )
@@ -53,6 +59,7 @@ sealed class Screen(
     data object Build : Screen(
         route = "build",
         label = "Build",
+        labelRes = R.string.nav_build,
         icon = Icons.Default.Build,
         isDrawerOnly = true
     )
@@ -61,6 +68,7 @@ sealed class Screen(
     data object Settings : Screen(
         route = "settings",
         label = "Settings",
+        labelRes = R.string.nav_settings,
         icon = Icons.Default.Settings
     )
 
@@ -68,6 +76,7 @@ sealed class Screen(
     data object Search : Screen(
         route = "search",
         label = "Search",
+        labelRes = R.string.nav_search,
         icon = Icons.Default.Search,
         isDrawerOnly = true
     )
@@ -76,6 +85,7 @@ sealed class Screen(
     data object Bookmarks : Screen(
         route = "bookmarks",
         label = "Bookmarks",
+        labelRes = R.string.nav_bookmarks,
         icon = Icons.Default.BookmarkBorder,
         isDrawerOnly = true
     )
@@ -84,6 +94,7 @@ sealed class Screen(
     data object ProjectList : Screen(
         route = "project_list",
         label = "Projects",
+        labelRes = R.string.nav_projects,
         icon = Icons.Default.FolderOpen,
         isDrawerOnly = true
     )
@@ -92,6 +103,7 @@ sealed class Screen(
     data object GitManager : Screen(
         route = "git_manager",
         label = "Git",
+        labelRes = R.string.nav_git,
         icon = Icons.Default.AccountTree,
         isDrawerOnly = true
     )
@@ -100,6 +112,7 @@ sealed class Screen(
     data object AiChat : Screen(
         route = "ai_chat",
         label = "AI Assistant",
+        labelRes = R.string.nav_ai_chat,
         icon = Icons.Default.SmartToy,
         isDrawerOnly = true
     )
@@ -108,6 +121,7 @@ sealed class Screen(
     data object PluginManager : Screen(
         route = "plugin_manager",
         label = "Plugins",
+        labelRes = R.string.nav_plugins,
         icon = Icons.Default.Extension,
         isDrawerOnly = true
     )

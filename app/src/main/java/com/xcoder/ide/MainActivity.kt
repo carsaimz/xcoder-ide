@@ -23,7 +23,6 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.xcoder.ide.navigation.MainNavigation
 import com.xcoder.ide.theme.XCoderTheme
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 
 /**
  * Main entry point for XCoder IDE.
@@ -46,14 +45,6 @@ class MainActivity : ComponentActivity() {
 
     /** Tracks whether the splash screen should keep showing. */
     private var keepSplashOnScreen = true
-
-    /**
-     * Optional: injected preference repo for reading the initial navigation
-     * target and theme preference before Compose is set up.
-     */
-    @Suppress("unused")
-    @Inject
-    lateinit var preferenceStore: com.xcoder.core.settings.PreferencesManager
 
     // -----------------------------------------------------------------------
     //  Permission launcher
@@ -88,9 +79,6 @@ class MainActivity : ComponentActivity() {
         // Process the incoming intent that launched this activity.
         handleIncomingIntent(intent)
 
-        // Request storage permissions (Android 10 and below).
-        requestStoragePermissionsIfNeeded()
-
         // Pre-load any heavy resources on a background thread.
         // Once done, dismiss the splash screen.
         preloadIdeResources {
@@ -112,6 +100,9 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+
+        // Ask for legacy storage access only after the first frame is ready.
+        window.decorView.post { requestStoragePermissionsIfNeeded() }
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -187,6 +178,8 @@ class MainActivity : ComponentActivity() {
             contentResolver.takePersistableUriPermission(uri, takeFlags)
         } catch (_: SecurityException) {
             // Not a persistable grant — ignore.
+        } catch (_: IllegalArgumentException) {
+            // Some providers reject zero or unsupported flag combinations.
         }
     }
 
@@ -203,23 +196,9 @@ class MainActivity : ComponentActivity() {
      */
     private fun requestStoragePermissionsIfNeeded() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            // Android 11+: check MANAGE_EXTERNAL_STORAGE.
-            if (!android.os.Environment.isExternalStorageManager()) {
-                try {
-                    val intent = Intent(
-                        android.provider.Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
-                        Uri.parse("package:$packageName")
-                    )
-                    startActivity(intent)
-                } catch (_: Exception) {
-                    // Fallback: open general app settings.
-                    val fallback = Intent(
-                        android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                        Uri.parse("package:$packageName")
-                    )
-                    startActivity(fallback)
-                }
-            }
+            // Android 11+: never open system settings during cold start.
+            // A later project/file action can request MANAGE_EXTERNAL_STORAGE explicitly.
+            return
         } else {
             // Android 10 and below: request legacy storage permissions.
             val needed = mutableListOf<String>()
@@ -262,7 +241,9 @@ class MainActivity : ComponentActivity() {
                 // Real code: LanguageRegistry.init(); LspManager.connect(); TerminalJni.load()
                 Thread.sleep(800)
             } catch (_: InterruptedException) {
-                // Ignored.
+                Thread.currentThread().interrupt()
+            } catch (_: Throwable) {
+                // Optional preloading must never prevent the editor from opening.
             } finally {
                 runOnUiThread(onReady)
             }

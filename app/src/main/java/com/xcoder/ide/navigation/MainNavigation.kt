@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -24,6 +25,8 @@ import kotlinx.coroutines.launch
 import com.xcoder.ide.ui.editor.EditorScreen
 import com.xcoder.ide.ui.terminal.TerminalScreen
 import com.xcoder.ide.ui.visual.VisualEditorScreen
+import com.xcoder.ide.ui.settings.SettingsScreen
+import com.xcoder.ide.R
 
 /**
  * Main navigation graph that wires every [Screen] to its composable.
@@ -120,9 +123,8 @@ fun MainNavigation(
                 composable(Screen.ApkEditor.route) {
                     PlaceholderScreen(
                         icon = Icons.Default.Android,
-                        title = "APK Editor",
-                        description = "Decompile, edit smali/resources, and re-sign APKs.\n" +
-                            "Powered by apktool and baksmali."
+                        titleRes = R.string.placeholder_apk_title,
+                        descriptionRes = R.string.placeholder_apk_description
                     )
                 }
 
@@ -130,9 +132,8 @@ fun MainNavigation(
                 composable(Screen.Build.route) {
                     PlaceholderScreen(
                         icon = Icons.Default.Build,
-                        title = "Build",
-                        description = "Gradle build console with real-time output.\n" +
-                            "Supports Gradle, Maven, and direct javac/kotlinc."
+                        titleRes = R.string.placeholder_build_title,
+                        descriptionRes = R.string.placeholder_build_description
                     )
                 }
 
@@ -140,9 +141,8 @@ fun MainNavigation(
                 composable(Screen.Search.route) {
                     PlaceholderScreen(
                         icon = Icons.Default.Search,
-                        title = "Search in Project",
-                        description = "Full-text search across all project files.\n" +
-                            "Regex support, file filtering, and result navigation."
+                        titleRes = R.string.placeholder_search_title,
+                        descriptionRes = R.string.placeholder_search_description
                     )
                 }
 
@@ -150,8 +150,8 @@ fun MainNavigation(
                 composable(Screen.Bookmarks.route) {
                     PlaceholderScreen(
                         icon = Icons.Default.BookmarkBorder,
-                        title = "Bookmarks",
-                        description = "Quick access to bookmarked lines and files."
+                        titleRes = R.string.placeholder_bookmarks_title,
+                        descriptionRes = R.string.placeholder_bookmarks_description
                     )
                 }
 
@@ -159,9 +159,8 @@ fun MainNavigation(
                 composable(Screen.ProjectList.route) {
                     PlaceholderScreen(
                         icon = Icons.Default.FolderOpen,
-                        title = "Projects",
-                        description = "Open recent projects or create a new one.\n" +
-                            "File tree powered by AndroidTreeView."
+                        titleRes = R.string.placeholder_projects_title,
+                        descriptionRes = R.string.placeholder_projects_description
                     )
                 }
 
@@ -169,9 +168,8 @@ fun MainNavigation(
                 composable(Screen.GitManager.route) {
                     PlaceholderScreen(
                         icon = Icons.Default.AccountTree,
-                        title = "Git Manager",
-                        description = "Branch, commit, push, pull, and view history.\n" +
-                            "Powered by JGit."
+                        titleRes = R.string.placeholder_git_title,
+                        descriptionRes = R.string.placeholder_git_description
                     )
                 }
 
@@ -179,9 +177,8 @@ fun MainNavigation(
                 composable(Screen.AiChat.route) {
                     PlaceholderScreen(
                         icon = Icons.Default.SmartToy,
-                        title = "AI Assistant",
-                        description = "Ask questions, generate code, and get suggestions.\n" +
-                            "Supports OpenAI, Gemini, Claude."
+                        titleRes = R.string.placeholder_ai_title,
+                        descriptionRes = R.string.placeholder_ai_description
                     )
                 }
 
@@ -189,19 +186,14 @@ fun MainNavigation(
                 composable(Screen.PluginManager.route) {
                     PlaceholderScreen(
                         icon = Icons.Default.Extension,
-                        title = "Plugins",
-                        description = "Browse, install, and manage IDE plugins."
+                        titleRes = R.string.placeholder_plugins_title,
+                        descriptionRes = R.string.placeholder_plugins_description
                     )
                 }
 
                 // ── Settings ────────────────────────────────────────
                 composable(Screen.Settings.route) {
-                    PlaceholderScreen(
-                        icon = Icons.Default.Settings,
-                        title = "Settings",
-                        description = "Customize your IDE experience.\n" +
-                            "Theme, font size, key bindings, terminal, LSP, and more."
-                    )
+                    SettingsScreen()
                 }
             }
         }
@@ -225,10 +217,10 @@ private fun BottomNavigationBar(
                 icon = {
                     Icon(
                         imageVector = screen.icon,
-                        contentDescription = screen.label
+                        contentDescription = stringResource(screen.labelRes)
                     )
                 },
-                label = { Text(screen.label) },
+                label = { Text(stringResource(screen.labelRes)) },
                 selected = selected,
                 onClick = { onNavigate(screen) },
                 colors = NavigationBarItemDefaults.colors(
@@ -242,8 +234,8 @@ private fun BottomNavigationBar(
         }
         // "More" button opens the drawer.
         NavigationBarItem(
-            icon = { Icon(Icons.Default.Menu, contentDescription = "More") },
-            label = { Text("More") },
+            icon = { Icon(Icons.Default.Menu, contentDescription = stringResource(R.string.drawer_more)) },
+            label = { Text(stringResource(R.string.drawer_more)) },
             selected = false,
             onClick = onOpenDrawer,
             colors = NavigationBarItemDefaults.colors(
@@ -284,7 +276,7 @@ private fun DrawerContent(
                     style = MaterialTheme.typography.headlineMedium
                 )
                 Text(
-                    text = "v1.0.0  •  Kotlin + Compose",
+                    text = stringResource(R.string.drawer_version),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -297,8 +289,8 @@ private fun DrawerContent(
             items(Screen.drawerOnlyScreens) { screen ->
                 val selected = currentRoute == screen.route
                 NavigationDrawerItem(
-                    icon = { Icon(screen.icon, contentDescription = screen.label) },
-                    label = { Text(screen.label) },
+                    icon = { Icon(screen.icon, contentDescription = stringResource(screen.labelRes)) },
+                    label = { Text(stringResource(screen.labelRes)) },
                     selected = selected,
                     onClick = { onNavigate(screen) },
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp),
@@ -316,7 +308,7 @@ private fun DrawerContent(
         HorizontalDivider()
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                "Powered by",
+                stringResource(R.string.drawer_powered_by),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -342,8 +334,8 @@ private fun DrawerContent(
 @Composable
 internal fun PlaceholderScreen(
     icon: ImageVector,
-    title: String,
-    description: String
+    titleRes: Int,
+    descriptionRes: Int
 ) {
     Box(
         modifier = Modifier
@@ -354,19 +346,19 @@ internal fun PlaceholderScreen(
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Icon(
                 imageVector = icon,
-                contentDescription = title,
+                contentDescription = stringResource(titleRes),
                 modifier = Modifier.size(64.dp),
                 tint = MaterialTheme.colorScheme.primary
             )
             Spacer(Modifier.height(16.dp))
             Text(
-                text = title,
+                text = stringResource(titleRes),
                 style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.onBackground
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                text = description,
+                text = stringResource(descriptionRes),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
