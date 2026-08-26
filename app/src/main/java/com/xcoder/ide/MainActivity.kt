@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.xcoder.ide.navigation.MainNavigation
+import com.xcoder.ide.ui.crash.CrashRecoveryScreen
 import com.xcoder.ide.theme.XCoderTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -85,19 +86,32 @@ class MainActivity : ComponentActivity() {
             keepSplashOnScreen = false
         }
 
-        setContent {
-            XCoderTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    MainNavigation(
-                        initialFileUri = pendingFileUri,
-                        onFileHandled = {
-                            pendingFileUri = null
-                        }
+        val app = application as? XCoderApp
+        val previousCrash = app?.getLastCrash()
+        try {
+            setContent {
+                if (previousCrash != null && app != null) {
+                    CrashRecoveryScreen(
+                        crash = previousCrash,
+                        onRetry = {
+                            app.clearLastCrash()
+                            recreate()
+                        },
+                        onClose = { finishAffinity() }
                     )
+                } else {
+                    RuntimeErrorBoundary(app)
                 }
+            }
+        } catch (throwable: Throwable) {
+            // setContent can fail synchronously during startup on a broken device/theme.
+            app?.recordHandledError(throwable)
+            setContent {
+                CrashRecoveryScreen(
+                    crash = throwable.toCrashSnapshot(),
+                    onRetry = { app?.clearLastCrash(); recreate() },
+                    onClose = { finishAffinity() }
+                )
             }
         }
 
@@ -124,6 +138,58 @@ class MainActivity : ComponentActivity() {
                 }
             }
         )
+    }
+
+    /**
+     * Catches exceptions thrown while composing the main UI and replaces the
+     * failing content with a diagnostic screen instead of killing the process.
+     */
+    @Composable
+    private fun RuntimeErrorBoundary(app: XCoderApp?) {
+        var handledError by remember { mutableStateOf<Throwable?>(null) }
+        var pendingError: Throwable? = null
+        if (handledError == null) {
+            try {
+                XCoderTheme {
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background
+                    ) {
+                        MainNavigation(
+                            initialFileUri = pendingFileUri,
+                            onFileHandled = { pendingFileUri = null }
+                        )
+                    }
+                }
+            } catch (throwable: Throwable) {
+                pendingError = throwable
+            }
+        }
+
+        val error = handledError ?: pendingError
+        if (error != null) {
+            SideEffect {
+                if (handledError == null) {
+                    app?.recordHandledError(error)
+                    handledError = error
+                }
+            }
+            CrashRecoveryScreen(
+                crash = error.toCrashSnapshot(),
+                onRetry = {
+                    app?.clearLastCrash()
+                    recreate()
+                },
+                onClose = { finishAffinity() }
+            )
+        }
+    }
+
+    private fun Throwable.toCrashSnapshot(): XCoderApp.CrashSnapshot {
+        val trace = java.io.StringWriter().also { writer ->
+            printStackTrace(java.io.PrintWriter(writer))
+        }.toString()
+        return XCoderApp.CrashSnapshot(System.currentTimeMillis(), trace.take(12000))
     }
 
     // -----------------------------------------------------------------------

@@ -322,4 +322,11 @@ Compatible con OpenAI, Gemini y Claude.</string>
     <string name="drawer_powered_by">Desarrollado con</string>
     <string name="drawer_version">v1.0.0  •  Kotlin + Compose</string>
     <string name="common_replace">Reemplazar</string>
+
+    <string name="crash_recovery_title">XCoder IDE encontró un error</string>
+    <string name="crash_recovery_message">La aplicación encontró un problema inesperado. Copia el diagnóstico e intenta abrirla de nuevo.</string>
+    <string name="crash_copy_diagnostics">Copiar diagnóstico</string>
+    <string name="crash_try_again">Intentar de nuevo</string>
+    <string name="crash_close">Cerrar</string>
+    <string name="crash_diagnostics_copied">Diagnóstico copiado.</string>
 </resources>

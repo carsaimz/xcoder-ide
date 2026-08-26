@@ -4,6 +4,7 @@ import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
+import android.util.Log
 import dagger.hilt.android.HiltAndroidApp
 import com.xcoder.ide.i18n.AppLocaleManager
 
@@ -70,26 +71,55 @@ class XCoderApp : Application() {
     private fun initializeCrashHandler() {
         val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
-            logCrash(throwable)
+            runCatching { logCrash(throwable) }
             defaultHandler?.uncaughtException(thread, throwable)
         }
     }
 
+    /** Returns the previous process crash, if one was persisted. */
+    fun getLastCrash(): CrashSnapshot? {
+        val prefs = getSharedPreferences(CRASH_PREFS, MODE_PRIVATE)
+        val trace = prefs.getString(CRASH_TRACE, null) ?: return null
+        return CrashSnapshot(
+            timestamp = prefs.getLong(CRASH_TIME, 0L),
+            trace = trace
+        )
+    }
+
+    /** Removes the crash marker after the user chooses to retry. */
+    fun clearLastCrash() {
+        getSharedPreferences(CRASH_PREFS, MODE_PRIVATE).edit().clear().apply()
+    }
+
+    /** Records an error caught by the UI boundary without terminating the process. */
+    fun recordHandledError(throwable: Throwable) {
+        runCatching { logCrash(throwable) }
+    }
+
     private fun logCrash(throwable: Throwable) {
+        Log.e(TAG, "Unhandled XCoder IDE error", throwable)
         // In production this would log to a crash reporting service.
         // For now we persist locally for the crash report screen.
-        val prefs = getSharedPreferences("xcoder_crash", MODE_PRIVATE)
+        val prefs = getSharedPreferences(CRASH_PREFS, MODE_PRIVATE)
         val timestamp = System.currentTimeMillis()
         val stackTrace = java.io.StringWriter().also { sw ->
             throwable.printStackTrace(java.io.PrintWriter(sw))
         }.toString()
         prefs.edit()
-            .putString("last_crash_time", timestamp.toString())
-            .putString("last_crash_trace", stackTrace)
+            .putLong(CRASH_TIME, timestamp)
+            .putString(CRASH_TRACE, stackTrace.take(MAX_TRACE_LENGTH))
             .apply()
     }
 
+    data class CrashSnapshot(val timestamp: Long, val trace: String)
+
     companion object {
+        private const val CRASH_PREFS = "xcoder_crash"
+        private const val CRASH_TIME = "last_crash_time"
+        private const val CRASH_TRACE = "last_crash_trace"
+        private const val MAX_TRACE_LENGTH = 12000
+        private const val TAG = "XCoderCrashHandler"
+
         lateinit var instance: XCoderApp
             private set
 
