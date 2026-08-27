@@ -329,4 +329,5 @@ Compatible con OpenAI, Gemini y Claude.</string>
     <string name="crash_try_again">Intentar de nuevo</string>
     <string name="crash_close">Cerrar</string>
     <string name="crash_diagnostics_copied">Diagnóstico copiado.</string>
+    <string name="startup_loading">Preparando XCoder IDE…</string>
 </resources>

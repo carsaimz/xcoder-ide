@@ -329,4 +329,5 @@ Supports OpenAI, Gemini, and Claude.</string>
     <string name="crash_try_again">Try again</string>
     <string name="crash_close">Close</string>
     <string name="crash_diagnostics_copied">Diagnostics copied.</string>
+    <string name="startup_loading">XCoder IDEを準備しています…</string>
 </resources>

@@ -8,9 +8,13 @@ import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.view.ViewTreeObserver
+import android.widget.Button
+import android.widget.FrameLayout
+import android.widget.TextView
 import android.widget.Toast
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,7 +25,6 @@ import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.xcoder.ide.navigation.MainNavigation
-import com.xcoder.ide.ui.crash.CrashRecoveryScreen
 import com.xcoder.ide.theme.XCoderTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -88,40 +91,34 @@ class MainActivity : ComponentActivity() {
 
         val app = application as? XCoderApp
         val previousCrash = app?.getLastCrash()
-        try {
-            setContent {
-                if (previousCrash != null && app != null) {
-                    CrashRecoveryScreen(
-                        crash = previousCrash,
-                        onRetry = {
-                            app.clearLastCrash()
-                            recreate()
-                        },
-                        onClose = { finishAffinity() }
-                    )
-                } else {
-                    XCoderTheme {
-                        Surface(
-                            modifier = Modifier.fillMaxSize(),
-                            color = MaterialTheme.colorScheme.background
-                        ) {
-                            MainNavigation(
-                                initialFileUri = pendingFileUri,
-                                onFileHandled = { pendingFileUri = null }
-                            )
+        setContentView(R.layout.activity_shell)
+        val composeContainer = findViewById<FrameLayout>(R.id.compose_container)
+        val loadingOverlay = findViewById<View>(R.id.startup_loading_overlay)
+        if (previousCrash != null && app != null) {
+            showCrashRecoveryXml(previousCrash)
+        } else {
+            try {
+                val composeView = ComposeView(this).apply {
+                    setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+                    setContent {
+                        XCoderTheme {
+                            Surface(
+                                modifier = Modifier.fillMaxSize(),
+                                color = MaterialTheme.colorScheme.background
+                            ) {
+                                MainNavigation(
+                                    initialFileUri = pendingFileUri,
+                                    onFileHandled = { pendingFileUri = null }
+                                )
+                            }
                         }
                     }
                 }
-            }
-        } catch (throwable: Throwable) {
-            // setContent can fail synchronously during startup on a broken device/theme.
-            app?.recordHandledError(throwable)
-            setContent {
-                CrashRecoveryScreen(
-                    crash = throwable.toCrashSnapshot(),
-                    onRetry = { app?.clearLastCrash(); recreate() },
-                    onClose = { finishAffinity() }
-                )
+                composeContainer.addView(composeView)
+                loadingOverlay.visibility = View.GONE
+            } catch (throwable: Throwable) {
+                app?.recordHandledError(throwable)
+                showCrashRecoveryXml(throwable.toCrashSnapshot())
             }
         }
 
@@ -148,6 +145,30 @@ class MainActivity : ComponentActivity() {
                 }
             }
         )
+    }
+
+    private fun showCrashRecoveryXml(crash: XCoderApp.CrashSnapshot) {
+        setContentView(R.layout.view_crash_recovery)
+        val diagnostics = findViewById<TextView>(R.id.crash_diagnostics)
+        val timestamp = if (crash.timestamp > 0L) {
+            java.text.DateFormat.getDateTimeInstance().format(java.util.Date(crash.timestamp))
+        } else {
+            "unknown"
+        }
+        val report = "XCoder IDE\\nTime: $timestamp\\n\\n${crash.trace}"
+        diagnostics.text = report
+        findViewById<Button>(R.id.crash_copy_button).setOnClickListener {
+            val clipboard = getSystemService(CLIPBOARD_SERVICE) as? android.content.ClipboardManager
+            clipboard?.setPrimaryClip(android.content.ClipData.newPlainText("XCoder diagnostics", report))
+            Toast.makeText(this, R.string.crash_diagnostics_copied, Toast.LENGTH_SHORT).show()
+        }
+        findViewById<Button>(R.id.crash_retry_button).setOnClickListener {
+            applicationContext.let { (it as? XCoderApp)?.clearLastCrash() }
+            recreate()
+        }
+        findViewById<Button>(R.id.crash_close_button).setOnClickListener {
+            finishAffinity()
+        }
     }
 
     private fun Throwable.toCrashSnapshot(): XCoderApp.CrashSnapshot {
